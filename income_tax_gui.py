@@ -284,7 +284,7 @@ class TextRedirector(io.TextIOBase):
 # CORE AUTOMATION LOGIC (refactored for portability)
 # ─────────────────────────────────────────────
 
-def download_and_rename(page, pan, name, file_id, base_dir):
+def download_and_rename(page, pan, name, file_id, base_dir, app_callback=None):
     """Handles the CSV download and renaming process."""
     print(f"Triggering download for ID: {file_id}...")
     download_selector = "button.downloadButtonsec"
@@ -301,9 +301,42 @@ def download_and_rename(page, pan, name, file_id, base_dir):
 
         download.save_as(save_path)
         print(f"✅ Successfully saved: {filename}")
+        
+        # Calculate size and check for "No Records Found"
+        file_size_bytes = os.path.getsize(save_path)
+        is_no_records = False
+        if file_size_bytes == 0:
+            is_no_records = True
+        else:
+            try:
+                with open(save_path, "r", encoding="utf-8", errors="ignore") as f:
+                    first_lines = [f.readline().lower() for _ in range(3)]
+                for line in first_lines:
+                    if "no records" in line:
+                        is_no_records = True
+                        break
+            except Exception:
+                pass
+
+        size_str = f"{file_size_bytes / 1024:.1f} KB"
+        
+        if is_no_records:
+            status_text = "No Records Found"
+            status_type = "warning"
+        else:
+            status_text = "Saved Successfully"
+            status_type = "success"
+
+        if app_callback:
+            app_callback.add_ledger_entry(file_id, filename, status_text, size_str, status_type=status_type)
+
         return True
     except Exception as e:
         print(f"⚠️ Failed to download {file_id}: {e}")
+        if app_callback:
+            safe_name = "".join(x for x in name if x.isalnum() or x in " -_").strip()
+            filename = f"{safe_name}_{pan}_{file_id}_FAIL.csv"
+            app_callback.add_ledger_entry(file_id, filename, "Download Failed", "0.0 KB", status_type="danger")
         return False
 
 
@@ -322,7 +355,7 @@ def get_latest_and_prev_files(pan, file_id, base_dir):
 
 # ── MAIN AUTOMATION ──────────────────────────
 
-def run_multi_client_downloads(credentials_file, base_dir, vault_manager):
+def run_multi_client_downloads(credentials_file, base_dir, vault_manager, app_callback=None):
     """Log in to each client on the Income Tax portal, navigate to
     e-Proceedings, and download four CSV snapshots per client."""
 
@@ -354,12 +387,16 @@ def run_multi_client_downloads(credentials_file, base_dir, vault_manager):
         for index, row in df_creds.iterrows():
             user_id = str(row["Login_ID"]).strip()
             password = str(row["Password"]).strip()
+            client_name = str(row["Name"]).strip() if pd.notna(row["Name"]) else "Taxpayer"
 
             print(f"\n{'=' * 50}")
             print(f"🏢 STARTING CLIENT: {user_id}")
             print(f"{'=' * 50}")
 
             print(f"ℹ️ [INFO]  - Scanning for login screen for {user_id}...")
+
+            if app_callback:
+                app_callback.start_client_timer(client_name, user_id)
 
             portal_ready = False
             max_checks = 20
@@ -377,6 +414,8 @@ def run_multi_client_downloads(credentials_file, base_dir, vault_manager):
             if not portal_ready:
                 print(f"🚨 [CRITICAL ERROR] - Portal seems completely down or stuck. Skipping {user_id}.")
                 logging.error(f"Portal down/stuck when scanning login screen for {user_id}")
+                if app_callback:
+                    app_callback.trigger_fast_forward()
                 continue
 
             # Stage 1: Login Form Injection
@@ -387,6 +426,8 @@ def run_multi_client_downloads(credentials_file, base_dir, vault_manager):
                 print(f"🚨 [CRITICAL ERROR] - Login form injection stage failed for {user_id}.")
                 capture_diagnostic_screenshot(page, user_id, "LOGIN_INJECT", vault_manager)
                 logging.exception(f"Login ID injection failed for {user_id}")
+                if app_callback:
+                    app_callback.trigger_fast_forward()
                 continue
 
             # Stage 2: OTP/Password Navigation
@@ -399,6 +440,8 @@ def run_multi_client_downloads(credentials_file, base_dir, vault_manager):
                 print(f"🚨 [CRITICAL ERROR] - Password navigation stage failed for {user_id}.")
                 capture_diagnostic_screenshot(page, user_id, "PASSWORD_NAV", vault_manager)
                 logging.exception(f"Password screen navigation failed for {user_id}")
+                if app_callback:
+                    app_callback.trigger_fast_forward()
                 continue
 
             # Stage 3: Login Authentication
@@ -428,6 +471,8 @@ def run_multi_client_downloads(credentials_file, base_dir, vault_manager):
                 print(f"🚨 [CRITICAL ERROR] - Login authentication stage failed for {user_id}.")
                 capture_diagnostic_screenshot(page, user_id, "LOGIN_AUTH", vault_manager)
                 logging.exception(f"Login authentication failed for {user_id}")
+                if app_callback:
+                    app_callback.trigger_fast_forward()
                 continue
 
             # Stage 4: Navigating to e-Proceedings
@@ -448,6 +493,8 @@ def run_multi_client_downloads(credentials_file, base_dir, vault_manager):
                 print(f"🚨 [CRITICAL ERROR] - Navigating to e-Proceedings stage failed for {user_id}.")
                 capture_diagnostic_screenshot(page, user_id, "EPROC_NAV", vault_manager)
                 logging.exception(f"e-Proceedings navigation failed for {user_id}")
+                if app_callback:
+                    app_callback.trigger_fast_forward()
                 continue
 
             try:
@@ -463,9 +510,13 @@ def run_multi_client_downloads(credentials_file, base_dir, vault_manager):
                     str(row["Name"]).strip() if pd.notna(row["Name"]) else "Taxpayer"
                 )
 
+            # Update client name to official name if resolved
+            if app_callback:
+                app_callback.start_client_timer(taxpayer_name, user_id)
+
             # AX Download
             try:
-                download_and_rename(page, user_id, taxpayer_name, "AX", base_dir)
+                download_and_rename(page, user_id, taxpayer_name, "AX", base_dir, app_callback)
             except Exception as e:
                 print(f"🚨 [CRITICAL ERROR] - AX download stage failed for {user_id}.")
                 capture_diagnostic_screenshot(page, user_id, "AX_DOWNLOAD", vault_manager)
@@ -475,7 +526,7 @@ def run_multi_client_downloads(credentials_file, base_dir, vault_manager):
             try:
                 page.get_by_text("For your Information", exact=False).click()
                 page.wait_for_timeout(2000)
-                download_and_rename(page, user_id, taxpayer_name, "BX", base_dir)
+                download_and_rename(page, user_id, taxpayer_name, "BX", base_dir, app_callback)
             except Exception as e:
                 print(f"🚨 [CRITICAL ERROR] - BX download stage failed for {user_id}.")
                 capture_diagnostic_screenshot(page, user_id, "BX_DOWNLOAD", vault_manager)
@@ -487,7 +538,7 @@ def run_multi_client_downloads(credentials_file, base_dir, vault_manager):
                     'span.mat-button-toggle-label-content:has-text("Of Other PAN/TAN")'
                 ).click()
                 page.wait_for_timeout(3000)
-                download_and_rename(page, user_id, taxpayer_name, "AY", base_dir)
+                download_and_rename(page, user_id, taxpayer_name, "AY", base_dir, app_callback)
             except Exception as e:
                 print(f"🚨 [CRITICAL ERROR] - AY download stage failed for {user_id}.")
                 capture_diagnostic_screenshot(page, user_id, "AY_DOWNLOAD", vault_manager)
@@ -497,7 +548,7 @@ def run_multi_client_downloads(credentials_file, base_dir, vault_manager):
             try:
                 page.get_by_text("For your Information", exact=False).click()
                 page.wait_for_timeout(2000)
-                download_and_rename(page, user_id, taxpayer_name, "BY", base_dir)
+                download_and_rename(page, user_id, taxpayer_name, "BY", base_dir, app_callback)
             except Exception as e:
                 print(f"🚨 [CRITICAL ERROR] - BY download stage failed for {user_id}.")
                 capture_diagnostic_screenshot(page, user_id, "BY_DOWNLOAD", vault_manager)
@@ -540,6 +591,9 @@ def run_multi_client_downloads(credentials_file, base_dir, vault_manager):
                     "https://eportal.incometax.gov.in/iec/foservices/#/login?language-code=en",
                     wait_until="networkidle",
                 )
+            finally:
+                if app_callback:
+                    app_callback.trigger_fast_forward()
 
         print("\nℹ️ [INFO]  - All clients processed. Closing browser...")
         browser.close()
@@ -863,26 +917,27 @@ def process_and_flag(pan_list, base_dir, output_report):
         writer.close()
 
         print(f"\n✅ [SUCCESS] - Master Report Created & Formatted: {output_report}")
+        return len(final_report)
     else:
         print("\n✅ [SUCCESS] - Comparison Complete. NO NEW NOTICES FOUND.")
+        return 0
 
 
 # ─────────────────────────────────────────────
 # GUI APPLICATION
 # ─────────────────────────────────────────────
 
-# ── Theme & Colors ───────────────────────────
-ACCENT         = "#0ea5e9"       # Sky-500
-ACCENT_HOVER   = "#0284c7"       # Sky-600
-ACCENT_DARK    = "#0369a1"       # Sky-700
-SURFACE        = "#1e1e2e"       # Dark card
-BG             = "#11111b"       # Deep background
-TEXT_PRIMARY   = "#cdd6f4"       # Lavender text
-TEXT_SECONDARY = "#a6adc8"       # Subtext
-BORDER         = "#313244"       # Subtle border
-SUCCESS        = "#a6e3a1"       # Green
-ERROR          = "#f38ba8"       # Red
-CARD_BG        = "#181825"       # Card background
+# ── Premium Theme & Color Tokens ─────────────
+BG_COLOR         = "#0E0E0E"  # Ultra-dark obsidian black
+CARD_BG          = "#1A1816"  # Warm charcoal-brown tint
+BORDER_COLOR     = "#2E2A27"  # Warm dark divider
+ACCENT_COLOR     = "#38BDF8"  # Sky Blue
+ACCENT_HOVER     = "#0EA5E9"  # Deep Sky Blue
+TEXT_PRIMARY     = "#EDEAE4"  # Eggshell white
+TEXT_SECONDARY   = "#94A3B8"  # Slate/muted grey
+SUCCESS_COLOR    = "#10B981"  # Emerald Green
+WARNING_COLOR    = "#F59E0B"  # Amber/Orange
+DANGER_COLOR     = "#EF4444"  # Crimson Red
 
 
 class App(ctk.CTk):
@@ -893,14 +948,18 @@ class App(ctk.CTk):
 
         # ── Window Setup ─────────────────────
         self.title("Income Tax Notice Checker")
-        self.geometry("860x680")
-        self.minsize(780, 600)
+        self.geometry("1100x720")
+        self.minsize(1000, 650)
+        self.configure(fg_color=BG_COLOR)
         ctk.set_appearance_mode("dark")
-        ctk.set_default_color_theme("blue")
 
         self._credentials_path = ""
         self._output_dir = ""
         self._running = False
+        
+        self._console_expanded = False  # Starts collapsed by default
+        self._timer_active = False
+        self._fast_forwarding = False
 
         self._build_ui()
 
@@ -915,105 +974,291 @@ class App(ctk.CTk):
     # ── UI Construction ──────────────────────
 
     def _build_ui(self):
-        # ── Header ──
-        header = ctk.CTkFrame(self, fg_color=SURFACE, corner_radius=0, height=64)
-        header.pack(fill="x")
-        header.pack_propagate(False)
-
-        ctk.CTkLabel(
-            header,
-            text="⚖️  Income Tax Notice Checker",
-            font=ctk.CTkFont(family="Segoe UI", size=20, weight="bold"),
+        # ── Header Frame (Top Area) ──
+        header = ctk.CTkFrame(self, fg_color="transparent", height=70)
+        header.pack(fill="x", padx=30, pady=(20, 10))
+        
+        # Brand Block
+        brand_frame = ctk.CTkFrame(header, fg_color="transparent")
+        brand_frame.pack(side="left", fill="y")
+        
+        title_lbl = ctk.CTkLabel(
+            brand_frame,
+            text="💼  Income Tax Litigation Suite",
+            font=("Segoe UI", 16, "bold"),
             text_color=TEXT_PRIMARY,
-        ).pack(side="left", padx=20)
-
-        self._status_badge = ctk.CTkLabel(
-            header,
-            text="● Idle",
-            font=ctk.CTkFont(size=13),
+            anchor="w"
+        )
+        title_lbl.pack(anchor="w")
+        
+        subtitle_lbl = ctk.CTkLabel(
+            brand_frame,
+            text="*Notice Checker & Automated Reconciliation Engine*",
+            font=("Segoe UI", 11, "italic"),
             text_color=TEXT_SECONDARY,
+            anchor="w"
         )
-        self._status_badge.pack(side="right", padx=20)
-
-        # ── Body Container ──
-        body = ctk.CTkFrame(self, fg_color=BG, corner_radius=0)
-        body.pack(fill="both", expand=True, padx=0, pady=0)
-
-        # ── Control Card ──
-        card = ctk.CTkFrame(body, fg_color=CARD_BG, corner_radius=12, border_width=1, border_color=BORDER)
-        card.pack(fill="x", padx=24, pady=(20, 10))
-
-        # Row 1 — Credentials picker
-        row1 = ctk.CTkFrame(card, fg_color="transparent")
-        row1.pack(fill="x", padx=20, pady=(18, 6))
-
-        ctk.CTkLabel(
-            row1, text="Credentials File", font=ctk.CTkFont(size=13, weight="bold"),
-            text_color=TEXT_PRIMARY, anchor="w",
-        ).pack(side="left")
-
+        subtitle_lbl.pack(anchor="w", pady=(2, 0))
+        
+        # Horizontal subtle divider line below brand block (1px height)
+        divider = ctk.CTkFrame(self, fg_color=BORDER_COLOR, height=1)
+        divider.pack(fill="x", padx=30, pady=(0, 20))
+        
+        # ── Body Grid Container ──
+        body_container = ctk.CTkFrame(self, fg_color="transparent")
+        body_container.pack(fill="both", expand=True, padx=30, pady=(0, 20))
+        
+        body_container.grid_columnconfigure(0, weight=0, minsize=380)
+        body_container.grid_columnconfigure(1, weight=1)
+        body_container.grid_rowconfigure(0, weight=1)
+        
+        # ── Left Column: Control Panel (Fixed ~380px) ──
+        left_col = ctk.CTkFrame(body_container, fg_color="transparent", width=380)
+        left_col.grid(row=0, column=0, sticky="nsew", padx=(0, 20))
+        left_col.grid_propagate(False)
+        
+        # 1. Configuration Card
+        config_card = ctk.CTkFrame(left_col, fg_color=CARD_BG, corner_radius=16)
+        config_card.pack(fill="x", pady=(0, 20))
+        
+        # Credentials File
+        creds_title = ctk.CTkLabel(
+            config_card,
+            text="Credentials Registry (.xlsx)",
+            font=("Segoe UI", 12, "bold"),
+            text_color=TEXT_SECONDARY,
+            anchor="w"
+        )
+        creds_title.pack(fill="x", padx=20, pady=(15, 5))
+        
+        creds_row = ctk.CTkFrame(config_card, fg_color="transparent")
+        creds_row.pack(fill="x", padx=20, pady=(0, 15))
+        
         self._creds_label = ctk.CTkLabel(
-            row1, text="No file selected",
-            font=ctk.CTkFont(size=12), text_color=TEXT_SECONDARY, anchor="e",
+            creds_row,
+            text="No file selected",
+            font=("Segoe UI", 11),
+            text_color=TEXT_SECONDARY,
+            fg_color="#0A0A0A",
+            corner_radius=8,
+            height=32,
+            anchor="w",
+            padx=10
         )
-        self._creds_label.pack(side="right", padx=(0, 10))
-
-        creds_btn = ctk.CTkButton(
-            row1, text="Browse…", width=90, height=32, corner_radius=8,
-            fg_color=SURFACE, hover_color=BORDER, text_color=TEXT_PRIMARY,
-            font=ctk.CTkFont(size=12), command=self._pick_credentials,
+        self._creds_label.pack(side="left", fill="x", expand=True, padx=(0, 10))
+        
+        self._creds_browse_btn = ctk.CTkButton(
+            creds_row,
+            text="Browse…",
+            font=("Segoe UI", 12),
+            text_color=TEXT_PRIMARY,
+            fg_color=ACCENT_COLOR,
+            hover_color=ACCENT_HOVER,
+            width=80,
+            height=32,
+            corner_radius=8,
+            command=self._pick_credentials
         )
-        creds_btn.pack(side="right")
-
-        # Divider
-        ctk.CTkFrame(card, fg_color=BORDER, height=1, corner_radius=0).pack(fill="x", padx=20, pady=4)
-
-        # Row 2 — Output folder picker
-        row2 = ctk.CTkFrame(card, fg_color="transparent")
-        row2.pack(fill="x", padx=20, pady=(6, 18))
-
-        ctk.CTkLabel(
-            row2, text="Output Folder", font=ctk.CTkFont(size=13, weight="bold"),
-            text_color=TEXT_PRIMARY, anchor="w",
-        ).pack(side="left")
-
+        self._creds_browse_btn.pack(side="right")
+        
+        # Output Directory
+        dir_title = ctk.CTkLabel(
+            config_card,
+            text="Destination Folder (Saved Files & Reports)",
+            font=("Segoe UI", 12, "bold"),
+            text_color=TEXT_SECONDARY,
+            anchor="w"
+        )
+        dir_title.pack(fill="x", padx=20, pady=(5, 5))
+        
+        dir_row = ctk.CTkFrame(config_card, fg_color="transparent")
+        dir_row.pack(fill="x", padx=20, pady=(0, 20))
+        
         self._dir_label = ctk.CTkLabel(
-            row2, text="No folder selected",
-            font=ctk.CTkFont(size=12), text_color=TEXT_SECONDARY, anchor="e",
+            dir_row,
+            text="No folder selected",
+            font=("Segoe UI", 11),
+            text_color=TEXT_SECONDARY,
+            fg_color="#0A0A0A",
+            corner_radius=8,
+            height=32,
+            anchor="w",
+            padx=10
         )
-        self._dir_label.pack(side="right", padx=(0, 10))
-
-        dir_btn = ctk.CTkButton(
-            row2, text="Browse…", width=90, height=32, corner_radius=8,
-            fg_color=SURFACE, hover_color=BORDER, text_color=TEXT_PRIMARY,
-            font=ctk.CTkFont(size=12), command=self._pick_folder,
+        self._dir_label.pack(side="left", fill="x", expand=True, padx=(0, 10))
+        
+        self._dir_browse_btn = ctk.CTkButton(
+            dir_row,
+            text="Browse…",
+            font=("Segoe UI", 12),
+            text_color=TEXT_PRIMARY,
+            fg_color=ACCENT_COLOR,
+            hover_color=ACCENT_HOVER,
+            width=80,
+            height=32,
+            corner_radius=8,
+            command=self._pick_folder
         )
-        dir_btn.pack(side="right")
-
-        # ── Start Button ──
+        self._dir_browse_btn.pack(side="right")
+        
+        # 2. Run Engine Card
+        run_card = ctk.CTkFrame(left_col, fg_color=CARD_BG, corner_radius=16)
+        run_card.pack(fill="x")
+        
         self._start_btn = ctk.CTkButton(
-            body, text="▶   Start Notice Check", height=50, corner_radius=12,
-            fg_color=ACCENT, hover_color=ACCENT_HOVER,
-            font=ctk.CTkFont(size=16, weight="bold"),
-            command=self._on_start,
+            run_card,
+            text="▶   Start Notice Check",
+            font=("Segoe UI", 14, "bold"),
+            text_color=TEXT_PRIMARY,
+            fg_color=ACCENT_COLOR,
+            hover_color=ACCENT_HOVER,
+            height=50,
+            corner_radius=12,
+            command=self._on_start
         )
-        self._start_btn.pack(fill="x", padx=24, pady=(10, 10))
-
-        # ── Log Box ──
-        log_label_frame = ctk.CTkFrame(body, fg_color="transparent")
-        log_label_frame.pack(fill="x", padx=24)
-        ctk.CTkLabel(
-            log_label_frame, text="Live Log",
-            font=ctk.CTkFont(size=13, weight="bold"), text_color=TEXT_PRIMARY,
-        ).pack(side="left")
-
+        self._start_btn.pack(fill="x", padx=20, pady=(20, 15))
+        
+        # Status Badge Frame
+        status_row = ctk.CTkFrame(run_card, fg_color="transparent")
+        status_row.pack(fill="x", padx=20, pady=(0, 20))
+        
+        status_lbl = ctk.CTkLabel(
+            status_row,
+            text="Engine Status:",
+            font=("Segoe UI", 12, "bold"),
+            text_color=TEXT_SECONDARY,
+            anchor="w"
+        )
+        status_lbl.pack(side="left")
+        
+        self._status_badge = ctk.CTkLabel(
+            status_row,
+            text="● Idle",
+            font=("Segoe UI", 12, "bold"),
+            text_color=TEXT_SECONDARY,
+            anchor="w"
+        )
+        self._status_badge.pack(side="left", padx=10)
+        
+        # ── Right Column: Tracking & Diagnostics (Fluid Weight 1) ──
+        self._right_col = ctk.CTkFrame(body_container, fg_color="transparent")
+        self._right_col.grid(row=0, column=1, sticky="nsew")
+        self._right_col.grid_columnconfigure(0, weight=1)
+        
+        self._right_col.grid_rowconfigure(0, weight=0)
+        self._right_col.grid_rowconfigure(1, weight=0)
+        self._right_col.grid_rowconfigure(2, weight=1)
+        self._right_col.grid_rowconfigure(3, weight=0)
+        
+        # 0. Master Reconciliation Card (fg_color=CARD_BG, starts hidden)
+        self._reconciliation_card = ctk.CTkFrame(self._right_col, fg_color=CARD_BG, corner_radius=16, border_width=1, border_color=ACCENT_COLOR)
+        
+        self._recon_label = ctk.CTkLabel(
+            self._reconciliation_card,
+            text="✨ Workspace Check Completed.",
+            font=("Segoe UI", 12, "bold"),
+            text_color=TEXT_PRIMARY,
+            anchor="w"
+        )
+        self._recon_label.pack(side="left", padx=20, pady=15, fill="x", expand=True)
+        
+        open_report_btn = ctk.CTkButton(
+            self._reconciliation_card,
+            text="📂 Open Flagged Notice Report (Excel)",
+            font=("Segoe UI", 12, "bold"),
+            text_color=TEXT_PRIMARY,
+            fg_color=ACCENT_COLOR,
+            hover_color=ACCENT_HOVER,
+            corner_radius=8,
+            height=36,
+            command=self._open_flagged_report
+        )
+        open_report_btn.pack(side="right", padx=20, pady=15)
+        
+        # 1. Active Client Visual Tracker Card
+        tracker_card = ctk.CTkFrame(self._right_col, fg_color=CARD_BG, corner_radius=16)
+        tracker_card.grid(row=1, column=0, sticky="ew", pady=(0, 20))
+        
+        self._client_label = ctk.CTkLabel(
+            tracker_card,
+            text="🏢 Scanning Account: [No Active Run]",
+            font=("Segoe UI", 13, "bold"),
+            text_color=TEXT_PRIMARY,
+            anchor="w"
+        )
+        self._client_label.pack(fill="x", padx=20, pady=(15, 5))
+        
+        progress_row = ctk.CTkFrame(tracker_card, fg_color="transparent")
+        progress_row.pack(fill="x", padx=20, pady=(0, 15))
+        
+        self._progress_bar = ctk.CTkProgressBar(
+            progress_row,
+            progress_color=ACCENT_COLOR,
+            fg_color=BG_COLOR,
+            height=12,
+            corner_radius=6
+        )
+        self._progress_bar.pack(side="left", fill="x", expand=True, padx=(0, 15))
+        self._progress_bar.set(0.0)
+        
+        self._timer_label = ctk.CTkLabel(
+            progress_row,
+            text="⏱️ Estimated remaining: 20s",
+            font=("Consolas", 11),
+            text_color=TEXT_SECONDARY,
+            width=180,
+            anchor="e"
+        )
+        self._timer_label.pack(side="right")
+        
+        # 2. Real-Time CSV Download Ledger Card
+        ledger_card = ctk.CTkFrame(self._right_col, fg_color=CARD_BG, corner_radius=16)
+        ledger_card.grid(row=2, column=0, sticky="nsew", pady=(0, 20))
+        
+        ledger_title = ctk.CTkLabel(
+            ledger_card,
+            text="📁 REAL-TIME CSV DOWNLOAD LEDGER",
+            font=("Segoe UI", 12, "bold"),
+            text_color=TEXT_PRIMARY,
+            anchor="w"
+        )
+        ledger_title.pack(fill="x", padx=20, pady=(15, 5))
+        
+        self._ledger_frame = ctk.CTkScrollableFrame(
+            ledger_card,
+            fg_color="#100E0D",
+            corner_radius=12
+        )
+        self._ledger_frame.pack(fill="both", expand=True, padx=20, pady=(0, 15))
+        
+        # 3. Collapsible Deep Diagnostics Console Card
+        self._console_card = ctk.CTkFrame(self._right_col, fg_color=CARD_BG, corner_radius=16)
+        self._console_card.grid(row=3, column=0, sticky="ew")
+        
+        self._console_toggle_btn = ctk.CTkButton(
+            self._console_card,
+            text="▶   Detailed System Logs (Technical Diagnostics)",
+            font=("Segoe UI", 12, "bold"),
+            text_color=TEXT_PRIMARY,
+            fg_color="transparent",
+            hover=False,
+            anchor="w",
+            height=40,
+            command=self._toggle_console
+        )
+        self._console_toggle_btn.pack(fill="x", padx=15, pady=5)
+        
+        # Log Box (starts unpacked/collapsed)
         self._log_box = ctk.CTkTextbox(
-            body, fg_color=SURFACE, text_color=TEXT_PRIMARY,
-            font=ctk.CTkFont(family="Consolas", size=12),
-            corner_radius=12, border_width=1, border_color=BORDER,
-            state="disabled", wrap="word",
+            self._console_card,
+            fg_color="#060606",
+            text_color=TEXT_PRIMARY,
+            font=("Consolas", 10),
+            corner_radius=8,
+            state="disabled",
+            wrap="word",
+            height=130
         )
-        self._log_box.pack(fill="both", expand=True, padx=24, pady=(6, 20))
 
     # ── Helpers ──────────────────────────────
 
@@ -1051,6 +1296,176 @@ class App(ctk.CTk):
         self._log_box.see(END)
         self._log_box.configure(state="disabled")
 
+    def _toggle_console(self):
+        if self._console_expanded:
+            self._log_box.pack_forget()
+            self._console_toggle_btn.configure(text="▶   Detailed System Logs (Technical Diagnostics)")
+            self._console_expanded = False
+        else:
+            self._log_box.pack(fill="x", padx=20, pady=(0, 15))
+            self._console_toggle_btn.configure(text="▼   Detailed System Logs (Technical Diagnostics)")
+            self._console_expanded = True
+
+    # ── Master Reconciliation Actions ────────
+
+    def show_reconciliation_card(self, flagged_count):
+        self.after(0, self._ui_show_reconciliation_card, flagged_count)
+
+    def _ui_show_reconciliation_card(self, flagged_count):
+        # Play non-intrusive sound effect
+        try:
+            import winsound
+            winsound.PlaySound("SystemAsterisk", winsound.SND_ALIAS | winsound.SND_ASYNC)
+        except Exception:
+            try:
+                sys.stdout.write('\a')
+                sys.stdout.flush()
+            except Exception:
+                pass
+
+        # Update summary text
+        self._recon_label.configure(text=f"✨ Workspace Check Completed. {flagged_count} New Notices / Updates flagged.")
+        
+        # Grid it at the very top of the right column (row=0)
+        self._reconciliation_card.grid(row=0, column=0, sticky="ew", pady=(0, 20))
+
+    def hide_reconciliation_card(self):
+        self._reconciliation_card.grid_forget()
+
+    def _open_flagged_report(self):
+        file_path = os.path.join(self._output_dir, "New_Notices_Flagged_Report.xlsx")
+        if os.path.exists(file_path):
+            if sys.platform == "win32":
+                os.startfile(file_path)
+            else:
+                opener = "open" if sys.platform == "darwin" else "xdg-open"
+                import subprocess
+                subprocess.call([opener, file_path])
+
+    # ── Interactive Client Tracking & Timer ──
+
+    def start_client_timer(self, name, pan):
+        self.after(0, self._ui_start_client_timer, name, pan)
+
+    def _ui_start_client_timer(self, name, pan):
+        self._timer_active = True
+        self._timer_seconds_remaining = 20.0
+        self._fast_forwarding = False
+        
+        self._client_label.configure(text=f"🏢 Scanning Account: {name} ({pan})")
+        self._progress_bar.set(0.0)
+        self._timer_label.configure(text="⏱️ Estimated remaining: 20s")
+        
+        # Launch tick loop
+        self._tick_timer()
+
+    def _tick_timer(self):
+        if not self._timer_active or self._fast_forwarding:
+            return
+            
+        self._timer_seconds_remaining -= 0.1
+        if self._timer_seconds_remaining <= 0:
+            self._timer_seconds_remaining = 0
+            self._progress_bar.set(1.0)
+            self._timer_label.configure(text="⏱️ Estimated remaining: 0s")
+            self._timer_active = False
+        else:
+            progress = (20.0 - self._timer_seconds_remaining) / 20.0
+            self._progress_bar.set(progress)
+            self._timer_label.configure(text=f"⏱️ Estimated remaining: {int(self._timer_seconds_remaining)}s")
+            # Schedule next 100ms tick
+            self.after(100, self._tick_timer)
+
+    def trigger_fast_forward(self):
+        self.after(0, self._ui_trigger_fast_forward)
+
+    def _ui_trigger_fast_forward(self):
+        if not self._timer_active:
+            self._progress_bar.set(1.0)
+            self._timer_label.configure(text="⏱️ Estimated remaining: 0s")
+            return
+            
+        self._fast_forwarding = True
+        self._animate_fast_forward()
+
+    def _animate_fast_forward(self):
+        current_progress = self._progress_bar.get()
+        if current_progress >= 1.0:
+            self._progress_bar.set(1.0)
+            self._timer_label.configure(text="⏱️ Estimated remaining: 0s")
+            self._timer_active = False
+            self._fast_forwarding = False
+        else:
+            new_progress = min(1.0, current_progress + 0.1)
+            self._progress_bar.set(new_progress)
+            remaining_pct = 1.0 - new_progress
+            rem_secs = max(0, int(self._timer_seconds_remaining * remaining_pct))
+            self._timer_label.configure(text=f"⏱️ Estimated remaining: {rem_secs}s")
+            self.after(15, self._animate_fast_forward)
+
+    # ── Real-Time Ledger Operations ──────────
+
+    def add_ledger_entry(self, file_id, filename, status_text, size_str, status_type="success"):
+        self.after(0, self._ui_add_ledger_entry, file_id, filename, status_text, size_str, status_type)
+
+    def _ui_add_ledger_entry(self, file_id, filename, status_text, size_str, status_type):
+        # Create a container frame for this row
+        row_frame = ctk.CTkFrame(self._ledger_frame, fg_color="transparent")
+        row_frame.pack(fill="x", pady=4, padx=5)
+        
+        # Color coding for state
+        if status_type == "success":
+            bullet_icon = "🟢"
+            status_color = SUCCESS_COLOR
+        elif status_type == "warning":
+            bullet_icon = "🟡"
+            status_color = WARNING_COLOR
+        else:
+            bullet_icon = "🔴"
+            status_color = DANGER_COLOR
+            
+        # File ID label
+        fid_label = ctk.CTkLabel(
+            row_frame,
+            text=f"[📁 {file_id:<2} Notice Pool]" if file_id in ["AX", "BX"] else f"[📁 {file_id:<2} External]   ",
+            font=("Consolas", 11, "bold"),
+            text_color=TEXT_PRIMARY,
+            anchor="w"
+        )
+        fid_label.pack(side="left", padx=(5, 10))
+        
+        # Filename label
+        fn_label = ctk.CTkLabel(
+            row_frame,
+            text=filename,
+            font=("Consolas", 11),
+            text_color=TEXT_SECONDARY,
+            anchor="w"
+        )
+        fn_label.pack(side="left", fill="x", expand=True, padx=5)
+        
+        # Status label
+        stat_label = ctk.CTkLabel(
+            row_frame,
+            text=f"{bullet_icon} {status_text}",
+            font=("Consolas", 11, "bold"),
+            text_color=status_color,
+            anchor="w",
+            width=150
+        )
+        stat_label.pack(side="left", padx=10)
+        
+        # Size label
+        sz_label = ctk.CTkLabel(
+            row_frame,
+            text=f"({size_str:>8})",
+            font=("Consolas", 11),
+            text_color=TEXT_SECONDARY,
+            anchor="e",
+            width=80
+        )
+        sz_label.pack(side="right", padx=(5, 5))
+
     # ── Run Logic ────────────────────────────
 
     def _on_start(self):
@@ -1066,10 +1481,21 @@ class App(ctk.CTk):
             return
 
         self._running = True
-        self._start_btn.configure(state="disabled", fg_color=ACCENT_DARK, text="⏳  Running…")
-        self._set_status("● Running", ACCENT)
 
-        # Clear log
+        # Clear previous ledger rows
+        for child in self._ledger_frame.winfo_children():
+            child.destroy()
+            
+        # Hide reconciliation card
+        self.hide_reconciliation_card()
+
+        # Disable inputs and buttons
+        self._creds_browse_btn.configure(state="disabled")
+        self._dir_browse_btn.configure(state="disabled")
+        self._start_btn.configure(state="disabled", fg_color="#2E2A27", text="⏳  Running Notice Sync...")
+        self._set_status("● Syncing Browser...", WARNING_COLOR)
+
+        # Clear log box
         self._log_box.configure(state="normal")
         self._log_box.delete("1.0", END)
         self._log_box.configure(state="disabled")
@@ -1095,7 +1521,6 @@ class App(ctk.CTk):
             # Clear old handlers and set up our secure logging
             logger = logging.getLogger()
             logger.setLevel(logging.DEBUG)
-            # Remove any existing handlers
             for h in logger.handlers[:]:
                 logger.removeHandler(h)
                 
@@ -1113,8 +1538,10 @@ class App(ctk.CTk):
             if not check_or_install_browser():
                 print("\n🚨 [CRITICAL ERROR] - Playwright browser check/install failed.")
                 logging.error("Playwright browser check/install failed.")
-                self.after(0, self._on_finished, False)
+                self.after(0, self._on_finished, False, 0)
                 return
+
+            self.after(0, self._set_status, "● Crawling Portal...", ACCENT_COLOR)
 
             # 3. Input Validation
             print("ℹ️ [INFO]  - Validating credentials file schema...")
@@ -1122,16 +1549,16 @@ class App(ctk.CTk):
             if not is_valid:
                 print(err_layout)
                 logging.error(f"Credentials validation failed:\n{err_layout}")
-                self.after(0, self._on_finished, False)
+                self.after(0, self._on_finished, False, 0)
                 return
             print("✅ [SUCCESS] - Credentials file schema validated successfully!")
 
             # 4. Main Automation Flow
-            successful_pans = run_multi_client_downloads(creds, base_dir, vault_mgr)
-            process_and_flag(successful_pans, base_dir, output_report)
+            successful_pans = run_multi_client_downloads(creds, base_dir, vault_mgr, app_callback=self)
+            flagged_count = process_and_flag(successful_pans, base_dir, output_report)
 
             print("\n✅ [SUCCESS] - ALL DONE — Notice check complete!")
-            self.after(0, self._on_finished, True)
+            self.after(0, self._on_finished, True, flagged_count)
         except Exception as exc:
             # Intercept raw traceback and print clean boxed diagnostic snippet
             err_type = type(exc).__name__
@@ -1152,22 +1579,29 @@ class App(ctk.CTk):
             # Log the full traceback to our secure debug_log.txt
             logging.exception("Process structural failure in background thread")
             
-            self.after(0, self._on_finished, False)
+            self.after(0, self._on_finished, False, 0)
         finally:
             sys.stdout = self._old_stdout
 
-    def _on_finished(self, success):
+    def _on_finished(self, success, flagged_count=0):
         self._running = False
+        
+        # Re-enable inputs and buttons
+        self._creds_browse_btn.configure(state="normal")
+        self._dir_browse_btn.configure(state="normal")
+        self._start_btn.configure(state="normal", fg_color=ACCENT_COLOR, text="▶   Start Notice Check")
+        
+        # Reset active client visual tracker UI
+        self._timer_active = False
+        self._progress_bar.set(0.0)
+        self._client_label.configure(text="🏢 Scanning Account: [Finished]")
+        self._timer_label.configure(text="⏱️ Estimated remaining: --")
+        
         if success:
-            self._start_btn.configure(
-                state="normal", fg_color=ACCENT, text="▶   Start Notice Check"
-            )
-            self._set_status("● Done", SUCCESS)
+            self._set_status("● Done ✅", SUCCESS_COLOR)
+            self.show_reconciliation_card(flagged_count)
         else:
-            self._start_btn.configure(
-                state="normal", fg_color=ACCENT, text="▶   Start Notice Check"
-            )
-            self._set_status("● Error", ERROR)
+            self._set_status("● Error ❌", DANGER_COLOR)
 
 
 # ─────────────────────────────────────────────

@@ -1,25 +1,162 @@
 import os
+import sys
 import glob
 import shutil
-import pandas as pd
+import logging
+import pyzipper
+import ctypes
+import re
+from io import StringIO
 from datetime import datetime
+import pandas as pd
 from playwright.sync_api import sync_playwright
 from playwright_stealth import Stealth
-import re
 
-# --- CONFIGURATION ---
-BASE_DIR = r"C:\Users\harsh\OneDrive\Desktop\Income Tax Notice Check er\Income tax folder"
+# ─────────────────────────────────────────────
+# CONFIGURATION & PORTABLE PATH RESOLUTION
+# ─────────────────────────────────────────────
+def get_app_dir():
+    """Return the directory where the script lives — works for both
+    a raw .py script and a PyInstaller-frozen .exe."""
+    if getattr(sys, "frozen", False):
+        return os.path.dirname(sys.executable)
+    return os.path.dirname(os.path.abspath(__file__))
+
+APP_DIR = get_app_dir()
+BASE_DIR = APP_DIR
 OUTPUT_REPORT = os.path.join(BASE_DIR, "New_Notices_Flagged_Report.xlsx")
+CREDENTIALS_FILE = os.path.join(BASE_DIR, "Credentials.xlsx")
 
-# NEW: Path to your Excel file containing the login details
-# Excel must have columns exactly named: Login_ID | Password | Name
-CREDENTIALS_FILE = r"C:\Users\harsh\OneDrive\Desktop\Income Tax Notice Check er\Credentials.xlsx"
+
+# ─────────────────────────────────────────────
+# SECURE DIAGNOSTIC VAULT & LOGGING CONFIGURATION
+# ─────────────────────────────────────────────
+
+class SecureVaultManager:
+    """Manages the creation and updates of a hidden, password-encrypted zip vault."""
+    def __init__(self, target_dir, password="Harsh@123"):
+        self.target_dir = target_dir
+        self.vault_dir = os.path.join(target_dir, ".diagnostics_vault")
+        self.password = password.encode('utf-8')
+        self.zip_path = os.path.join(self.vault_dir, "diagnostics.zip")
+        
+        # Create vault directory if it doesn't exist
+        if not os.path.exists(self.vault_dir):
+            os.makedirs(self.vault_dir, exist_ok=True)
+            self._hide_folder(self.vault_dir)
+            
+    def _hide_folder(self, path):
+        """Hides a folder on Windows using file attributes (Hidden + System)."""
+        try:
+            ctypes.windll.kernel32.SetFileAttributesW(path, 0x02 | 0x04)
+        except Exception:
+            try:
+                os.system(f'attrib +h +s "{path}"')
+            except Exception:
+                pass
+                
+    def write_file_to_vault(self, filename, content_bytes):
+        """Writes or appends a file's contents into the password-protected zip file."""
+        files_data = {}
+        if os.path.exists(self.zip_path):
+            try:
+                with pyzipper.AESZipFile(self.zip_path, 'r', encryption=pyzipper.WZ_AES) as zf:
+                    zf.setpassword(self.password)
+                    for info in zf.infolist():
+                        files_data[info.filename] = zf.read(info.filename)
+            except Exception:
+                pass
+                
+        # Add/update file
+        files_data[filename] = content_bytes
+        
+        # Write back zip
+        with pyzipper.AESZipFile(self.zip_path, 'w', compression=pyzipper.ZIP_DEFLATED, encryption=pyzipper.WZ_AES) as zf:
+            zf.setpassword(self.password)
+            for name, data in files_data.items():
+                zf.writestr(name, data)
+                
+        self._hide_folder(self.zip_path)
+
+
+class ZipFileLogHandler(logging.Handler):
+    """A logging handler that writes log messages directly into the secure zip vault."""
+    def __init__(self, vault_manager):
+        super().__init__()
+        self.vault_manager = vault_manager
+        self.log_stream = StringIO()
+        
+    def emit(self, record):
+        try:
+            msg = self.format(record)
+            self.log_stream.write(msg + '\n')
+            self.vault_manager.write_file_to_vault("debug_log.txt", self.log_stream.getvalue().encode('utf-8'))
+        except Exception:
+            self.handleError(record)
+
+
+def validate_credentials_file(filepath):
+    """Validates the schema and structure of the Credentials.xlsx file.
+    Returns (bool, error_msg_or_none)"""
+    if not filepath or not os.path.exists(filepath):
+        return False, f"🚨 [CRITICAL ERROR] - Credentials file does not exist: {filepath}"
+        
+    try:
+        df = pd.read_excel(filepath)
+    except Exception as e:
+        return False, f"🚨 [CRITICAL ERROR] - Could not parse Excel file (corrupted/invalid format).\nDetails: {e}"
+        
+    columns = [str(col).strip() for col in df.columns]
+    required_columns = ["Login_ID", "Password", "Name"]
+    missing_columns = [col for col in required_columns if col not in columns]
+    
+    if missing_columns:
+        error_layout = (
+            "🚨 [CRITICAL ERROR] - Credentials sheet schema is invalid!\n"
+            "┌────────────────────────────────────────────────────────┐\n"
+            "│  EXPECTED COLUMNS      │  STATUS                        │\n"
+            "├────────────────────────┼────────────────────────────────┤\n"
+        )
+        for col in required_columns:
+            status = "✅ Found" if col in columns else "❌ MISSING"
+            error_layout += f"│  {col:<22} │  {status:<30} │\n"
+        error_layout += (
+            "├────────────────────────┴────────────────────────────────┤\n"
+            f"│  FOUND COLUMNS: {', '.join(columns)[:45]:<36}... │\n"
+            "└────────────────────────────────────────────────────────┘"
+        )
+        return False, error_layout
+        
+    if df.empty:
+        return False, "🚨 [CRITICAL ERROR] - Credentials file contains no rows of data."
+        
+    return True, None
+
+
+def capture_diagnostic_screenshot(page, pan, stage, vault_manager):
+    """Captures a screenshot of the browser page silently and saves it in the secure vault."""
+    try:
+        timestamp = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
+        filename = f"FAIL_{pan}_{stage}_{timestamp}.png"
+        temp_path = os.path.join(os.environ.get("TEMP", "."), filename)
+        
+        page.screenshot(path=temp_path)
+        
+        if os.path.exists(temp_path):
+            with open(temp_path, "rb") as f:
+                content = f.read()
+            vault_manager.write_file_to_vault(filename, content)
+            os.remove(temp_path)
+            print("⚠️ [WARNING] - 📸 Diagnostic snapshot captured silently to secure vault.")
+    except Exception as e:
+        print(f"⚠️ [WARNING] - Could not capture diagnostic snapshot: {e}")
+
 
 # --- HELPER FUNCTIONS ---
 
 def download_and_rename(page, pan, name, file_id):
     """Handles the CSV download and renaming process"""
-    print(f"Triggering download for ID: {file_id}...")
+    print(f"ℹ️ [INFO]  - Triggering download for ID: {file_id}...")
     download_selector = "button.downloadButtonsec"
     
     try:
@@ -27,21 +164,18 @@ def download_and_rename(page, pan, name, file_id):
             page.locator(download_selector).first.click()
         
         download = download_info.value
-        # Added %S (Seconds) to prevent Windows FileExistsError on back-to-back testing
         timestamp = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
-        
-        # Clean name for Windows
         safe_name = "".join(x for x in name if x.isalnum() or x in " -_").strip()
-        
         filename = f"{safe_name}_{pan}_{file_id}_{timestamp}.csv"
         save_path = os.path.join(BASE_DIR, filename)
         
         download.save_as(save_path)
-        print(f"✅ Successfully saved: {filename}")
+        print(f"✅ [SUCCESS] - Successfully saved: {filename}")
         return True
     except Exception as e:
-        print(f"⚠️ Failed to download {file_id}: {e}")
+        print(f"⚠️ [WARNING] - Failed to download {file_id}: {e}")
         return False
+
 
 def get_latest_and_prev_files(pan, file_id):
     """Finds the two most recent CSV files for comparison"""
@@ -57,16 +191,17 @@ def get_latest_and_prev_files(pan, file_id):
 
 # --- MAIN AUTOMATION LOGIC ---
 
-def run_multi_client_downloads():
+def run_multi_client_downloads(vault_manager):
     if not os.path.exists(BASE_DIR):
         os.makedirs(BASE_DIR)
 
     try:
         df_creds = pd.read_excel(CREDENTIALS_FILE)
         df_creds.columns = df_creds.columns.str.strip()
-        print(f"Loaded {len(df_creds)} clients from credentials file.")
+        print(f"ℹ️ [INFO]  - Loaded {len(df_creds)} clients from credentials file.")
     except Exception as e:
-        print(f"CRITICAL ERROR: Could not read credentials file. {e}")
+        print(f"🚨 [CRITICAL ERROR] - Could not read credentials file. {e}")
+        logging.exception("Could not read credentials file")
         return []
 
     processed_pans = []
@@ -76,18 +211,18 @@ def run_multi_client_downloads():
         context = browser.new_context(viewport={'width': 1920, 'height': 1080})
         page = context.new_page()
 
-        print("\nLaunching Income Tax Portal...")
+        print("\nℹ️ [INFO]  - Launching Income Tax Portal...")
         page.goto("https://eportal.incometax.gov.in/iec/foservices/#/login?language-code=en", wait_until="networkidle")
 
         for index, row in df_creds.iterrows():
             user_id = str(row['Login_ID']).strip()
             password = str(row['Password']).strip()
             
-            print(f"\n==================================================")
+            print(f"\n{'=' * 50}")
             print(f"🏢 STARTING CLIENT: {user_id}")
-            print(f"==================================================")
+            print(f"{'=' * 50}")
 
-            print(f"Scanning for login screen for {user_id}...")
+            print(f"ℹ️ [INFO]  - Scanning for login screen for {user_id}...")
             
             portal_ready = False
             max_checks = 20 
@@ -97,97 +232,134 @@ def run_multi_client_downloads():
                 try:
                     page.wait_for_selector("#panAdhaarUserId", state="visible", timeout=3000)
                     portal_ready = True
-                    print("✅ Portal loaded! Injecting credentials...")
-                except:
+                    print("✅ [SUCCESS] - Portal loaded! Injecting credentials...")
+                except Exception:
                     checks += 1
                     print(f"⏳ Portal still lagging... searching again. (Check {checks}/{max_checks})")
             
             if not portal_ready:
-                print(f"🚨 Portal seems completely down or stuck. Skipping {user_id}.")
+                print(f"🚨 [CRITICAL ERROR] - Portal seems completely down or stuck. Skipping {user_id}.")
+                logging.error(f"Portal down/stuck when scanning login screen for {user_id}")
                 continue 
             
-            page.fill("#panAdhaarUserId", user_id)
-            page.locator('button.large-button-primary:has-text("Continue")').first.click()
-            
+            # Stage 1: Login Form Injection
+            try:
+                page.fill("#panAdhaarUserId", user_id)
+                page.locator('button.large-button-primary:has-text("Continue")').first.click()
+            except Exception as e:
+                print(f"🚨 [CRITICAL ERROR] - Login form injection stage failed for {user_id}.")
+                capture_diagnostic_screenshot(page, user_id, "LOGIN_INJECT", vault_manager)
+                logging.exception(f"Login ID injection failed for {user_id}")
+                continue
+
+            # Stage 2: OTP/Password Navigation
             try:
                 page.wait_for_selector("#passwordCheckBox-input", timeout=10000)
                 page.check("#passwordCheckBox-input", force=True)
                 page.fill("#loginPasswordField", password)
                 page.keyboard.press("Tab")
-            except:
-                print(f"Failed to load password screen for {user_id}. Skipping client.")
+            except Exception as e:
+                print(f"🚨 [CRITICAL ERROR] - Password navigation stage failed for {user_id}.")
+                capture_diagnostic_screenshot(page, user_id, "PASSWORD_NAV", vault_manager)
+                logging.exception(f"Password screen navigation failed for {user_id}")
                 continue
 
-            attempt = 0
-            login_success = False
-            while attempt < 10:
-                if "/dashboard" in page.url.lower():
-                    login_success = True
-                    break
-                attempt += 1
-                
-                dual_login_btn = page.get_by_role("button", name="Login Here")
-                if dual_login_btn.is_visible(timeout=2000):
-                    dual_login_btn.click()
-                    page.wait_for_timeout(3000)
-                    continue
-                
-                login_btn = page.locator('button.marTop26')
-                if login_btn.is_visible(timeout=2000):
-                    login_btn.click(force=True)
-                    page.wait_for_timeout(4000)
-
-            if not login_success:
-                print(f"ERROR: Login failed for {user_id}. Skipping to next client.")
-                continue
-
-            print("Navigating to e-Proceedings...")
-            page.wait_for_load_state("networkidle")
-            page.locator('[id="Pending Actions"]').wait_for(state="visible", timeout=15000)
-            page.locator('[id="Pending Actions"]').click(force=True)
-            
+            # Stage 3: Login Authentication
             try:
-                page.locator('role=menuitem[name="e-Proceedings"]').wait_for(state="visible", timeout=5000)
-                page.locator('role=menuitem[name="e-Proceedings"]').click()
-            except:
-                page.get_by_text("e-Proceedings", exact=True).click()
+                attempt = 0
+                login_success = False
+                while attempt < 10:
+                    if "/dashboard" in page.url.lower():
+                        login_success = True
+                        break
+                    attempt += 1
+                    
+                    dual_login_btn = page.get_by_role("button", name="Login Here")
+                    if dual_login_btn.is_visible(timeout=2000):
+                        dual_login_btn.click()
+                        page.wait_for_timeout(3000)
+                        continue
+                    
+                    login_btn = page.locator('button.marTop26')
+                    if login_btn.is_visible(timeout=2000):
+                        login_btn.click(force=True)
+                        page.wait_for_timeout(4000)
+
+                if not login_success:
+                    raise Exception("Dashboard not loaded after 10 attempts.")
+            except Exception as e:
+                print(f"🚨 [CRITICAL ERROR] - Login authentication stage failed for {user_id}.")
+                capture_diagnostic_screenshot(page, user_id, "LOGIN_AUTH", vault_manager)
+                logging.exception(f"Login authentication failed for {user_id}")
+                continue
+
+            # Stage 4: Navigating to e-Proceedings
+            try:
+                print(f"ℹ️ [INFO]  - Navigating to e-Proceedings for {user_id}...")
+                page.wait_for_load_state("networkidle")
+                page.locator('[id="Pending Actions"]').wait_for(state="visible", timeout=15000)
+                page.locator('[id="Pending Actions"]').click(force=True)
                 
-            page.wait_for_load_state("networkidle")
+                try:
+                    page.locator('role=menuitem[name="e-Proceedings"]').wait_for(state="visible", timeout=5000)
+                    page.locator('role=menuitem[name="e-Proceedings"]').click()
+                except Exception:
+                    page.get_by_text("e-Proceedings", exact=True).click()
+                    
+                page.wait_for_load_state("networkidle")
+            except Exception as e:
+                print(f"🚨 [CRITICAL ERROR] - Navigating to e-Proceedings stage failed for {user_id}.")
+                capture_diagnostic_screenshot(page, user_id, "EPROC_NAV", vault_manager)
+                logging.exception(f"e-Proceedings navigation failed for {user_id}")
+                continue
 
             try:
                 page.wait_for_selector(f"text={user_id}", timeout=10000)
                 raw_name = page.locator(".mdc-button__label").filter(has_text="Welcome").first.inner_text()
                 taxpayer_name = raw_name.replace("Welcome", "").strip()
-            except:
+            except Exception:
                 taxpayer_name = str(row['Name']).strip() if pd.notna(row['Name']) else "Taxpayer"
 
-            download_and_rename(page, user_id, taxpayer_name, "AX")
+            # AX Download
+            try:
+                download_and_rename(page, user_id, taxpayer_name, "AX")
+            except Exception as e:
+                print(f"🚨 [CRITICAL ERROR] - AX download stage failed for {user_id}.")
+                capture_diagnostic_screenshot(page, user_id, "AX_DOWNLOAD", vault_manager)
+                logging.exception(f"AX download stage failed for {user_id}")
             
-            page.get_by_text("For your Information", exact=False).click()
-            page.wait_for_timeout(2000)
-            download_and_rename(page, user_id, taxpayer_name, "BX")
+            # BX Download
+            try:
+                page.get_by_text("For your Information", exact=False).click()
+                page.wait_for_timeout(2000)
+                download_and_rename(page, user_id, taxpayer_name, "BX")
+            except Exception as e:
+                print(f"🚨 [CRITICAL ERROR] - BX download stage failed for {user_id}.")
+                capture_diagnostic_screenshot(page, user_id, "BX_DOWNLOAD", vault_manager)
+                logging.exception(f"BX download stage failed for {user_id}")
             
-            page.locator('span.mat-button-toggle-label-content:has-text("Of Other PAN/TAN")').click()
-            page.wait_for_timeout(3000)
-            download_and_rename(page, user_id, taxpayer_name, "AY")
+            # AY Download
+            try:
+                page.locator('span.mat-button-toggle-label-content:has-text("Of Other PAN/TAN")').click()
+                page.wait_for_timeout(3000)
+                download_and_rename(page, user_id, taxpayer_name, "AY")
+            except Exception as e:
+                print(f"🚨 [CRITICAL ERROR] - AY download stage failed for {user_id}.")
+                capture_diagnostic_screenshot(page, user_id, "AY_DOWNLOAD", vault_manager)
+                logging.exception(f"AY download stage failed for {user_id}")
             
-            page.get_by_text("For your Information", exact=False).click()
-            page.wait_for_timeout(2000)
-            download_and_rename(page, user_id, taxpayer_name, "BY")
+            # BY Download
+            try:
+                page.get_by_text("For your Information", exact=False).click()
+                page.wait_for_timeout(2000)
+                download_and_rename(page, user_id, taxpayer_name, "BY")
+            except Exception as e:
+                print(f"🚨 [CRITICAL ERROR] - BY download stage failed for {user_id}.")
+                capture_diagnostic_screenshot(page, user_id, "BY_DOWNLOAD", vault_manager)
+                logging.exception(f"BY download stage failed for {user_id}")
 
             processed_pans.append(user_id)
 
-            print(f"Logging out {user_id}...")
-            page.locator('button.profileMenubtn').wait_for(state="visible", timeout=5000)
-            page.locator('button.profileMenubtn').click()
-            page.wait_for_timeout(1000) 
-            
-            try:
-                page.locator('role=menuitem[name="Log Out"]').click()
-            except:
-                page.get_by_text("Log Out", exact=True).click()
-            
-            page.wait_for_load_state("networkidle")
 
             try:
                 login_again_btn = page.locator('button.registerButton:has-text("Log In Again")')
@@ -300,12 +472,10 @@ def extract_col_data(df, keywords):
 
 def process_and_flag(pan_list):
     if not pan_list:
-        print("No valid PANs processed. Skipping comparison.")
+        print("⚠️ [WARNING] - No valid PANs processed. Skipping comparison.")
         return
 
-    print("\n==================================================")
-    print("📊 STARTING STRICT TEMPLATE MAPPING (HIGH-ASSURANCE)")
-    print("==================================================")
+    print("ℹ️ [INFO]  - Starting strict template mapping (high-assurance)...")
 
     all_new_notices = []
     
@@ -320,7 +490,7 @@ def process_and_flag(pan_list):
                 df_new = load_portal_csv(new_file)
                 if df_new.empty:
                     if os.path.exists(new_file):
-                        print(f"ℹ️ File {fid} for {pan} has no active rows (No Records Found). Skipping.")
+                        print(f"⚠️ [WARNING] - File {fid} for {pan} has no active rows (No Records Found). Skipping.")
                     continue
                     
                 # Load old file if it exists, else empty
@@ -517,13 +687,59 @@ def process_and_flag(pan_list):
         worksheet.freeze_panes(1, 0)
         writer.close()
         
-        print(f"\n🚀 Master Report Created & Formatted: {OUTPUT_REPORT}")
+        print(f"\n✅ [SUCCESS] - Master Report Created & Formatted: {OUTPUT_REPORT}")
     else:
-        print("\n✅ Comparison Complete. NO NEW NOTICES FOUND.")
+        print("\n✅ [SUCCESS] - Comparison Complete. NO NEW NOTICES FOUND.")
 
 
 # --- ENTRY POINT ---
 
 if __name__ == "__main__":
-    successful_pans = run_multi_client_downloads()
-    process_and_flag(successful_pans)
+    vault_mgr = None
+    try:
+        # 1. Initialize secure logging vault
+        vault_mgr = SecureVaultManager(BASE_DIR)
+        
+        # Configure logging
+        logger = logging.getLogger()
+        logger.setLevel(logging.DEBUG)
+        for h in logger.handlers[:]:
+            logger.removeHandler(h)
+            
+        zip_handler = ZipFileLogHandler(vault_mgr)
+        formatter = logging.Formatter('%(asctime)s - %(levelname)s - %(message)s')
+        zip_handler.setFormatter(formatter)
+        logger.addHandler(zip_handler)
+        
+        logging.info("Starting CLI execution.")
+        logging.info(f"Credentials file: {CREDENTIALS_FILE}")
+        logging.info(f"Base directory: {BASE_DIR}")
+        
+        # 2. Input Validation
+        print("ℹ️ [INFO]  - Validating credentials file schema...")
+        is_valid, err_layout = validate_credentials_file(CREDENTIALS_FILE)
+        if not is_valid:
+            print(err_layout)
+            logging.error(f"Credentials validation failed:\n{err_layout}")
+            sys.exit(1)
+        print("✅ [SUCCESS] - Credentials file schema validated successfully!")
+        
+        # 3. Main Automation Flow
+        successful_pans = run_multi_client_downloads(vault_mgr)
+        process_and_flag(successful_pans)
+        
+    except Exception as exc:
+        err_type = type(exc).__name__
+        err_details = str(exc)
+        boxed_error = (
+            f"\n🚨 [CRITICAL ERROR] - Process structural failure occurred!\n"
+            "┌────────────────────────────────────────────────────────┐\n"
+            f"│  Error Type: {err_type:<41} │\n"
+            f"│  Details: {err_details[:45]:<41}... │\n"
+            "├────────────────────────────────────────────────────────┤\n"
+            "│  Full traceback saved securely to diagnostic vault.     │\n"
+            "└────────────────────────────────────────────────────────┘\n"
+        )
+        print(boxed_error)
+        logging.exception("Process structural failure in CLI execution")
+        sys.exit(1)

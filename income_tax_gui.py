@@ -11,6 +11,20 @@ the app is fully portable.
 
 import os
 import sys
+
+# Detect if running as compiled PyInstaller EXE or raw script
+if getattr(sys, 'frozen', False):
+    # Directory where the .exe is running
+    APP_DIR = os.path.dirname(sys.executable)
+else:
+    APP_DIR = os.path.dirname(os.path.abspath(__file__))
+
+# Establish a portable local folder adjacent to the EXE
+PORTABLE_BROWSER_DIR = os.path.join(APP_DIR, "ms-playwright")
+
+# Force Playwright to use our local folder for storing and reading drivers/browsers
+os.environ["PLAYWRIGHT_BROWSERS_PATH"] = PORTABLE_BROWSER_DIR
+
 import glob
 import shutil
 import threading
@@ -21,57 +35,6 @@ import pyzipper
 import ctypes
 from io import StringIO
 from datetime import datetime
-
-# ─────────────────────────────────────────────
-# PLAYWRIGHT BROWSER PATH CONFIGURATION FOR PORTABILITY
-# ─────────────────────────────────────────────
-def setup_playwright_browsers_path():
-    """Configures Playwright browser paths.
-    Returns:
-        tuple: (path_to_use, mode)
-    """
-    is_frozen = getattr(sys, "frozen", False)
-    
-    # 1. Check for pre-bundled browsers inside PyInstaller extraction temp folder
-    if is_frozen and hasattr(sys, "_MEIPASS"):
-        bundled_path = os.path.join(sys._MEIPASS, "playwright", "driver", "package", ".local-browsers")
-        executable_pattern = os.path.join(bundled_path, "**", "chrome*.exe")
-        if glob.glob(executable_pattern, recursive=True):
-            os.environ["PLAYWRIGHT_BROWSERS_PATH"] = "0"
-            return bundled_path, "bundled"
-
-    # Determine script or exe directory
-    if is_frozen:
-        app_dir = os.path.dirname(sys.executable)
-    else:
-        app_dir = os.path.dirname(os.path.abspath(__file__))
-
-    # 2. Check for local/portable browsers directory (same folder as exe/script)
-    local_path = os.path.join(app_dir, "ms-playwright")
-    if os.path.isdir(local_path):
-        executable_pattern = os.path.join(local_path, "**", "chrome*.exe")
-        if glob.glob(executable_pattern, recursive=True):
-            os.environ["PLAYWRIGHT_BROWSERS_PATH"] = local_path
-            return local_path, "portable"
-
-    # 3. Check for system-wide AppData browsers directory
-    system_path = os.path.join(
-        os.environ.get("LOCALAPPDATA", os.path.expanduser("~/AppData/Local")),
-        "ms-playwright"
-    )
-    
-    executable_pattern = os.path.join(system_path, "**", "chrome*.exe")
-    if glob.glob(executable_pattern, recursive=True):
-        os.environ["PLAYWRIGHT_BROWSERS_PATH"] = system_path
-        return system_path, "system_exist"
-
-    # 4. Default to system path (will trigger auto-install on launch failure)
-    os.environ["PLAYWRIGHT_BROWSERS_PATH"] = system_path
-    return system_path, "system_need_install"
-
-
-# Setup the path before importing Playwright
-BROWSERS_PATH, BROWSER_MODE = setup_playwright_browsers_path()
 
 # Delayed import of Playwright and Stealth to ensure environment variables are applied
 import pandas as pd
@@ -223,59 +186,72 @@ APP_DIR = get_app_dir()
 
 
 def check_or_install_browser():
-    """Checks if browser binaries are installed. If not, installs them."""
+    """Checks if browser binaries are installed in the portable directory. If not, installs them."""
     print("ℹ️ [INFO]  - Checking for required browser binaries...")
     
-    try:
-        with sync_playwright() as p:
-            browser = p.chromium.launch(headless=True)
-            browser.close()
-        print("✅ [SUCCESS] - Browser binaries verified!")
-        return True
-    except Exception as e:
-        err_msg = str(e)
-        if "Executable doesn't exist" in err_msg or "playwright install" in err_msg.lower():
-            print("⚠️ [WARNING] - Playwright browser binaries not found.")
-            print("ℹ️ [INFO]  - Starting automatic browser download and installation...")
-            print("ℹ️ [INFO]  - This may take 1-3 minutes depending on your internet connection.")
-            print("ℹ️ [INFO]  - Please wait...")
+    # 1. Verify Browser Presence inside PORTABLE_BROWSER_DIR
+    executable_pattern = os.path.join(PORTABLE_BROWSER_DIR, "**", "chrome*.exe")
+    chromium_exists = len(glob.glob(executable_pattern, recursive=True)) > 0
+    
+    if chromium_exists:
+        try:
+            with sync_playwright() as p:
+                browser = p.chromium.launch(headless=True)
+                browser.close()
+            print("✅ [SUCCESS] - Browser binaries verified!")
+            return True
+        except Exception:
+            # If launch fails, we proceed to reinstall/repair
+            pass
             
-            try:
-                import subprocess
-                from playwright.__main__ import compute_driver_executable, get_driver_env
-                
-                driver_executable, driver_cli = compute_driver_executable()
-                env = get_driver_env()
-                env["PLAYWRIGHT_BROWSERS_PATH"] = os.environ.get("PLAYWRIGHT_BROWSERS_PATH")
-                
-                process = subprocess.Popen(
-                    [driver_executable, driver_cli, "install", "chromium"],
-                    stdout=subprocess.PIPE,
-                    stderr=subprocess.STDOUT,
-                    text=True,
-                    env=env,
-                    bufsize=1
-                )
-                
-                if process.stdout:
-                    for line in process.stdout:
-                        sys.stdout.write(line)
-                        sys.stdout.flush()
-                
-                process.wait()
-                
-                if process.returncode == 0:
-                    print("✅ [SUCCESS] - Browser installed successfully!")
-                    return True
-                else:
-                    print(f"🚨 [CRITICAL ERROR] - Browser installation failed with exit code: {process.returncode}")
-                    return False
-            except Exception as install_err:
-                print(f"🚨 [CRITICAL ERROR] - Failed to run browser installer: {install_err}")
-                return False
+    # 2. Graceful Auto-Installation
+    print("🌐 Portable browser engine not found. Initiating zero-setup download... Please wait...")
+    
+    try:
+        import subprocess
+        # Determine correct installer executable and arguments depending on frozen state
+        if getattr(sys, 'frozen', False):
+            from playwright.__main__ import compute_driver_executable
+            driver_executable, driver_cli = compute_driver_executable()
+            cmd = [driver_executable, driver_cli, "install", "chromium"]
         else:
-            print(f"🚨 [CRITICAL ERROR] - Unexpected browser error: {e}")
+            cmd = [sys.executable, "-m", "playwright", "install", "chromium"]
+            
+        env = os.environ.copy()
+        env["PLAYWRIGHT_BROWSERS_PATH"] = PORTABLE_BROWSER_DIR
+        
+        # Keep command window invisible on Windows using CREATE_NO_WINDOW (0x08000000)
+        creation_flags = 0
+        if sys.platform == "win32":
+            creation_flags = 0x08000000  # CREATE_NO_WINDOW
+            
+        process = subprocess.Popen(
+            cmd,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.STDOUT,
+            text=True,
+            env=env,
+            creationflags=creation_flags,
+            bufsize=1
+        )
+        
+        if process.stdout:
+            for line in process.stdout:
+                sys.stdout.write(line)
+                sys.stdout.flush()
+                
+        process.wait()
+        
+        if process.returncode == 0:
+            print("✅ Browser setup completed successfully! Starting automation...")
+            return True
+        else:
+            print(f"🚨 [CRITICAL ERROR] - Browser installation failed with exit code: {process.returncode}")
             return False
+            
+    except Exception as install_err:
+        print(f"🚨 [CRITICAL ERROR] - Failed to run browser installer: {install_err}")
+        return False
 
 # ─────────────────────────────────────────────
 # STDOUT REDIRECTOR  (thread-safe → Tk widget)

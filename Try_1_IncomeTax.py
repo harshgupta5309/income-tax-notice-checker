@@ -1,5 +1,19 @@
 import os
 import sys
+
+# Detect if running as compiled PyInstaller EXE or raw script
+if getattr(sys, 'frozen', False):
+    # Directory where the .exe is running
+    APP_DIR = os.path.dirname(sys.executable)
+else:
+    APP_DIR = os.path.dirname(os.path.abspath(__file__))
+
+# Establish a portable local folder adjacent to the EXE
+PORTABLE_BROWSER_DIR = os.path.join(APP_DIR, "ms-playwright")
+
+# Force Playwright to use our local folder for storing and reading drivers/browsers
+os.environ["PLAYWRIGHT_BROWSERS_PATH"] = PORTABLE_BROWSER_DIR
+
 import glob
 import shutil
 import logging
@@ -15,14 +29,6 @@ from playwright_stealth import Stealth
 # ─────────────────────────────────────────────
 # CONFIGURATION & PORTABLE PATH RESOLUTION
 # ─────────────────────────────────────────────
-def get_app_dir():
-    """Return the directory where the script lives — works for both
-    a raw .py script and a PyInstaller-frozen .exe."""
-    if getattr(sys, "frozen", False):
-        return os.path.dirname(sys.executable)
-    return os.path.dirname(os.path.abspath(__file__))
-
-APP_DIR = get_app_dir()
 BASE_DIR = APP_DIR
 OUTPUT_REPORT = os.path.join(BASE_DIR, "New_Notices_Flagged_Report.xlsx")
 CREDENTIALS_FILE = os.path.join(BASE_DIR, "Credentials.xlsx")
@@ -125,12 +131,76 @@ def validate_credentials_file(filepath):
             f"│  FOUND COLUMNS: {', '.join(columns)[:45]:<36}... │\n"
             "└────────────────────────────────────────────────────────┘"
         )
-        return False, error_layout
-        
-    if df.empty:
-        return False, "🚨 [CRITICAL ERROR] - Credentials file contains no rows of data."
-        
     return True, None
+
+
+def check_or_install_browser():
+    """Checks if browser binaries are installed in the portable directory. If not, installs them."""
+    print("ℹ️ [INFO]  - Checking for required browser binaries...")
+    
+    # 1. Verify Browser Presence inside PORTABLE_BROWSER_DIR
+    executable_pattern = os.path.join(PORTABLE_BROWSER_DIR, "**", "chrome*.exe")
+    chromium_exists = len(glob.glob(executable_pattern, recursive=True)) > 0
+    
+    if chromium_exists:
+        try:
+            with sync_playwright() as p:
+                browser = p.chromium.launch(headless=True)
+                browser.close()
+            print("✅ [SUCCESS] - Browser binaries verified!")
+            return True
+        except Exception:
+            # If launch fails, we proceed to reinstall/repair
+            pass
+            
+    # 2. Graceful Auto-Installation
+    print("🌐 Portable browser engine not found. Initiating zero-setup download... Please wait...")
+    
+    try:
+        import subprocess
+        # Determine correct installer executable and arguments depending on frozen state
+        if getattr(sys, 'frozen', False):
+            from playwright.__main__ import compute_driver_executable
+            driver_executable, driver_cli = compute_driver_executable()
+            cmd = [driver_executable, driver_cli, "install", "chromium"]
+        else:
+            cmd = [sys.executable, "-m", "playwright", "install", "chromium"]
+            
+        env = os.environ.copy()
+        env["PLAYWRIGHT_BROWSERS_PATH"] = PORTABLE_BROWSER_DIR
+        
+        # Keep command window invisible on Windows using CREATE_NO_WINDOW (0x08000000)
+        creation_flags = 0
+        if sys.platform == "win32":
+            creation_flags = 0x08000000  # CREATE_NO_WINDOW
+            
+        process = subprocess.Popen(
+            cmd,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.STDOUT,
+            text=True,
+            env=env,
+            creationflags=creation_flags,
+            bufsize=1
+        )
+        
+        if process.stdout:
+            for line in process.stdout:
+                sys.stdout.write(line)
+                sys.stdout.flush()
+                
+        process.wait()
+        
+        if process.returncode == 0:
+            print("✅ Browser setup completed successfully! Starting automation...")
+            return True
+        else:
+            print(f"🚨 [CRITICAL ERROR] - Browser installation failed with exit code: {process.returncode}")
+            return False
+            
+    except Exception as install_err:
+        print(f"🚨 [CRITICAL ERROR] - Failed to run browser installer: {install_err}")
+        return False
 
 
 def capture_diagnostic_screenshot(page, pan, stage, vault_manager):
@@ -724,7 +794,13 @@ if __name__ == "__main__":
             sys.exit(1)
         print("✅ [SUCCESS] - Credentials file schema validated successfully!")
         
-        # 3. Main Automation Flow
+        # 3. Browser Check/Installation
+        if not check_or_install_browser():
+            print("🚨 [CRITICAL ERROR] - Playwright browser check/install failed. Exiting.")
+            logging.error("Playwright browser check/install failed.")
+            sys.exit(1)
+            
+        # 4. Main Automation Flow
         successful_pans = run_multi_client_downloads(vault_mgr)
         process_and_flag(successful_pans)
         

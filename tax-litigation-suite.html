@@ -1,0 +1,658 @@
+
+<!doctype html>
+<html lang="en" class="dark">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Income Tax Litigation Suite | Engine</title>
+  
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=Instrument+Sans:ital,wght@0,400..700;1,400..700&family=JetBrains+Mono:ital,wght@0,100..800;1,100..800&family=Sora:wght@100..800&display=swap" rel="stylesheet">
+  
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          colors: {
+            bg: 'var(--bg)',
+            faint: 'var(--faint)',
+            'faint-nested': 'var(--faint-nested)',
+            ink: 'var(--ink)',
+            muted: 'var(--muted)',
+            'border-faint': 'var(--border-faint)',
+            accent: 'var(--accent)',
+            'accent-hover': 'var(--accent-hover)',
+            success: 'var(--success)',
+            warning: 'var(--warning)',
+            danger: 'var(--danger)',
+          },
+          fontFamily: {
+            sora: ['var(--font-sora)', 'sans-serif'],
+            instrument: ['var(--font-instrument)', 'sans-serif'],
+            mono: ['var(--font-mono)', 'monospace'],
+            serif: ['var(--font-serif)', 'serif'],
+          },
+          borderRadius: {
+            'app': '16px',
+            'app-sm': '12px',
+          }
+        }
+      }
+    }
+  </script>
+  
+  <style>
+    :root {
+      --bg: #0E0E0E;
+      --faint: #1A1816;
+      --faint-nested: #221F1C;
+      --ink: #EDEAE4;
+      --muted: #94A3B8;
+      --border-faint: #2D2A26;
+      --accent: #38BDF8;
+      --accent-hover: #0EA5E9;
+      --success: #10B981;
+      --warning: #F59E0B;
+      --danger: #EF4444;
+
+      --font-sora: 'Sora', sans-serif;
+      --font-instrument: 'Instrument Sans', sans-serif;
+      --font-mono: 'JetBrains Mono', monospace;
+      --font-serif: 'DM Serif Display', serif;
+
+      --transition-smooth: all 0.35s cubic-bezier(0.25, 1, 0.5, 1);
+    }
+
+    body {
+      font-family: var(--font-instrument);
+      font-size: 0.95rem;
+      background-color: var(--bg);
+      color: var(--ink);
+    }
+
+    h1.brand-title { font-family: var(--font-sora); font-size: 1.5rem; font-weight: 700; letter-spacing: -0.025em; }
+    p.brand-subtitle { font-family: var(--font-serif); font-size: 0.875rem; font-style: italic; }
+    span.mono-metric { font-family: var(--font-mono); font-size: 0.85rem; letter-spacing: -0.01em; }
+
+    ::-webkit-scrollbar { width: 8px; height: 8px; }
+    ::-webkit-scrollbar-track { background: var(--bg); }
+    ::-webkit-scrollbar-thumb { background: var(--faint-nested); border-radius: 4px; border: 1px solid var(--border-faint); }
+    ::-webkit-scrollbar-thumb:hover { background: var(--muted); }
+
+    .btn-interactive {
+      transition: var(--transition-smooth);
+    }
+    .btn-interactive:not(:disabled):hover {
+      transform: scale(1.02);
+    }
+    .btn-interactive:not(:disabled):active {
+      transform: scale(0.98);
+    }
+    .focus-ring:focus-within {
+      box-shadow: 0 0 0 2px rgba(56, 189, 248, 0.15);
+    }
+    
+    .sliding-indicator {
+      transition: transform 0.4s cubic-bezier(0.25, 1, 0.5, 1);
+    }
+
+    .tab-content { display: none; }
+    .tab-content.active { display: block; animation: fade-in-up 0.4s cubic-bezier(0.25, 1, 0.5, 1) forwards; }
+
+    @keyframes fade-in-up {
+      from { opacity: 0; transform: translateY(8px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+    .animate-fade-in-up {
+      animation: fade-in-up 0.3s cubic-bezier(0.25, 1, 0.5, 1) forwards;
+    }
+    @keyframes slide-down {
+      from { opacity: 0; transform: translateY(-16px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+    .animate-slide-down {
+      animation: slide-down 0.5s cubic-bezier(0.25, 1, 0.5, 1) forwards;
+    }
+
+    .glass-header {
+      background: rgba(14, 14, 14, 0.85);
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+    }
+  </style>
+</head>
+<body class="flex flex-col h-screen overflow-hidden selection:bg-accent selection:text-bg">
+
+  <!-- Header Block (Sticky Top) -->
+  <header class="glass-header z-50 border-b border-border-faint px-6 py-4 flex flex-col md:flex-row justify-between items-start md:items-center gap-4 shrink-0">
+    <div>
+      <h1 class="brand-title text-ink flex items-center gap-2.5">
+        <span class="text-xl">💼</span> Income Tax Litigation Suite
+      </h1>
+      <p class="brand-subtitle text-muted mt-1">Notice Checker & Automated Reconciliation Engine</p>
+    </div>
+    <div class="flex items-center gap-5">
+      <div class="flex items-center gap-2.5 bg-faint border border-border-faint px-3 py-1.5 rounded-full">
+        <span id="engine-status-dot" class="w-2.5 h-2.5 rounded-full bg-muted transition-colors duration-300"></span>
+        <span id="engine-status-text" class="text-muted font-sora font-semibold text-xs uppercase tracking-widest transition-colors duration-300">Idle</span>
+      </div>
+      <button id="start-engine-btn" class="btn-interactive bg-accent hover:bg-accent-hover text-bg font-sora font-semibold py-2.5 px-6 rounded-app-sm shadow-[0_4px_14px_rgba(56,189,248,0.2)] flex items-center gap-2 overflow-hidden relative group">
+        <div id="btn-glow" class="absolute inset-0 bg-white/20 opacity-0 group-hover:opacity-100 transition-opacity"></div>
+        <svg id="btn-icon" class="w-4 h-4 fill-current" viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>
+        <span id="btn-text">Start Notice Check</span>
+      </button>
+    </div>
+  </header>
+
+  <!-- Sliding Navigation Pills -->
+  <nav class="px-6 py-3 border-b border-border-faint bg-bg shrink-0">
+    <div class="relative inline-flex bg-faint rounded-app-sm p-1 border border-border-faint">
+      <div id="tab-indicator" class="sliding-indicator absolute top-1 bottom-1 left-1 bg-faint-nested rounded-[10px] w-[200px] shadow-sm border border-border-faint"></div>
+      <button class="tab-btn relative z-10 w-[200px] py-1.5 text-sm font-medium text-ink transition-colors" data-tab="tab-monitor">Operational Monitor</button>
+      <button class="tab-btn relative z-10 w-[200px] py-1.5 text-sm font-medium text-muted hover:text-ink transition-colors" data-tab="tab-inventory">Client Inventory</button>
+    </div>
+  </nav>
+
+  <!-- Workspace Grid -->
+  <main class="flex-1 flex flex-col lg:flex-row p-6 gap-6 overflow-hidden max-w-full">
+    
+    <!-- LEFT SIDE: Directory Dock -->
+    <aside class="w-full lg:w-[380px] shrink-0 flex flex-col gap-6 overflow-y-auto pr-2 pb-8">
+      
+      <div class="bg-faint rounded-app border border-border-faint p-5 focus-ring transition-shadow duration-300">
+        <label class="block text-[10px] font-bold tracking-widest uppercase text-muted mb-3 font-sora">Credentials Registry (.xlsx)</label>
+        <div class="flex gap-2">
+          <input type="text" readonly value="Credentials.xlsx" id="input-registry" class="flex-1 bg-faint-nested border border-border-faint rounded-app-sm px-3 py-2 text-sm text-ink cursor-default focus:outline-none font-mono">
+          <button class="btn-interactive bg-faint-nested hover:bg-border-faint border border-border-faint text-ink text-sm px-4 py-2 rounded-app-sm font-medium" id="btn-browse-1">Browse</button>
+        </div>
+      </div>
+
+      <div class="bg-faint rounded-app border border-border-faint p-5 focus-ring transition-shadow duration-300">
+        <label class="block text-[10px] font-bold tracking-widest uppercase text-muted mb-3 font-sora">Destination Folder</label>
+        <div class="flex gap-2">
+          <input type="text" readonly value="D:/Downloaded_CSV_Notices" id="input-dest" class="flex-1 bg-faint-nested border border-border-faint rounded-app-sm px-3 py-2 text-sm text-ink cursor-default focus:outline-none font-mono">
+          <button class="btn-interactive bg-faint-nested hover:bg-border-faint border border-border-faint text-ink text-sm px-4 py-2 rounded-app-sm font-medium" id="btn-browse-2">Browse</button>
+        </div>
+      </div>
+
+      <div class="bg-faint rounded-app border border-border-faint p-5 flex-1">
+        <h3 class="text-sm font-sora font-semibold text-ink mb-5 border-b border-border-faint pb-3">Live Diagnostic Readout</h3>
+        <div class="space-y-4">
+          <div class="flex justify-between items-center text-sm">
+            <span class="text-muted">Registry Clients Loaded</span>
+            <span class="mono-metric text-ink bg-faint-nested px-2 py-0.5 rounded border border-border-faint" id="diag-clients">3 Accounts</span>
+          </div>
+          <div class="flex justify-between items-center text-sm">
+            <span class="text-muted">Completed Iterations</span>
+            <span class="mono-metric text-ink bg-faint-nested px-2 py-0.5 rounded border border-border-faint" id="diag-iterations">0 / 3 processed</span>
+          </div>
+          <div class="flex justify-between items-center text-sm">
+            <span class="text-muted">Active Thread Identifier</span>
+            <span class="mono-metric text-ink bg-faint-nested px-2 py-0.5 rounded border border-border-faint" id="diag-thread">None</span>
+          </div>
+        </div>
+      </div>
+    </aside>
+
+    <!-- RIGHT SIDE: Active Workspace -->
+    <section class="flex-1 min-w-0 relative overflow-hidden flex flex-col">
+      
+      <!-- TAB 1: WORKSPACE OPERATIONAL MONITOR -->
+      <div id="tab-monitor" class="tab-content active h-full flex flex-col gap-6 overflow-y-auto pr-2 pb-8">
+        
+        <!-- Post-Run Reconciliation Card -->
+        <div id="post-run-alert" class="hidden bg-faint rounded-app border-y border-r border-border-faint border-l-[4px] border-l-success p-5 shadow-[0_8px_30px_rgba(0,0,0,0.4)]">
+          <div class="flex flex-col md:flex-row justify-between items-center gap-4">
+            <div class="flex items-center gap-4">
+              <div class="w-10 h-10 rounded-full bg-success/10 border border-success/30 flex items-center justify-center shrink-0">
+                <span class="text-success text-xl">✨</span>
+              </div>
+              <div>
+                <h4 class="text-ink font-sora font-semibold tracking-tight">Workspace Check Completed</h4>
+                <p class="text-muted text-sm mt-0.5" id="post-run-msg">0 New Notices / Updates flagged.</p>
+              </div>
+            </div>
+            <button class="btn-interactive border border-success/50 text-success hover:bg-success/10 font-sora font-semibold text-sm px-5 py-2.5 rounded-app-sm flex items-center gap-2 shrink-0">
+              <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z"></path></svg>
+              Open Flagged Notice Report
+            </button>
+          </div>
+        </div>
+
+        <!-- Dual-Stage Progress Cards -->
+        <div class="bg-faint rounded-app border border-border-faint p-6 shrink-0 shadow-sm">
+          <div class="mb-7">
+            <div class="flex justify-between items-end mb-2.5">
+              <div class="flex items-center gap-2">
+                <span class="text-accent text-xs">●</span>
+                <span class="text-ink text-sm font-sora font-semibold tracking-tight">Portal Login Status <span class="text-muted font-instrument font-normal">(Stage 1: Authentication)</span></span>
+              </div>
+              <span class="mono-metric text-xs text-muted" id="auth-pct">[ 0% ]</span>
+            </div>
+            <div class="h-2.5 w-full bg-faint-nested rounded-full overflow-hidden border border-border-faint">
+              <div id="auth-bar" class="h-full bg-accent transition-all duration-300 w-0 relative overflow-hidden">
+                <div class="absolute inset-0 bg-white/20" style="background-image: linear-gradient(45deg,rgba(255,255,255,.15) 25%,transparent 25%,transparent 50%,rgba(255,255,255,.15) 50%,rgba(255,255,255,.15) 75%,transparent 75%,transparent); background-size: 1rem 1rem;"></div>
+              </div>
+            </div>
+            <p class="text-muted text-xs mt-2 italic font-serif" id="auth-status">Awaiting engine start...</p>
+          </div>
+
+          <div>
+            <div class="flex justify-between items-end mb-2.5">
+              <div class="flex items-center gap-2">
+                <span class="text-accent text-xs">●</span>
+                <span class="text-ink text-sm font-sora font-semibold tracking-tight">Data Download Status <span class="text-muted font-instrument font-normal">(Stage 2: Extraction)</span></span>
+              </div>
+              <span class="mono-metric text-xs text-muted flex items-center gap-1.5" id="extract-timer">
+                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                Estimated: --s
+              </span>
+            </div>
+            <div class="h-2.5 w-full bg-faint-nested rounded-full overflow-hidden border border-border-faint relative">
+              <div id="extract-bar" class="h-full bg-accent transition-all duration-300 w-0"></div>
+            </div>
+          </div>
+        </div>
+
+        <div class="grid grid-cols-1 xl:grid-cols-2 gap-6 min-h-[360px] flex-1">
+          <!-- Real-Time CSV Download Ledger -->
+          <div class="bg-faint rounded-app border border-border-faint flex flex-col overflow-hidden">
+            <div class="px-5 py-3.5 border-b border-border-faint bg-faint-nested">
+              <h3 class="text-[10px] font-bold tracking-widest uppercase text-muted font-sora">Real-Time CSV Download Ledger</h3>
+            </div>
+            <div class="p-4 flex-1 overflow-y-auto" id="ledger-container">
+              <div class="text-muted text-sm italic font-serif text-center mt-12 opacity-60" id="ledger-empty">The ledger is empty. Waiting for execution...</div>
+              <!-- Ledger rows injected dynamically -->
+            </div>
+          </div>
+
+          <!-- Collapsible Debug Console -->
+          <div class="bg-faint rounded-app border border-border-faint flex flex-col overflow-hidden transition-all duration-300" id="console-wrapper">
+            <button id="console-toggle" class="px-5 py-3.5 border-b border-border-faint bg-faint-nested flex justify-between items-center text-left hover:bg-border-faint transition-colors w-full focus:outline-none">
+              <h3 class="text-[10px] font-bold tracking-widest uppercase text-muted font-sora">▼ Detailed Technical Terminal Output</h3>
+            </button>
+            <div id="console-container" class="p-5 flex-1 overflow-y-auto bg-[#080808] font-mono text-[11px] text-muted leading-[1.6] hidden xl:block space-y-1.5">
+              <div class="text-muted/40">Engine initialized. Loading libraries...</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- TAB 2: CLIENT INVENTORY -->
+      <div id="tab-inventory" class="tab-content h-full overflow-y-auto pr-2 pb-8">
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6" id="client-grid">
+          <!-- Standalone Client Cards injected dynamically -->
+        </div>
+      </div>
+
+    </section>
+  </main>
+
+  <script>
+    // System Data Mock
+    const clients = [
+      { name: "NIPC Foundation", pan: "AAAIN8307K", id: "client-1" },
+      { name: "Dharamvir Gupta", pan: "AAKPG3963E", id: "client-2" },
+      { name: "Suresh & Co", pan: "AABCS1234F", id: "client-3" }
+    ];
+
+    let engineRunning = false;
+    let currentCountdownInterval = null;
+
+    // DOM References
+    const btnStart = document.getElementById('start-engine-btn');
+    const statusDot = document.getElementById('engine-status-dot');
+    const statusText = document.getElementById('engine-status-text');
+    
+    const tabBtns = document.querySelectorAll('.tab-btn');
+    const tabIndicator = document.getElementById('tab-indicator');
+    const tabContents = document.querySelectorAll('.tab-content');
+    
+    const inputs = [document.getElementById('input-registry'), document.getElementById('input-dest')];
+    const browseBtns = [document.getElementById('btn-browse-1'), document.getElementById('btn-browse-2')];
+    
+    const diagIter = document.getElementById('diag-iterations');
+    const diagThread = document.getElementById('diag-thread');
+
+    const authBar = document.getElementById('auth-bar');
+    const authPct = document.getElementById('auth-pct');
+    const authStatus = document.getElementById('auth-status');
+    
+    const extractBar = document.getElementById('extract-bar');
+    const extractTimer = document.getElementById('extract-timer');
+    
+    const ledgerContainer = document.getElementById('ledger-container');
+    const ledgerEmpty = document.getElementById('ledger-empty');
+    
+    const consoleToggle = document.getElementById('console-toggle');
+    const consoleContainer = document.getElementById('console-container');
+    
+    const clientGrid = document.getElementById('client-grid');
+    const postRunAlert = document.getElementById('post-run-alert');
+
+    function init() {
+      // Setup Tab Controller
+      tabBtns.forEach((btn, index) => {
+        btn.addEventListener('click', () => {
+          const target = btn.getAttribute('data-tab');
+          tabIndicator.style.transform = `translateX(${index * 200}px)`;
+          
+          tabBtns.forEach(b => {
+            b.classList.remove('text-ink');
+            b.classList.add('text-muted');
+          });
+          btn.classList.add('text-ink');
+          btn.classList.remove('text-muted');
+          
+          tabContents.forEach(content => {
+            content.classList.remove('active');
+            if (content.id === target) content.classList.add('active');
+          });
+        });
+      });
+
+      // Console Toggle Logic
+      consoleToggle.addEventListener('click', () => {
+        consoleContainer.classList.toggle('hidden');
+      });
+
+      renderClientInventory();
+    }
+
+    function renderClientInventory() {
+      clientGrid.innerHTML = '';
+      clients.forEach(client => {
+        const card = document.createElement('div');
+        card.id = `card-${client.id}`;
+        card.className = 'bg-faint rounded-app border border-border-faint p-6 flex flex-col relative transition-all duration-300 hover:border-muted/30';
+        
+        card.innerHTML = `
+          <div class="mb-5 relative z-10">
+            <div class="flex justify-between items-start mb-1.5">
+              <h3 class="font-sora font-semibold text-ink text-base tracking-tight truncate pr-2">${client.name}</h3>
+              <div class="flex items-center gap-2 status-badge bg-bg border border-border-faint px-2 py-1 rounded">
+                <span class="w-1.5 h-1.5 rounded-full bg-muted indicator-dot"></span>
+                <span class="text-[9px] uppercase tracking-widest text-muted font-bold indicator-text">Idle</span>
+              </div>
+            </div>
+            <span class="mono-metric text-muted bg-faint-nested px-1.5 py-0.5 rounded border border-border-faint shadow-sm">[PAN: ${client.pan}]</span>
+          </div>
+          
+          <div class="bg-bg rounded-app-sm border border-border-faint p-3.5 text-xs space-y-2.5 font-instrument audit-trail opacity-40 transition-opacity">
+            <div class="flex items-start gap-2.5"><span class="ax-icon font-mono">⚪</span><span class="text-muted ax-text">Awaiting extraction sequence...</span></div>
+            <div class="flex items-start gap-2.5"><span class="bx-icon font-mono">⚪</span><span class="text-muted bx-text">Awaiting extraction sequence...</span></div>
+          </div>
+          
+          <div class="compliance-flag hidden mt-4 bg-warning/10 border border-warning/30 rounded text-warning text-[10px] uppercase font-bold tracking-widest px-3 py-2 flex items-center gap-2 shadow-[inset_0_0_8px_rgba(245,158,11,0.05)]">
+            <svg class="w-3.5 h-3.5 text-warning flex-shrink-0" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clip-rule="evenodd"></path></svg>
+            Action Required: Compliance Due on 12-07-2026
+          </div>
+        `;
+        clientGrid.appendChild(card);
+      });
+    }
+
+    function syncClientState(id, state, details = {}) {
+      const card = document.getElementById(`card-${id}`);
+      if (!card) return;
+      
+      const dot = card.querySelector('.indicator-dot');
+      const text = card.querySelector('.indicator-text');
+      const trail = card.querySelector('.audit-trail');
+      
+      dot.className = 'w-1.5 h-1.5 rounded-full indicator-dot';
+      text.className = 'text-[9px] uppercase tracking-widest font-bold indicator-text';
+      
+      if (state === 'processing') {
+        dot.classList.add('bg-accent', 'animate-pulse', 'shadow-[0_0_6px_rgba(56,189,248,0.8)]');
+        text.classList.add('text-accent');
+        text.innerText = 'Processing';
+        trail.classList.remove('opacity-40');
+        card.classList.add('border-accent/40', 'bg-accent/[0.02]');
+      } else if (state === 'completed') {
+        card.classList.remove('border-accent/40', 'bg-accent/[0.02]');
+        dot.classList.add('bg-success');
+        text.classList.add('text-success');
+        text.innerText = 'Completed';
+        
+        if (details.ax) {
+          card.querySelector('.ax-icon').innerText = details.ax.count > 0 ? '🟢' : '⚪';
+          card.querySelector('.ax-text').innerText = details.ax.text;
+          card.querySelector('.ax-text').classList.replace('text-muted', 'text-ink');
+        }
+        if (details.bx) {
+          card.querySelector('.bx-icon').innerText = details.bx.count > 0 ? '🟢' : '⚪';
+          card.querySelector('.bx-text').innerText = details.bx.text;
+          card.querySelector('.bx-text').classList.replace('text-muted', 'text-ink');
+        }
+        if (details.flag) card.querySelector('.compliance-flag').classList.remove('hidden');
+      }
+    }
+
+    function printToConsole(msg, type = 'info') {
+      const line = document.createElement('div');
+      const time = new Date().toISOString().split('T')[1].slice(0,-1);
+      line.innerHTML = `<span class="text-muted/40">[${time}]</span> <span class="${type === 'error' ? 'text-danger' : 'text-ink/90'}">${msg}</span>`;
+      consoleContainer.appendChild(line);
+      consoleContainer.scrollTop = consoleContainer.scrollHeight;
+    }
+
+    function appendLedger(pool, filename, success) {
+      if (ledgerEmpty) ledgerEmpty.style.display = 'none';
+      const row = document.createElement('div');
+      row.className = 'grid grid-cols-12 gap-4 items-center py-3 border-b border-border-faint animate-fade-in-up text-sm font-instrument';
+      
+      const badgeClass = success ? 'bg-success/[0.08] text-success border-success/20 shadow-[inset_0_0_4px_rgba(16,185,129,0.1)]' : 'bg-warning/[0.08] text-warning border-warning/20 shadow-[inset_0_0_4px_rgba(245,158,11,0.1)]';
+      const badgeText = success ? '🟢 Saved Successfully' : '🟡 No Records Found';
+      
+      row.innerHTML = `
+        <div class="col-span-3 text-muted truncate text-xs" title="${pool}">[📁 ${pool}]</div>
+        <div class="col-span-5 font-mono text-ink text-xs truncate" title="${filename}">${filename}</div>
+        <div class="col-span-4 text-right">
+          <span class="text-[9px] font-bold tracking-widest uppercase border px-2.5 py-1.5 rounded-sm ${badgeClass}">${badgeText}</span>
+        </div>
+      `;
+      ledgerContainer.appendChild(row);
+      ledgerContainer.scrollTop = ledgerContainer.scrollHeight;
+    }
+
+    // --- HTML / Python Bridge Binders & Callbacks ---
+
+    document.addEventListener('DOMContentLoaded', () => {
+      init();
+      // Wait for native wrapper variables to establish inside DOM context
+      window.addEventListener('pywebviewready', () => {
+        printToConsole("🔌 Native Python Bridge Handshake Successful! Ready.", "info");
+        bindNativeControls();
+      });
+    });
+
+    function bindNativeControls() {
+      // Bind Credentials Browser
+      document.getElementById('btn-browse-1').addEventListener('click', async () => {
+        const path = await window.pywebview.api.browse_credentials();
+        if (path && !path.startsWith("Error")) {
+          document.getElementById('input-registry').value = path;
+          printToConsole(`📁 Loaded credentials file: ${path}`, 'info');
+        }
+      });
+
+      // Bind Target Destination Browser
+      document.getElementById('btn-browse-2').addEventListener('click', async () => {
+        const path = await window.pywebview.api.browse_destination();
+        if (path && !path.startsWith("Error")) {
+          document.getElementById('input-dest').value = path;
+          printToConsole(`🎯 Configured destination workspace: ${path}`, 'info');
+        }
+      });
+
+      // Bind Post-Run Excel Report Opener
+      const alertBtn = document.getElementById('post-run-alert').querySelector('button');
+      alertBtn.addEventListener('click', async () => {
+        const response = await window.pywebview.api.open_excel_report();
+        if (response.success) {
+          printToConsole(`✅ Successfully launched master report in Excel.`, 'success');
+        } else {
+          printToConsole(`🚨 Excel Launch Failed: ${response.error}`, 'error');
+        }
+      });
+
+      // Bind Start Engine Execution Sequence
+      btnStart.addEventListener('click', async () => {
+        if (engineRunning) return;
+
+        const creds = document.getElementById('input-registry').value;
+        const dest = document.getElementById('input-dest').value;
+
+        if (!creds || !dest) {
+          printToConsole("⚠️ Action Blocked: Please configure both file registry and output directory!", "error");
+          return;
+        }
+
+        // Call asynchronous Python backend automation thread
+        const initResponse = await window.pywebview.api.start_notice_check(creds, dest);
+        
+        if (initResponse.success) {
+          engineRunning = true;
+          btnStart.classList.add('opacity-50', 'cursor-not-allowed', 'animate-pulse');
+          btnStart.querySelector('#btn-text').innerText = 'Engine Running...';
+          inputs.forEach(i => i.classList.add('opacity-40'));
+          browseBtns.forEach(b => b.disabled = true);
+
+          statusDot.className = 'w-2.5 h-2.5 rounded-full bg-warning shadow-[0_0_10px_rgba(245,158,11,0.9)] animate-pulse';
+          statusText.className = 'text-warning font-sora font-semibold text-xs uppercase tracking-widest';
+          statusText.innerText = 'Crawling...';
+
+          // Reset ledger and screen elements
+          ledgerContainer.innerHTML = '';
+          if (ledgerEmpty) ledgerEmpty.style.display = 'none';
+          postRunAlert.classList.add('hidden');
+          printToConsole("🔥 Automation Thread Dispatched. Running client crawls...", "info");
+        } else {
+          printToConsole(`🚨 Failed to start engine: ${initResponse.error}`, "error");
+        }
+      });
+    }
+
+    // --- Dynamic Callback API Exposed to Python context ---
+
+    function updateLoadedClientsCount(count) {
+      document.getElementById('diag-clients').innerText = `${count} Accounts`;
+    }
+
+    function onClientCycleStarted(clientId) {
+      // Locate client card in Tab 2 and flag it as active
+      const activeClient = clients.find(c => c.pan === clientId || c.id === clientId);
+      const targetId = activeClient ? activeClient.id : clientId;
+      syncClientState(targetId, 'processing');
+
+      // Reset auth progress values
+      authBar.style.transition = 'width 0.4s ease';
+      authBar.style.width = '10%';
+      authPct.innerText = '[ 10% ]';
+      authStatus.innerText = 'Spinning up Chromium Context...';
+    }
+
+    function updateAuthStatus(percentage, message) {
+      authBar.style.width = `${percentage}%`;
+      authPct.innerText = `[ ${percentage}% ]`;
+      authStatus.innerText = message;
+      if (percentage === 100) {
+        authBar.classList.replace('bg-accent', 'bg-success');
+      } else {
+        authBar.classList.replace('bg-success', 'bg-accent');
+      }
+    }
+
+    function onExtractionStarted(fileId) {
+      // Trigger countdown animation for 20 seconds
+      if (currentCountdownInterval) clearInterval(currentCountdownInterval);
+      
+      extractBar.style.transition = 'width 20s linear';
+      extractBar.style.width = '100%';
+      
+      let t = 20;
+      extractTimer.innerHTML = `<svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg> Estimated: ${t}s`;
+      
+      currentCountdownInterval = setInterval(() => {
+        t--;
+        if (t <= 0) {
+          clearInterval(currentCountdownInterval);
+          t = 0;
+        }
+        extractTimer.innerHTML = `<svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg> Estimated: ${t}s`;
+      }, 1000);
+    }
+
+    function onFileDownloaded(poolType, fileInfo, success) {
+      // Clear running countdowns and fast-forward extraction bar instantly
+      if (currentCountdownInterval) clearInterval(currentCountdownInterval);
+      
+      extractBar.style.transition = 'width 0.2s cubic-bezier(0.25, 1, 0.5, 1)';
+      extractBar.style.width = '100%';
+      extractTimer.innerHTML = `<span class="text-success flex items-center gap-1"><svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg> Done</span>`;
+      
+      appendLedger(poolType, fileInfo, success);
+
+      // Sync logs inside Tab 2 inventory cards dynamically
+      const activeCard = document.querySelector('.indicator-text');
+      if (activeCard) {
+        const cardContainer = activeCard.closest('.bg-faint');
+        if (cardContainer) {
+          const logTextClass = poolType.toLowerCase().startsWith('a') ? '.ax-text' : '.bx-text';
+          const iconClass = poolType.toLowerCase().startsWith('a') ? '.ax-icon' : '.bx-icon';
+          
+          const textEl = cardContainer.querySelector(logTextClass);
+          const iconEl = cardContainer.querySelector(iconClass);
+          
+          if (textEl && iconEl) {
+            iconEl.innerText = success ? '🟢' : '⚪';
+            textEl.innerText = success ? `Successfully fetched notices database` : `No structural notices active`;
+            textEl.classList.replace('text-muted', 'text-ink');
+          }
+        }
+      }
+    }
+
+    function onNativeAutomationComplete() {
+      engineRunning = false;
+      btnStart.classList.remove('opacity-50', 'cursor-not-allowed', 'animate-pulse');
+      btnStart.querySelector('#btn-text').innerText = 'Start Notice Check';
+      inputs.forEach(i => i.classList.remove('opacity-40'));
+      browseBtns.forEach(b => b.disabled = false);
+      
+      statusDot.className = 'w-2.5 h-2.5 rounded-full bg-success shadow-[0_0_10px_rgba(16,185,129,0.9)]';
+      statusText.innerText = 'Complete';
+      diagThread.innerText = 'None';
+      
+      postRunAlert.classList.remove('hidden');
+      postRunAlert.classList.add('animate-slide-down');
+
+      // Turn processing client cards into full "Completed" states
+      const activeCards = document.querySelectorAll('.indicator-text');
+      activeCards.forEach(badge => {
+        if (badge.innerText === 'PROCESSING') {
+          const container = badge.closest('.bg-faint');
+          if (container) {
+            const id = container.id.replace('card-', '');
+            syncClientState(id, 'completed', {
+              ax: { count: 1, text: 'Extraction audit run finished' },
+              bx: { count: 0, text: 'Extraction audit run finished' }
+            });
+          }
+        }
+      });
+    }
+
+    function onNativeAutomationError(errMsg) {
+      onNativeAutomationComplete();
+      statusDot.className = 'w-2.5 h-2.5 rounded-full bg-danger shadow-[0_0_10px_rgba(239,68,68,0.9)]';
+      statusText.innerText = 'Error';
+      printToConsole(`🚨 RUNTIME CRITICAL ERROR: ${errMsg}`, 'error');
+    }
+  </script>
+</body>
+</html>

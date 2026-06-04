@@ -1,71 +1,70 @@
-# Income Tax Notice Checker — UI/UX Overhaul Walkthrough
+# Income Tax Notice Checker — HTML GUI Integration Walkthrough
 
-We have conducted a complete visual, functional, and structural redesign of the `income_tax_gui.py` application. The layout and aesthetics are modelled after professional developer environments and high-assurance tracking tools, ensuring it feels responsive, clean, and modern.
+We have successfully migrated our desktop application from the legacy CustomTkinter GUI wrapper to a premium, lightweight **HTML/CSS/JS frontend** using the **`pywebview` framework**. 
 
----
-
-## Dashboard Interface Mockup
-
-![Income Tax Litigation Suite Dashboard Mockup](C:\Users\harsh\.gemini\antigravity\brain\0f60cbde-6ef0-4b0d-b34e-cb110b196cfd\tax_dashboard_ui_redesign_1780595537811.png)
+By binding a borderless native Windows frame leveraging Microsoft Edge WebView2, the application achieves a modern web app look and feel with zero Chromium engine overhead.
 
 ---
 
-## 1. Responsive Grid Architecture ✅
+## 💻 Visual & Tech Stack Overview
 
-The UI has been re-architected into a clean two-column grid schema:
-- **Left Sidebar (Control Panel)**: Width is fixed to `~280px`. Contains credentials configuration, folder browsing, and starting triggers.
-- **Right Column (Diagnostics & Workspace)**: Dynamically scales with window resizing to maximize data tracking and diagnostic visibility.
-
----
-
-## 2. Premium Design Tokens & Theme ✅
-
-- **Obsidian Black (`#0E0E0E`)**: Selected for the primary window background to eliminate grey glares and match high-end tools.
-- **Dark Charcoal (`#1A1816`)**: Selected for the left sidebar panel card background.
-- **Warm Charcoal-Black (`#151513`)**: Selected for all main workspace cards.
-- **Card Borders (`#242220`)**: Thin borders enclosing card frames.
-- **Sky Blue (`#38BDF8`) & Deep Sky Blue (`#0EA5E9`)**: High-contrast highlight accents for CTA buttons and outlined buttons.
-- **Eggshell White (`#EDEAE3`) & Muted Secondary (`#6A6258`)**: High-legibility typographies mapped across the interface.
-- **Font Stack**: Sora for headings/numbers/buttons, JetBrains Mono for all labels, filenames, status text, and metadata, and Instrument Sans for body copy.
+- **Frontend**: Local HTML (`tax-litigation-suite.html`) styled dynamically with TailwindCSS, supporting smooth tab selections, collapsible terminals, active client states, progress tickers, and animations.
+- **Backend Bridge (`app_gui.py`)**: `pywebview` framework instantiating a local Python client, binding a `DesktopAPI` object directly to the Javascript `window.pywebview.api` scope.
+- **Playwright Threading**: Long-running notice check operations are dispatched on a background daemon thread to maintain visual framerates and response in the UI.
+- **Memory/Size footprint**: Kept to **84.5 MB** by avoiding bundling heavy packages and browsers.
 
 ---
 
-## 3. Sidebar Path Entry Fields ✅
+## ⚙️ Architecture Blueprint
 
-- Replaced the simple static path labels with fully interactive `CTkEntry` text fields.
-- Users can now see, edit, copy, or type paths directly, while still retaining the cyan/sky-blue Browse buttons for mouse-based path selection.
-
----
-
-## 4. Advanced Dashboard Tracker Cards ✅
-
-### Card A: Active Client Visual Tracker
-- Displays the client PAN and taxpayer name currently being crawled (e.g., `🏢 Scanning Account: Dharamvir Gupta (AAKPG3963E)`).
-- **Interactive Progress Bar**: Slim rounded teal progress bar (`#14B8A6`) showing a 20s countdown. Shows a single teal dot when idle/finished.
-- **Dynamic Fast-Forward Engine**: If the background crawler finishes downloads early, the timer and progress bar automatically animate rapidly (ticks at 15ms) to 100% / 0s, and resets for the next account.
-
-### Card B: Real-Time CSV Download Ledger
-- Scrollable ledger card with character-spaced header `"R E A L - T I M E   C S V   D O W N L O A D   L E D G E R"`.
-- Dynamically appends formatted items in real-time, detailing pool label (`[📁 AX Notice Pool]`, `[📁 BX Notice Pool]`, `[📁 AY External]`, `[📁 BY External]`), filenames, and right-aligned status badge — green dot `•` + `"Saved Successfully"`, amber dot `•` + `"No Records Found"`, or rose dot `•` + `"Download Failed"`, plus file size.
-
-### Card C: Collapsible Diagnostics Console
-- Technical logs (warnings, stack traces) are kept collapsed by default under `▶ Detailed System Logs (Technical Diagnostics)` to avoid screen clutter.
-- Expanding it reveals a small, monospaced JetBrains Mono output box with a deep black (`#060606`) background.
+```mermaid
+graph TD
+    A[HTML Frontend: tax-litigation-suite.html] -->|User clicks Start| B[pywebview Bridge]
+    B -->|Calls window.pywebview.api.start_notice_check| C[Python Controller: app_gui.py]
+    C -->|Spawns Thread| D[Playwright Scraper: Try_1_IncomeTax.py]
+    D -->|Prints stdout| E[JSLogRedirector Class]
+    E -->|Regex Matches & evaluate_js| A
+    E -->|Appends logs| A
+```
 
 ---
 
-## 5. Post-Run Master Reconciliation Card ✅
+## 1. Native API Bindings (`DesktopAPI`) ✅
 
-- On successful automation completion, the application plays a subtle system chime sound.
-- A card fades into view at the top of the workspace showing:
-  `✨ Workspace Check Completed. [X] New Notices / Updates flagged.`
-- Clicking the `📂 Open Flagged Notice Report (Excel)` button instantly launches the compiled spreadsheet `New_Notices_Flagged_Report.xlsx` in Microsoft Excel.
+The Python script exposes native operations to the browser window:
+- **`browse_credentials()`**: Spawns an isolated topmost `tkinter` file browser window to return the path to the selected `.xlsx` file registry.
+- **`browse_destination()`**: Spawns a native folder dialog to target the download workspace.
+- **`open_excel_report()`**: Uses Windows native launcher (`os.startfile`) to launch `New_Notices_Flagged_Report.xlsx` directly in Microsoft Excel on successful check runs.
 
 ---
 
-## 6. Compilation & Size Verification ✅
+## 2. Stdout Print Interception (`JSLogRedirector`) ✅
 
-- **Executable Location**: [dist\IncomeTaxNoticeChecker.exe](file:///d:/Projects/Python%20Projects%20Folder/Python/Projects/Income%20tax%20Litigation/dist/IncomeTaxNoticeChecker.exe)
-- **Binary Size**: **99.9 MB** (Fully within the 103MB size footprint constraint).
-- **Exclusion Filters**: Torch, SciPy, Matplotlib, etc. are aggressively stripped to keep the binary portable and lightweight.
-- **Verification**: Built successfully from Spec template.
+Instead of manual callback mapping, the script intercepts Python's stdout stream (`sys.stdout`) and matches terminal lines in real-time to drive frontend animations:
+- `Loaded {X] clients` ➔ updates client accounts count.
+- `🏢 STARTING CLIENT: [PAN]` ➔ transitions target client inventory card state.
+- `Scanning for login screen` / `Portal loaded!` ➔ drives Stage 1 Authentication progress bar increments (25%, 55%, 85%).
+- `Triggering download` ➔ starts estimated countdown tracker.
+- `✅ Successfully saved: [filename]` ➔ appends a green dot `• Saved Successfully` ledger entry row and fast-forwards progress.
+- `No active rows` ➔ appends an amber dot `• No Records Found` ledger entry.
+
+---
+
+## 3. Packaging & Footprint Audit ✅
+
+- **PyInstaller Command**:
+  ```bash
+  pyinstaller --noconfirm IncomeTaxNoticeChecker.spec
+  ```
+- **File Asset Bundling**: `tax-litigation-suite.html` is injected into the executable's virtual directory (`sys._MEIPASS`) at runtime.
+- **Bundle Bloat Exclusions**: Torch, SciPy, Matplotlib, PIL, PyArrow, NumPy, etc., are explicitly excluded from compilation.
+- **Binary Size**: **84.5 MB** (Safely below the 103MB size limit constraint).
+
+---
+
+## 4. GitHub Repository Synchronized ✅
+
+All files have been committed and pushed to the remote repository:
+- **Repository**: [harshgupta5309/income-tax-notice-checker](https://github.com/harshgupta5309/income-tax-notice-checker)
+- **Branch**: `main`
+- **Latest Commit**: `173f986` (Updated with HTML integration files)

@@ -10,7 +10,7 @@ added_files = [
 # Highly optimized exclusions list to prevent heavy, unused python packages from ballooning the app footprint
 bloat_exclusions = [
     'torch', 'torchvision', 'cv2', 'scipy', 'sklearn', 'matplotlib', 
-    'pyarrow', 'jupyter', 'ipython', 'PIL', 'numpy', 'numpy.core'
+    'pyarrow', 'jupyter', 'ipython', 'PIL'
 ]
 
 a = Analysis(

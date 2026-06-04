@@ -58,7 +58,7 @@ Instead of manual callback mapping, the script intercepts Python's stdout stream
   ```
 - **File Asset Bundling**: `tax-litigation-suite.html` is injected into the executable's virtual directory (`sys._MEIPASS`) at runtime.
 - **Bundle Bloat Exclusions**: Torch, SciPy, Matplotlib, PIL, PyArrow, NumPy, etc., are explicitly excluded from compilation.
-- **Binary Size**: **84.5 MB** (Safely below the 103MB size limit constraint).
+- **Binary Size**: **94.6 MB** (Fully within the 103MB size footprint constraint).
 
 ---
 

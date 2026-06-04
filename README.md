@@ -45,13 +45,13 @@ Your `Credentials.xlsx` must have exactly these column headers:
 ## Building the .exe
 
 ```bash
-pyinstaller --noconfirm --onefile --windowed \
-  --name "IncomeTaxNoticeChecker" \
-  --hidden-import=playwright \
-  --hidden-import=playwright.sync_api \
-  --hidden-import=playwright_stealth \
-  --hidden-import=openpyxl \
-  --hidden-import=xlsxwriter \
+pyinstaller --noconfirm --onefile --windowed ^
+  --name "IncomeTaxNoticeChecker" ^
+  --hidden-import=playwright ^
+  --hidden-import=playwright.sync_api ^
+  --hidden-import=playwright_stealth ^
+  --hidden-import=openpyxl ^
+  --hidden-import=xlsxwriter ^
   income_tax_gui.py
 ```
 

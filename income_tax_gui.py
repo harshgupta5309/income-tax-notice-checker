@@ -18,11 +18,64 @@ import re
 import io
 from datetime import datetime
 
+# ─────────────────────────────────────────────
+# PLAYWRIGHT BROWSER PATH CONFIGURATION FOR PORTABILITY
+# ─────────────────────────────────────────────
+def setup_playwright_browsers_path():
+    """Configures Playwright browser paths.
+    Returns:
+        tuple: (path_to_use, mode)
+    """
+    is_frozen = getattr(sys, "frozen", False)
+    
+    # 1. Check for pre-bundled browsers inside PyInstaller extraction temp folder
+    if is_frozen and hasattr(sys, "_MEIPASS"):
+        bundled_path = os.path.join(sys._MEIPASS, "playwright", "driver", "package", ".local-browsers")
+        executable_pattern = os.path.join(bundled_path, "**", "chrome*.exe")
+        if glob.glob(executable_pattern, recursive=True):
+            os.environ["PLAYWRIGHT_BROWSERS_PATH"] = "0"
+            return bundled_path, "bundled"
+
+    # Determine script or exe directory
+    if is_frozen:
+        app_dir = os.path.dirname(sys.executable)
+    else:
+        app_dir = os.path.dirname(os.path.abspath(__file__))
+
+    # 2. Check for local/portable browsers directory (same folder as exe/script)
+    local_path = os.path.join(app_dir, "ms-playwright")
+    if os.path.isdir(local_path):
+        executable_pattern = os.path.join(local_path, "**", "chrome*.exe")
+        if glob.glob(executable_pattern, recursive=True):
+            os.environ["PLAYWRIGHT_BROWSERS_PATH"] = local_path
+            return local_path, "portable"
+
+    # 3. Check for system-wide AppData browsers directory
+    system_path = os.path.join(
+        os.environ.get("LOCALAPPDATA", os.path.expanduser("~/AppData/Local")),
+        "ms-playwright"
+    )
+    
+    executable_pattern = os.path.join(system_path, "**", "chrome*.exe")
+    if glob.glob(executable_pattern, recursive=True):
+        os.environ["PLAYWRIGHT_BROWSERS_PATH"] = system_path
+        return system_path, "system_exist"
+
+    # 4. Default to system path (will trigger auto-install on launch failure)
+    os.environ["PLAYWRIGHT_BROWSERS_PATH"] = system_path
+    return system_path, "system_need_install"
+
+
+# Setup the path before importing Playwright
+BROWSERS_PATH, BROWSER_MODE = setup_playwright_browsers_path()
+
+# Delayed import of Playwright and Stealth to ensure environment variables are applied
 import pandas as pd
 from playwright.sync_api import sync_playwright
 from playwright_stealth import Stealth
 import customtkinter as ctk
 from tkinter import filedialog, END
+
 
 # ─────────────────────────────────────────────
 # PORTABLE PATH RESOLUTION
@@ -37,6 +90,65 @@ def get_app_dir():
 
 
 APP_DIR = get_app_dir()
+
+
+def check_or_install_browser():
+    """Checks if browser binaries are installed. If not, installs them."""
+    print("Checking for required browser binaries...")
+    
+    try:
+        # Attempt a dry launch of chromium in headless mode
+        with sync_playwright() as p:
+            browser = p.chromium.launch(headless=True)
+            browser.close()
+        print("✅ Browser binaries verified!")
+        return True
+    except Exception as e:
+        err_msg = str(e)
+        if "Executable doesn't exist" in err_msg or "playwright install" in err_msg.lower():
+            print("⚠️ Playwright browser binaries not found.")
+            print("🌐 Starting automatic browser download and installation...")
+            print("This may take 1-3 minutes depending on your internet connection.")
+            print("Please wait...")
+            
+            try:
+                import subprocess
+                from playwright.__main__ import compute_driver_executable, get_driver_env
+                
+                driver_executable, driver_cli = compute_driver_executable()
+                env = get_driver_env()
+                # Ensure the subprocess uses our configured path
+                env["PLAYWRIGHT_BROWSERS_PATH"] = os.environ.get("PLAYWRIGHT_BROWSERS_PATH")
+                
+                # Run the installer and print output in real-time
+                process = subprocess.Popen(
+                    [driver_executable, driver_cli, "install", "chromium"],
+                    stdout=subprocess.PIPE,
+                    stderr=subprocess.STDOUT,
+                    text=True,
+                    env=env,
+                    bufsize=1
+                )
+                
+                if process.stdout:
+                    for line in process.stdout:
+                        sys.stdout.write(line)
+                        sys.stdout.flush()
+                
+                process.wait()
+                
+                if process.returncode == 0:
+                    print("✅ Browser installed successfully!")
+                    return True
+                else:
+                    print(f"❌ Browser installation failed with exit code: {process.returncode}")
+                    return False
+            except Exception as install_err:
+                print(f"❌ Failed to run browser installer: {install_err}")
+                return False
+        else:
+            print(f"❌ Unexpected browser error: {e}")
+            return False
 
 # ─────────────────────────────────────────────
 # STDOUT REDIRECTOR  (thread-safe → Tk widget)
@@ -812,6 +924,12 @@ class App(ctk.CTk):
     def _worker(self):
         """Runs on a background thread."""
         try:
+            # First check if the browser is installed
+            if not check_or_install_browser():
+                print("\n❌ Notice check aborted: Playwright browser check/install failed.")
+                self.after(0, self._on_finished, False)
+                return
+
             base_dir = self._output_dir
             creds = self._credentials_path
             output_report = os.path.join(base_dir, "New_Notices_Flagged_Report.xlsx")

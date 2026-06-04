@@ -1,0 +1,29 @@
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+*.egg
+dist/
+build/
+*.spec
+
+# PyInstaller
+*.manifest
+
+# Virtual Environment
+venv/
+.env/
+
+# IDE
+.vscode/
+.idea/
+
+# Project data (do not commit credentials or reports)
+Credentials.xlsx
+*.csv
+New_Notices_Flagged_Report.xlsx
+Archive/
+
+# OS
+Thumbs.db
+.DS_Store

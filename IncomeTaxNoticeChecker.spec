@@ -2,12 +2,19 @@
 
 block_cipher = None
 
-# Asset additions configuration: Injecting our HTML UI file into the compiled extraction folder (_MEIPASS)
+# Inject our HTML file and required Playwright/Stealth assets into the executable runtime container (_MEIPASS)
+import os
+import playwright
+import playwright_stealth
+
 added_files = [
-    ('tax-litigation-suite.html', '.')
+    ('code.html', '.'),
+    (os.path.join(os.path.dirname(playwright.__file__), 'driver'), 'playwright/driver'),
+    (os.path.join(os.path.dirname(playwright_stealth.__file__), 'js'), 'playwright_stealth/js')
 ]
 
-# Highly optimized exclusions list to prevent heavy, unused python packages from ballooning the app footprint
+# Exclude unneeded dynamic link dependencies to preserve ~100MB target
+# Note: we do NOT exclude numpy/pandas because they are required by our automation reporting backend.
 bloat_exclusions = [
     'torch', 'torchvision', 'cv2', 'scipy', 'sklearn', 'matplotlib', 
     'pyarrow', 'jupyter', 'ipython', 'PIL'
@@ -18,7 +25,7 @@ a = Analysis(
     pathex=[],
     binaries=[],
     datas=added_files,
-    hiddenimports=['playwright', 'playwright-stealth', 'openpyxl', 'pandas', 'xlsxwriter'],
+    hiddenimports=['playwright', 'playwright_stealth', 'openpyxl', 'pandas', 'xlsxwriter', 'pyzipper', 'numpy'],
     hookspath=[],
     hooksconfig={},
     runtime_hooks=[],
@@ -38,14 +45,12 @@ exe = EXE(
     a.zipfiles,
     a.datas,
     [],
-    name='IncomeTaxNoticeChecker',
+    name='LitigationOS',
     debug=False,
     bootloader_ignore_signals=False,
     strip=False,
     upx=True,
-    upx_exclude=[],
-    runtime_tmpdir=None,
-    console=False,  # This hides the terminal window in production and runs the app in pure GUI mode!
+    console=False, # Hides cmd prompt. Launches the desktop frame cleanly in production GUI mode!
     disable_windowed_traceback=False,
     argv_emulation=False,
     target_arch=None,

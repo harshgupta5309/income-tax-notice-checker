@@ -1,0 +1,840 @@
+<!DOCTYPE html>
+
+<html lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Litigation OS | Neo-Classical Editorial</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com" rel="preconnect"/>
+<link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/>
+<link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&amp;family=Inter:wght@400;700;900&amp;family=JetBrains+Mono:wght@400;500;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<style>
+        :root {
+            --parchment: #EFECE6;
+            --ink: #1C1B19;
+            --muted-ink: rgba(28, 27, 25, 0.4);
+            --border-ink: rgba(28, 27, 25, 0.12);
+            --rust: #D14F36;
+            --emerald: #10B981;
+            --indigo: #3B82F6;
+            
+            --font-serif: 'DM Serif Display', serif;
+            --font-sans: 'Inter', sans-serif;
+            --font-mono: 'JetBrains Mono', monospace;
+        }
+
+        body {
+            background-color: var(--parchment);
+            color: var(--ink);
+            font-family: var(--font-sans);
+            -webkit-font-smoothing: antialiased;
+            overflow: hidden;
+            height: 100vh;
+        }
+
+        /* Typography */
+        .serif-title { font-family: var(--font-serif); font-weight: 400; letter-spacing: -0.01em; }
+        .serif-italic { font-family: var(--font-serif); font-style: italic; }
+        .accent-rust { color: var(--rust); }
+        .accent-emerald { color: var(--emerald); }
+        .accent-indigo { color: var(--indigo); }
+        
+        .sans-bold { font-family: var(--font-sans); font-weight: 900; letter-spacing: -0.04em; text-transform: uppercase; }
+        .mono-ledger { font-family: var(--font-mono); font-size: 11px; letter-spacing: -0.02em; }
+
+        /* Structural Framework */
+        .vector-border { border: 1px solid var(--ink); }
+        .vector-border-r { border-right: 1px solid var(--ink); }
+        .vector-border-l { border-left: 1px solid var(--ink); }
+        .vector-border-t { border-top: 1px solid var(--ink); }
+        .vector-border-b { border-bottom: 1px solid var(--ink); }
+
+        .crosshair::before, .crosshair::after {
+            content: '+';
+            position: absolute;
+            font-family: var(--font-mono);
+            font-size: 14px;
+            color: var(--ink);
+            opacity: 0.5;
+        }
+        .ch-tl::before { top: -8px; left: -6px; }
+        .ch-tr::after { top: -8px; right: -6px; }
+        .ch-bl::before { bottom: -10px; left: -6px; }
+        .ch-br::after { bottom: -10px; right: -6px; }
+
+        .main-grid {
+            display: grid;
+            grid-template-columns: 48px 1fr 48px;
+            height: 100vh;
+        }
+
+        .content-structure {
+            display: grid;
+            grid-template-rows: auto 1fr;
+            border-left: 1px solid var(--ink);
+            border-right: 1px solid var(--ink);
+        }
+
+        .vertical-label-container {
+            writing-mode: vertical-rl;
+            transform: rotate(180deg);
+            font-family: var(--font-mono);
+            font-size: 9px;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.3em;
+            color: var(--muted-ink);
+        }
+
+        /* Buttons & Cards */
+        .tab-pill {
+            font-family: var(--font-mono);
+            font-size: 10px;
+            font-weight: 700;
+            text-transform: uppercase;
+            padding: 6px 14px;
+            border: 1px solid var(--ink);
+            transition: all 0.2s;
+        }
+        .tab-active { 
+            background: var(--indigo); 
+            color: white; 
+            box-shadow: 2px 2px 0px var(--ink);
+            border-color: var(--ink);
+        }
+        .tab-inactive { color: var(--muted-ink); background: transparent; }
+        .tab-inactive:hover { color: var(--ink); background: white; }
+
+        .card-editorial {
+            background: transparent;
+            border: 1px solid var(--ink);
+            padding: 2rem;
+            transition: all 0.2s;
+            position: relative;
+        }
+        .card-editorial:hover {
+            background: white;
+            box-shadow: 4px 4px 0px var(--ink);
+            transform: translate(-2px, -2px);
+        }
+
+        .btn-rigid {
+            border: 1px solid var(--ink);
+            font-family: var(--font-mono);
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.1em;
+            transition: all 0.1s;
+        }
+        .btn-rigid:active {
+            box-shadow: none !important;
+            transform: translate(2px, 2px);
+        }
+
+        .btn-rust {
+            background: var(--rust);
+            color: white;
+            box-shadow: 2px 2px 0px var(--ink);
+        }
+
+        /* Statuses */
+        .status-stamp {
+            font-family: var(--font-mono);
+            font-size: 9px;
+            font-weight: 700;
+            padding: 2px 8px;
+            border: 1px solid var(--ink);
+            text-transform: uppercase;
+        }
+        .status-verified { border-color: var(--emerald); color: var(--emerald); }
+        .status-syncing { border-color: var(--indigo); color: var(--indigo); }
+        .status-mismatch { border-color: var(--rust); color: var(--rust); }
+
+        /* Progress Visuals */
+        .meter-container {
+            height: 12px;
+            background: #D9D6CF;
+            border: 1px solid var(--ink);
+            position: relative;
+            overflow: visible;
+        }
+        .meter-fill {
+            height: 100%;
+            background: var(--ink);
+            width: 0%;
+            transition: width 0.3s ease;
+            position: relative;
+        }
+        .meter-fill-rust { background: var(--rust); }
+
+        .mini-progress {
+            height: 2px;
+            background: var(--border-ink);
+            width: 100%;
+            margin-top: 4px;
+        }
+        .mini-progress-fill {
+            height: 100%;
+            background: var(--emerald);
+            width: 30%;
+        }
+
+        /* Technical Figure Animation */
+        .processing-agent {
+            position: absolute;
+            right: -16px;
+            bottom: 50%;
+            transform: translateY(50%);
+            width: 32px;
+            height: 32px;
+            pointer-events: none;
+            color: var(--ink);
+        }
+        .meter-fill-rust .processing-agent { color: var(--rust); }
+
+        /* Brutalist Directory Cards */
+        .directory-card {
+            border: 1.5px solid var(--ink);
+            border-radius: 20px;
+            padding: 1.5rem;
+            background: white;
+            transition: all 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+        }
+        .directory-card:hover {
+            box-shadow: 6px 6px 0px var(--ink);
+            transform: translate(-3px, -3px);
+        }
+
+        /* Drawer Overlay */
+        .drawer-overlay {
+            background: rgba(28, 27, 25, 0.4);
+            backdrop-filter: blur(2px);
+            z-index: 100;
+        }
+        .drawer-sheet {
+            background: var(--parchment);
+            border-left: 1px solid var(--ink);
+            transform: translateX(100%);
+            transition: transform 0.5s cubic-bezier(0.16, 1, 0.3, 1);
+        }
+        .drawer-sheet.active { transform: translateX(0); }
+
+        ::-webkit-scrollbar { width: 6px; border-left: 1px solid var(--ink); }
+        ::-webkit-scrollbar-thumb { background: var(--ink); }
+    </style><style>body { background-image: radial-gradient(var(--border-ink) 1px, transparent 0); background-size: 20px 20px; }</style>
+</head>
+<body>
+<div class="main-grid"><div class="absolute top-4 left-4 w-4 h-[1px] bg-ink/10 pointer-events-none"></div><div class="absolute top-4 left-4 w-[1px] h-4 bg-ink/10 pointer-events-none"></div><div class="absolute bottom-4 right-4 w-4 h-[1px] bg-ink/10 pointer-events-none"></div><div class="absolute bottom-4 right-4 w-[1px] h-4 bg-ink/10 pointer-events-none"></div>
+<!-- Left Frame Margin -->
+<aside class="flex flex-col items-center py-12 vertical-label-container gap-12 vector-border-r bg-white/20">
+<span class="">STATUS • PIPELINES • COMPLIANCE</span>
+<div class="h-24 w-1 bg-ink"></div>
+<span class="">SECURE • LOCAL-FIRST • ARCHIVE</span>
+</aside>
+<!-- Central Document Area -->
+<div class="content-structure overflow-hidden"><div class="absolute top-0 left-0 w-8 h-8 border-t border-l border-ink/20 pointer-events-none z-10"></div><div class="absolute top-0 right-0 w-8 h-8 border-t border-r border-ink/20 pointer-events-none z-10"></div><div class="absolute bottom-0 left-0 w-8 h-8 border-b border-l border-ink/20 pointer-events-none z-10"></div><div class="absolute bottom-0 right-0 w-8 h-8 border-b border-r border-ink/20 pointer-events-none z-10"></div>
+<!-- Header -->
+<header class="vector-border-b px-12 py-6 flex items-center justify-between bg-white/10">
+<div class="flex items-center gap-12">
+<div class="flex flex-col">
+<h1 class="sans-bold text-2xl leading-none">Litigation OS</h1>
+<span class="serif-italic text-sm text-rust">VOL. 04 • ISSUE N° 12</span>
+</div>
+<div class="hidden md:flex flex-col border-l border-ink pl-12" id="status-mount">
+<span class="mono-ledger text-[9px] uppercase font-bold text-muted-ink">System Readiness</span>
+<span class="mono-ledger font-bold text-ink uppercase" id="global-status-text">Engine Idle</span>
+<div class="mini-progress">
+<div class="mini-progress-fill"></div>
+</div>
+</div>
+</div>
+<div class="flex items-center gap-8">
+<nav class="flex gap-2">
+<button class="tab-pill tab-inactive" id="tab-op" onclick="switchTab('operational')">Operational Monitor</button>
+<button class="tab-pill tab-active" id="tab-lit" onclick="switchTab('litigation')">Litigation Suite</button>
+</nav>
+<button class="btn-rigid btn-rust px-8 py-3 text-[10px] flex items-center gap-4" id="sync-trigger">
+<span class="">Sync Notices</span>
+<span class="text-xs">→</span>
+</button>
+</div>
+</header>
+<!-- Main Workspace Body -->
+<main class="overflow-y-auto p-12 custom-scroll relative" id="workspace"><div class="absolute inset-0 flex items-center justify-center pointer-events-none opacity-[0.04] z-0 overflow-hidden"><svg class="text-ink" fill="none" height="800" stroke="currentColor" viewbox="0 0 100 100" width="600"><path d="M20 90 L80 90 M30 90 L30 30 M70 90 L70 30 M25 30 L75 30 M50 10 L50 30 M20 20 L80 20" stroke-width="0.5"></path><circle cx="50" cy="15" r="5" stroke-width="0.5"></circle><path d="M10 95 L90 95" stroke-width="1"></path></svg></div>
+<!-- Background Geometric Markers -->
+<div class="absolute top-8 left-8 crosshair ch-tl pointer-events-none"></div>
+<div class="absolute top-8 right-8 crosshair ch-tr pointer-events-none"></div>
+<div class="absolute bottom-8 left-8 crosshair ch-bl pointer-events-none"></div>
+<div class="absolute bottom-8 right-8 crosshair ch-br pointer-events-none"></div>
+<!-- VIEW: Litigation Suite -->
+<div class="max-w-7xl mx-auto space-y-16" id="view-litigation">
+<div class="flex items-end justify-between border-b border-ink pb-8 relative">
+<div>
+<h2 class="serif-title text-6xl">Audit <span class="serif-italic accent-indigo">Registry</span></h2>
+<p class="serif-italic text-xl text-muted-ink mt-2">Historical synchronization of institutional compliance profiles.</p>
+</div>
+<div class="w-32 h-32 border border-ink flex flex-col items-center justify-center text-center p-4 bg-white/30 box-shadow-[2px_2px_0px_var(--ink)]">
+<span class="mono-ledger text-[8px] font-bold border-b border-ink w-full mb-2 pb-1">RECORDS_V4</span>
+<span class="sans-bold text-3xl">155</span>
+<span class="mono-ledger text-[8px] mt-1 text-emerald font-bold">SHIPPABLE</span>
+</div>
+</div>
+<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+<!-- Client 1 -->
+<div class="card-editorial flex flex-col h-full bg-white/10">
+<div class="flex justify-between items-start mb-12">
+<h3 class="sans-bold text-xl leading-tight">Reliance<br/>Industries</h3>
+<span class="status-stamp status-verified">Verified</span>
+</div>
+<div class="space-y-6 flex-1 vector-border p-4 bg-[#F5F2EA]">
+<div class="flex flex-col">
+<span class="mono-ledger uppercase text-muted-ink font-bold mb-1">Index Code / PAN</span>
+<span class="mono-ledger text-lg font-bold">AAACR0000X</span>
+</div>
+<div class="flex flex-col border-t border-ink pt-4">
+<span class="mono-ledger uppercase text-muted-ink font-bold mb-1">Last Update</span>
+<span class="serif-italic text-lg">24th May, 2024</span>
+</div>
+</div>
+<button class="btn-rigid mt-8 w-full py-4 text-[10px] tracking-[0.2em] hover:bg-ink hover:text-parchment hover:shadow-[4px_4px_0px_var(--ink)]" onclick="openDrawer('Reliance Industries', 'AAACR0000X')">Open Dossier</button>
+</div>
+<!-- Client 2 -->
+<div class="card-editorial flex flex-col h-full bg-white/10">
+<div class="flex justify-between items-start mb-12">
+<h3 class="sans-bold text-xl leading-tight">Tata<br/>Consultancy</h3>
+<span class="status-stamp status-syncing">Syncing</span>
+</div>
+<div class="space-y-6 flex-1 vector-border p-4 bg-[#F5F2EA]">
+<div class="flex flex-col">
+<span class="mono-ledger uppercase text-muted-ink font-bold mb-1">Index Code / PAN</span>
+<span class="mono-ledger text-lg font-bold">AAACT1111Y</span>
+</div>
+<div class="flex flex-col border-t border-ink pt-4">
+<span class="mono-ledger uppercase text-muted-ink font-bold mb-1">Last Update</span>
+<span class="serif-italic text-lg">22nd May, 2024</span>
+</div>
+</div>
+<button class="btn-rigid mt-8 w-full py-4 text-[10px] tracking-[0.2em] hover:bg-ink hover:text-parchment hover:shadow-[4px_4px_0px_var(--ink)]" onclick="openDrawer('Tata Consultancy', 'AAACT1111Y')">Open Dossier</button>
+</div>
+<!-- Client 3 -->
+<div class="card-editorial flex flex-col h-full bg-white/10">
+<div class="flex justify-between items-start mb-12">
+<h3 class="sans-bold text-xl leading-tight">HDFC<br/>Bank Ltd</h3>
+<span class="status-stamp status-mismatch">Mismatch</span>
+</div>
+<div class="space-y-6 flex-1 vector-border p-4 bg-[#F5F2EA]">
+<div class="flex flex-col">
+<span class="mono-ledger uppercase text-muted-ink font-bold mb-1">Index Code / PAN</span>
+<span class="mono-ledger text-lg font-bold">AAACH2222Z</span>
+</div>
+<div class="flex flex-col border-t border-ink pt-4">
+<span class="mono-ledger uppercase text-muted-ink font-bold mb-1">Last Update</span>
+<span class="serif-italic text-lg">23rd May, 2024</span>
+</div>
+</div>
+<button class="btn-rigid mt-8 w-full py-4 text-[10px] tracking-[0.2em] hover:bg-ink hover:text-parchment hover:shadow-[4px_4px_0px_var(--ink)]" onclick="openDrawer('HDFC Bank', 'AAACH2222Z')">Open Dossier</button>
+</div>
+</div>
+</div>
+<!-- VIEW: Operational Monitor -->
+<div class="hidden max-w-7xl mx-auto space-y-12" id="view-operational">
+<div class="grid grid-cols-12 gap-0 vector-border">
+<!-- Pipeline Panel -->
+<div class="col-span-12 lg:col-span-5 p-12 vector-border-r bg-white/10 space-y-12">
+<div class="flex flex-col space-y-4">
+<h2 class="serif-title text-5xl">Extraction <span class="serif-italic accent-rust">Pipeline</span></h2>
+<p class="serif-italic text-lg text-muted-ink">Technical sequence for portal handshaking and JSON mapping.</p>
+</div>
+<div class="space-y-10 py-10 border-t border-ink border-dashed">
+<div>
+<div class="flex justify-between items-baseline mb-4">
+<span class="mono-ledger uppercase font-bold text-ink">I. Secure Authentication</span>
+<span class="mono-ledger font-bold" id="auth-val">0%</span>
+</div>
+<div class="meter-container">
+<div class="meter-fill" id="auth-bar">
+<div class="processing-agent">
+<svg viewbox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
+<style>
+    @keyframes detailed-pulse {
+      0%, 100% { transform: translateY(0) scale(1); opacity: 0.8; }
+      50% { transform: translateY(-5px) scale(1.05); opacity: 1; }
+    }
+    .figure-path {
+      fill: none;
+      stroke: currentColor;
+      stroke-width: 1.5;
+      stroke-linecap: round;
+      stroke-linejoin: round;
+      animation: detailed-pulse 2s infinite ease-in-out;
+    }
+    .gear {
+      transform-origin: center;
+      animation: spin 4s linear infinite;
+    }
+    @keyframes spin {
+      from { transform: rotate(0deg); }
+      to { transform: rotate(360deg); }
+    }
+  </style>
+<circle class="figure-path" cx="50" cy="30" r="8"></circle>
+<path class="figure-path" d="M50,38 L50,60 M50,45 L35,55 M50,45 L65,55 M50,60 L40,80 M50,60 L60,80"></path>
+<circle class="figure-path" cx="50" cy="50" r="45" stroke-dasharray="2 4"></circle>
+<g class="gear figure-path">
+<circle cx="50" cy="50" r="10"></circle>
+<path d="M50,35 L50,40 M65,50 L60,50 M50,65 L50,60 M35,50 L40,50"></path>
+</g>
+</svg>
+</div>
+</div>
+</div>
+</div>
+<div>
+<div class="flex justify-between items-baseline mb-4">
+<span class="mono-ledger uppercase font-bold text-ink">II. Notice Aggregation</span>
+<span class="mono-ledger font-bold" id="ext-val">Idle</span>
+</div>
+<div class="meter-container">
+<div class="meter-fill meter-fill-rust" id="ext-bar">
+<div class="processing-agent">
+<svg viewbox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
+<style>
+    @keyframes detailed-pulse {
+      0%, 100% { transform: translateY(0) scale(1); opacity: 0.8; }
+      50% { transform: translateY(-5px) scale(1.05); opacity: 1; }
+    }
+    .figure-path {
+      fill: none;
+      stroke: currentColor;
+      stroke-width: 1.5;
+      stroke-linecap: round;
+      stroke-linejoin: round;
+      animation: detailed-pulse 2s infinite ease-in-out;
+    }
+    .gear {
+      transform-origin: center;
+      animation: spin 4s linear infinite;
+    }
+    @keyframes spin {
+      from { transform: rotate(0deg); }
+      to { transform: rotate(360deg); }
+    }
+  </style>
+<circle class="figure-path" cx="50" cy="30" r="8"></circle>
+<path class="figure-path" d="M50,38 L50,60 M50,45 L35,55 M50,45 L65,55 M50,60 L40,80 M50,60 L60,80"></path>
+<circle class="figure-path" cx="50" cy="50" r="45" stroke-dasharray="2 4"></circle>
+<g class="gear figure-path">
+<circle cx="50" cy="50" r="10"></circle>
+<path d="M50,35 L50,40 M65,50 L60,50 M50,65 L50,60 M35,50 L40,50"></path>
+</g>
+</svg>
+</div>
+</div>
+</div>
+</div>
+</div>
+<!-- Technical Path Configuration -->
+<div class="space-y-6 pt-6 border-t border-ink">
+<h3 class="sans-bold text-xs tracking-widest text-muted-ink">Technical Path Configuration</h3>
+<div class="grid grid-cols-1 gap-4">
+<div class="directory-card flex items-center gap-4 cursor-pointer" id="btn-browse-creds">
+<div class="w-10 h-10 rounded-full bg-indigo-50 flex items-center justify-center border border-indigo-200">
+<span class="material-symbols-outlined text-indigo-500">folder_open</span>
+</div>
+<div class="flex flex-col">
+<span class="mono-ledger font-bold text-[10px] text-muted-ink uppercase">Credential Directory</span>
+<span class="mono-ledger text-xs text-ink" id="text-creds-path">Credentials.xlsx</span>
+</div>
+</div>
+<div class="directory-card flex items-center gap-4 cursor-pointer" id="btn-browse-dest">
+<div class="w-10 h-10 rounded-full bg-rust/5 flex items-center justify-center border border-rust/20">
+<span class="material-symbols-outlined text-rust">download</span>
+</div>
+<div class="flex flex-col">
+<span class="mono-ledger font-bold text-[10px] text-muted-ink uppercase">Download Destination</span>
+<span class="mono-ledger text-xs text-ink truncate max-w-[240px]" id="text-dest-path">D:/Downloaded_CSV_Notices</span>
+</div>
+</div>
+</div>
+</div>
+<div class="hidden p-8 border border-ink bg-rust/5 relative shadow-[4px_4px_0px_var(--rust)]" id="recon-card">
+<div class="absolute top-0 left-0 w-full h-1 bg-rust"></div>
+<p class="sans-bold text-rust text-lg mb-2">Notice Check Completed</p>
+<p class="serif-italic text-sm leading-relaxed mb-4">Notice comparison run has completed. Any changes or new notices are recorded in the Excel report.</p>
+<button class="btn-rigid px-6 py-2 bg-rust text-white mono-ledger font-bold hover:shadow-[3px_3px_0px_var(--ink)]">Open Flagged Notice Report</button>
+</div>
+</div>
+<!-- Ledger Panel -->
+<div class="col-span-12 lg:col-span-7 flex flex-col p-12">
+<div class="flex justify-between items-end border-b border-ink pb-4 mb-4">
+<span class="sans-bold text-sm">Transaction Ledger_V4</span>
+<span class="mono-ledger text-muted-ink">EST: 2024-05-24</span>
+</div>
+<div class="bg-white/40 vector-border flex-1 p-8 h-[500px] overflow-y-auto mono-ledger space-y-2 leading-relaxed text-muted-ink" id="ledger-body">
+<div class="italic">&gt;&gt;&gt; Awaiting initialization sequence...</div>
+</div>
+</div>
+</div>
+</div>
+</main>
+</div>
+<!-- Right Frame Margin -->
+<aside class="flex flex-col items-center py-12 vertical-label-container gap-12 vector-border-l bg-white/20">
+<span class="">LITIGATION OS • VOL. 04</span>
+<div class="h-24 w-1 bg-ink"></div>
+<span class="">ISSUE N° 12 • APACHE-2.0</span>
+</aside>
+</div>
+<!-- Dossier Modal Drawer -->
+<div class="fixed inset-0 drawer-overlay hidden opacity-0 transition-opacity duration-300" id="drawer-overlay" onclick="closeDrawer()"></div>
+<div class="fixed top-0 right-0 h-full w-[850px] drawer-sheet z-[101] flex flex-col" id="drawer-panel">
+<div class="p-12 vector-border-b bg-white/10 flex justify-between items-start">
+<div class="flex flex-col gap-2">
+<span class="mono-ledger font-bold text-rust uppercase border-b border-rust w-max pb-1 mb-2">Classification: Confidential</span>
+<h2 class="serif-title text-5xl" id="drawer-title">Client Ledger</h2>
+<p class="serif-italic text-muted-ink">Detailed extract of litigation history and pending <span class="accent-indigo">portal responses</span>.</p>
+</div>
+<div class="flex flex-col items-end gap-6">
+<button class="text-ink text-3xl font-light hover:rotate-90 transition-transform" onclick="closeDrawer()">✕</button>
+<div class="flex flex-col gap-3">
+<div class="flex gap-4">
+<button class="btn-rigid px-6 py-2 mono-ledger font-bold hover:bg-white hover:shadow-[3px_3px_0px_var(--ink)] bg-parchment" onclick="handleExport('CSV')">Download CSV</button>
+<button class="btn-rigid px-6 py-2 bg-ink text-parchment mono-ledger font-bold hover:shadow-[3px_3px_0px_var(--indigo)]" onclick="handleExport('PDF')">Export PDF Report</button>
+</div>
+<!-- Drawer Progress Bar -->
+<div class="w-full opacity-0 transition-opacity duration-300" id="drawer-progress-container">
+<div class="flex justify-between items-center mb-1">
+<span class="mono-ledger text-[9px] font-bold uppercase" id="drawer-progress-label">Generating...</span>
+<span class="mono-ledger text-[9px] font-bold" id="drawer-progress-val">0%</span>
+</div>
+<div class="meter-container h-2">
+<div class="meter-fill bg-indigo-500" id="drawer-progress-bar"></div>
+</div>
+</div>
+</div>
+</div>
+</div>
+<div class="flex-1 overflow-y-auto p-12 custom-scroll relative">
+<div class="absolute top-4 left-4 crosshair ch-tl opacity-20"></div>
+<div class="absolute top-4 right-4 crosshair ch-tr opacity-20"></div>
+<div class="vector-border p-1 bg-white">
+<table class="w-full text-left">
+<thead class="bg-ink text-parchment">
+<tr>
+<th class="px-6 py-3 mono-ledger font-bold uppercase">Notice DIN</th>
+<th class="px-6 py-3 mono-ledger font-bold uppercase">Proceeding</th>
+<th class="px-6 py-3 mono-ledger font-bold uppercase text-center">Section</th>
+<th class="px-6 py-3 mono-ledger font-bold uppercase text-right">Status</th>
+</tr>
+</thead>
+<tbody class="mono-ledger text-ink divide-y divide-ink">
+<tr class="hover:bg-indigo-50 transition-colors">
+<td class="px-6 py-4 font-bold">2024/ITC/99281</td>
+<td class="px-6 py-4 serif-italic">u/s 143(1) Assessment</td>
+<td class="px-6 py-4 text-center">143(1)</td>
+<td class="px-6 py-4 text-right"><span class="status-stamp status-verified">Submitted</span></td>
+</tr>
+<tr class="hover:bg-indigo-50 transition-colors">
+<td class="px-6 py-4 font-bold">2024/ITC/11029</td>
+<td class="px-6 py-4 serif-italic">TDS Mismatch Notice</td>
+<td class="px-6 py-4 text-center">154</td>
+<td class="px-6 py-4 text-right"><span class="status-stamp status-syncing">Action Req</span></td>
+</tr>
+<tr class="hover:bg-indigo-50 transition-colors">
+<td class="px-6 py-4 font-bold">2024/ITC/00122</td>
+<td class="px-6 py-4 serif-italic">Section 148A Inquiry</td>
+<td class="px-6 py-4 text-center">148A</td>
+<td class="px-6 py-4 text-right"><span class="status-stamp status-mismatch font-bold">New</span></td>
+</tr>
+</tbody>
+</table>
+</div>
+<div class="grid grid-cols-2 gap-0 mt-16 vector-border bg-white">
+<div class="flex flex-col gap-4 p-8 vector-border-r">
+<span class="mono-ledger uppercase text-muted-ink font-bold">Archive Integrity</span>
+<p class="serif-title text-4xl">1,402 <span class="serif-italic text-xl accent-emerald">Files Verified</span></p>
+</div>
+<div class="flex flex-col gap-4 p-8">
+<span class="mono-ledger uppercase text-muted-ink font-bold">Response Delta</span>
+<p class="serif-title text-4xl text-rust">04 <span class="serif-italic text-xl text-ink">Days Remaining</span></p>
+</div>
+</div>
+<div class="mt-20 opacity-5 flex justify-center pb-12">
+<svg fill="none" height="200" viewbox="0 0 400 200" width="400" xmlns="http://www.w3.org/2000/svg">
+<rect height="150" stroke="black" stroke-width="2" width="100" x="150" y="50"></rect>
+<circle cx="200" cy="50" r="40" stroke="black" stroke-width="2"></circle>
+<path d="M100 190 H300" stroke="black" stroke-width="4"></path>
+</svg>
+</div>
+</div>
+</div>
+<script>
+        function switchTab(view) {
+            const opView = document.getElementById('view-operational');
+            const litView = document.getElementById('view-litigation');
+            const opTab = document.getElementById('tab-op');
+            const litTab = document.getElementById('tab-lit');
+
+            if (view === 'operational') {
+                opView.classList.remove('hidden');
+                litView.classList.add('hidden');
+                opTab.classList.add('tab-active');
+                opTab.classList.remove('tab-inactive');
+                litTab.classList.remove('tab-active');
+                litTab.classList.add('tab-inactive');
+            } else {
+                opView.classList.add('hidden');
+                litView.classList.remove('hidden');
+                litTab.classList.add('tab-active');
+                litTab.classList.remove('tab-inactive');
+                opTab.classList.remove('tab-active');
+                opTab.classList.add('tab-inactive');
+            }
+        }
+
+        function closeDrawer() {
+            const overlay = document.getElementById('drawer-overlay');
+            const panel = document.getElementById('drawer-panel');
+            
+            overlay.classList.remove('opacity-100');
+            panel.classList.remove('active');
+            setTimeout(() => overlay.classList.add('hidden'), 300);
+        }
+
+        async function handleExport(format) {
+            const btn = event.target;
+            const container = document.getElementById('drawer-progress-container');
+            const bar = document.getElementById('drawer-progress-bar');
+            const val = document.getElementById('drawer-progress-val');
+            
+            container.classList.remove('opacity-0');
+            btn.classList.add('opacity-50', 'pointer-events-none');
+            
+            for(let i=0; i<=100; i+=5) {
+                bar.style.width = i + "%";
+                val.innerText = i + "%";
+                await new Promise(r => setTimeout(r, 75));
+            }
+            
+            setTimeout(() => {
+                container.classList.add('opacity-0');
+                btn.classList.remove('opacity-50', 'pointer-events-none');
+                printToConsole(`DOCUMENT_PRINT_SUCCESS: ARCHIVE_${format}_GEN.pdf`, 'success');
+            }, 500);
+        }
+
+        let currentCountdownInterval = null;
+
+        document.addEventListener('DOMContentLoaded', () => {
+          // Enforce litigation tab active by default on startup
+          switchTab('litigation');
+
+          // Listen for the secure pywebview handshaking window initialization
+          window.addEventListener('pywebviewready', () => {
+            printToConsole("🔌 Secure pipeline handshake completed successfully! Litigation OS ready.", "success");
+            bindNativeInterface();
+          });
+        });
+
+        function bindNativeInterface() {
+          // Bind excel path picker
+          const pathButton = document.getElementById('btn-browse-creds');
+          if (pathButton) {
+            pathButton.addEventListener('click', async () => {
+              const selectedPath = await window.pywebview.api.browse_credentials();
+              if (selectedPath) {
+                document.getElementById('text-creds-path').innerText = selectedPath;
+                printToConsole(`📁 Excel registry updated: ${selectedPath}`, 'info');
+              }
+            });
+          }
+
+          // Bind destination folder picker
+          const destButton = document.getElementById('btn-browse-dest');
+          if (destButton) {
+            destButton.addEventListener('click', async () => {
+              const selectedPath = await window.pywebview.api.browse_destination();
+              if (selectedPath) {
+                document.getElementById('text-dest-path').innerText = selectedPath;
+                printToConsole(`🎯 Target destination configured: ${selectedPath}`, 'info');
+              }
+            });
+          }
+
+          // Bind post-run excel report button
+          const alertBtn = document.getElementById('recon-card').querySelector('button');
+          if (alertBtn) {
+            alertBtn.addEventListener('click', async () => {
+              const launchState = await window.pywebview.api.open_excel_report();
+              if (launchState.success) {
+                printToConsole("✅ Successfully opened Notice Reconciliation spreadsheet.", "success");
+              } else {
+                printToConsole(`🚨 Excel open failed: ${launchState.error}`, "error");
+              }
+            });
+          }
+
+          // Bind Start Notice Check
+          const startBtn = document.getElementById('sync-trigger');
+          if (startBtn) {
+            startBtn.addEventListener('click', async () => {
+              const credsFile = document.getElementById('text-creds-path').innerText;
+              const targetFolder = document.getElementById('text-dest-path').innerText;
+
+              if (!credsFile || credsFile === "Credentials.xlsx" || credsFile === "Not Configured") {
+                printToConsole("⚠️ Action Blocked: Please load a valid credentials.xlsx spreadsheet first!", "error");
+                return;
+              }
+
+              if (!targetFolder || targetFolder === "Not Configured") {
+                printToConsole("⚠️ Action Blocked: Please configure a valid target destination folder!", "error");
+                return;
+              }
+
+              // Call async Python thread
+              const response = await window.pywebview.api.start_notice_check(credsFile, targetFolder);
+              if (response.success) {
+                // Transition UI to locked crawling states
+                startBtn.disabled = true;
+                startBtn.classList.add('opacity-40', 'cursor-not-allowed');
+                document.getElementById('global-status-text').innerText = "Sync Active";
+                printToConsole("🔥 Automation worker threads dispatched cleanly.", "info");
+                
+                // Wipe old logs and switch view to the monitor tab
+                document.getElementById('ledger-body').innerHTML = '';
+                switchTab('operational');
+              } else {
+                printToConsole(`🚨 Core failure: ${response.error}`, 'error');
+              }
+            });
+          }
+        }
+
+        async function openDrawer(clientName, pan) {
+          const overlay = document.getElementById('drawer-overlay');
+          const panel = document.getElementById('drawer-panel');
+          document.getElementById('drawer-title').innerText = clientName;
+          
+          overlay.classList.remove('hidden');
+          setTimeout(() => overlay.classList.add('opacity-100'), 10);
+          panel.classList.add('active');
+
+          // Query Python database dynamically
+          const responseJson = await window.pywebview.api.get_client_notices(pan);
+          const data = JSON.parse(responseJson);
+
+          const tbody = document.querySelector('#drawer-panel table tbody');
+          tbody.innerHTML = ''; // Wipe stale traces
+
+          if (!data.notices || data.notices.length === 0) {
+            tbody.innerHTML = `<tr><td colspan="4" class="px-6 py-8 text-center text-muted-ink italic font-serif">No notices recovered on disk. Sync required.</td></tr>`;
+            return;
+          }
+
+          // Inject real notice rows
+          data.notices.forEach(notice => {
+            const row = document.createElement('tr');
+            row.className = 'hover:bg-indigo-50 transition-colors border-b border-ink';
+            
+            const badgeClass = notice.status === 'SUBMITTED' ? 'status-verified' : 'status-mismatch';
+            
+            row.innerHTML = `
+              <td class="px-6 py-4 font-bold font-mono text-rust">${notice.din}</td>
+              <td class="px-6 py-4 serif-italic">${notice.proceeding}</td>
+              <td class="px-6 py-4 text-center font-mono">${notice.section}</td>
+              <td class="px-6 py-4 text-right"><span class="status-stamp ${badgeClass}">${notice.status}</span></td>
+            `;
+            tbody.appendChild(row);
+          });
+        }
+
+        // Dom element reference variables
+        const authBar = document.getElementById('auth-bar');
+        const authVal = document.getElementById('auth-val');
+        const authLabel = document.getElementById('global-status-text');
+
+        const extBar = document.getElementById('ext-bar');
+        const extVal = document.getElementById('ext-val');
+
+        function printToConsole(msg, type = 'info') {
+          const body = document.getElementById('ledger-body');
+          if (!body) return;
+
+          // CRITICAL V8 MEMORY DEFENSE: Cap DOM log nodes to stop Exit Code 134 stalls
+          if (body.children.length > 150) {
+            body.removeChild(body.lastChild);
+          }
+
+          const line = document.createElement('div');
+          const time = new Date().toLocaleTimeString([], { hour12: false });
+          line.className = "opacity-0 transition-opacity duration-700 border-b border-ink pb-2 mt-2";
+          
+          const textClass = type === 'success' ? 'text-indigo-600 font-bold' : (type === 'error' ? 'text-rust font-bold' : 'text-ink');
+          line.innerHTML = `<span class="text-ink/30">[${time}]</span> <span class="${textClass}">>> ${msg}</span>`;
+          body.prepend(line);
+          setTimeout(() => line.classList.remove('opacity-0'), 50);
+        }
+
+        function updateLoadedClientsCount(count) {
+          printToConsole(`✨ Process loaded ${count} client records from Credentials Sheet.`, 'success');
+        }
+
+        function onClientCycleStarted(pan) {
+          printToConsole(`🔄 Dispatching scraping agent context for taxpayer: ${pan}`, 'info');
+          // Reset Stage 2 extraction progress bar
+          extBar.style.width = '0%';
+          extVal.innerText = 'Syncing...';
+        }
+
+        function updateAuthProgressBar(percent, message) {
+          if (authBar) authBar.style.width = percent + '%';
+          if (authVal) authVal.innerText = percent + '%';
+          if (authLabel) {
+            authLabel.innerText = message;
+          }
+          if (percent === 100) {
+            printToConsole("✅ Portal authentication validated successfully.", "success");
+          }
+        }
+
+        function onExtractionStarted(fileId) {
+          printToConsole(`📥 Requesting package extraction download for target pool: ${fileId}...`, 'info');
+        }
+
+        function onFileDownloaded(poolType, filename, success) {
+          // Set Extraction bar to complete dynamically
+          if (extBar) extBar.style.width = '100%';
+          if (extVal) extVal.innerText = 'Completed';
+          
+          if (success) {
+            printToConsole(`💾 Download Complete: Pool ${poolType} -> File saved as ${filename}`, 'success');
+          } else {
+            printToConsole(`⚠️ Warning: Pool ${poolType} indicated no new active notices.`, 'warning');
+          }
+        }
+
+        function onNativeAutomationComplete() {
+          const btn = document.getElementById('sync-trigger');
+          const statusText = document.getElementById('global-status-text');
+          
+          if (btn) {
+            btn.classList.remove('opacity-40', 'pointer-events-none', 'cursor-not-allowed');
+            btn.disabled = false;
+          }
+          if (statusText) {
+            statusText.innerText = "Engine Idle";
+          }
+          
+          document.getElementById('recon-card').classList.remove('hidden');
+          printToConsole("✨ Synchronisation cycle completed. Output archives finalized.", "success");
+        }
+
+        function onNativeAutomationError(errorText) {
+          onNativeAutomationComplete();
+          printToConsole(`🚨 PIPELINE AUTOMATION RUNTIME FAILURE: ${errorText}`, 'error');
+        }
+
+        window.addEventListener('keydown', (e) => { if (e.key === 'Escape') closeDrawer(); });
+    </script>
+</body></html>

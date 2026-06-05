@@ -436,8 +436,8 @@
       const line = document.createElement('div');
       const time = new Date().toISOString().split('T')[1].slice(0,-1);
       line.innerHTML = `<span class="text-muted/40">[${time}]</span> <span class="${type === 'error' ? 'text-danger' : 'text-ink/90'}">${msg}</span>`;
-      consoleContainer.appendChild(line);
-      consoleContainer.scrollTop = consoleContainer.scrollHeight;
+      consoleContainer.prepend(line);
+      consoleContainer.scrollTop = 0;
     }
 
     function appendLedger(pool, filename, success) {
@@ -455,8 +455,8 @@
           <span class="text-[9px] font-bold tracking-widest uppercase border px-2.5 py-1.5 rounded-sm ${badgeClass}">${badgeText}</span>
         </div>
       `;
-      ledgerContainer.appendChild(row);
-      ledgerContainer.scrollTop = ledgerContainer.scrollHeight;
+      ledgerContainer.prepend(row);
+      ledgerContainer.scrollTop = 0;
     }
 
     // --- HTML / Python Bridge Binders & Callbacks ---

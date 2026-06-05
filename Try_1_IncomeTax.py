@@ -1,18 +1,24 @@
 import os
 import sys
 
-# Detect if running as compiled PyInstaller EXE or raw script
+# Determine if the application is running as a compiled PyInstaller binary
 if getattr(sys, 'frozen', False):
-    # Directory where the .exe is running
+    # Directory of the compiled standalone .exe
     APP_DIR = os.path.dirname(sys.executable)
+    # PyInstaller temporary extraction folder containing bundled assets
+    HTML_PATH = os.path.join(sys._MEIPASS, "code.html")
 else:
+    # Running in a standard local python interpreter
     APP_DIR = os.path.dirname(os.path.abspath(__file__))
+    HTML_PATH = os.path.join(APP_DIR, "code.html")
 
-# Establish a portable local folder adjacent to the EXE
-PORTABLE_BROWSER_DIR = os.path.join(APP_DIR, "ms-playwright")
+# Enforce our dynamic portable root output directories
+BASE_DIR = os.path.join(APP_DIR, "Income_tax_folder")
+os.makedirs(BASE_DIR, exist_ok=True)
 
-# Force Playwright to use our local folder for storing and reading drivers/browsers
-os.environ["PLAYWRIGHT_BROWSERS_PATH"] = PORTABLE_BROWSER_DIR
+# Force Playwright's browser context to remain entirely inside a local subfolder
+# This prevents the app from needing admin rights to write to %LOCALAPPDATA%
+os.environ["PLAYWRIGHT_BROWSERS_PATH"] = os.path.join(APP_DIR, "ms-playwright")
 
 import glob
 import shutil
@@ -29,9 +35,8 @@ from playwright_stealth import Stealth
 # ─────────────────────────────────────────────
 # CONFIGURATION & PORTABLE PATH RESOLUTION
 # ─────────────────────────────────────────────
-BASE_DIR = APP_DIR
 OUTPUT_REPORT = os.path.join(BASE_DIR, "New_Notices_Flagged_Report.xlsx")
-CREDENTIALS_FILE = os.path.join(BASE_DIR, "Credentials.xlsx")
+CREDENTIALS_FILE = os.path.join(APP_DIR, "Credentials.xlsx")
 
 
 # ─────────────────────────────────────────────
@@ -261,7 +266,9 @@ def get_latest_and_prev_files(pan, file_id):
 
 # --- MAIN AUTOMATION LOGIC ---
 
-def run_multi_client_downloads(vault_manager):
+def run_multi_client_downloads(vault_manager=None):
+    if vault_manager is None:
+        vault_manager = SecureVaultManager(BASE_DIR)
     if not os.path.exists(BASE_DIR):
         os.makedirs(BASE_DIR)
 

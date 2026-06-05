@@ -205,9 +205,10 @@ class DesktopAPI:
             return {"success": True}
 
     def _run_automation_pipeline(self):
+        redirector = JSLogRedirector(self._window, self)
         try:
             # Safely hook print output streams to update the browser ledger interface
-            sys.stdout = JSLogRedirector(self._window, self)
+            sys.stdout = redirector
             
             # Configure logging to output to stdout
             import logging
@@ -234,6 +235,10 @@ class DesktopAPI:
             self._window.evaluate_js(f"onNativeAutomationError('{str(e)}')")
         finally:
             sys.stdout = sys.__stdout__ # Reset print redirects back to default output
+            # Write the complete execution log to the vault at the end of the run to prevent file lock contention
+            if redirector.log_buffer:
+                log_content = "\n".join(redirector.log_buffer) + "\n"
+                self.write_to_secure_vault("run_execution.log", log_content.encode('utf-8'))
 
     def get_client_notices(self, pan):
         """Reads local CSV files to feed notice listings dynamically to the slide-out drawers"""
@@ -274,6 +279,7 @@ class JSLogRedirector:
     def __init__(self, window, api_ref):
         self.window = window
         self.api_ref = api_ref
+        self.log_buffer = []
 
     def write(self, string):
         if string.strip():
@@ -284,9 +290,9 @@ class JSLogRedirector:
             # Safely append console string inside JS
             self.window.evaluate_js(f"printToConsole('{clean_str}', 'info')")
             
-            # Back up logs continuously inside our secure, password-locked diagnostics zip
+            # Accumulate logs in memory buffer to prevent locks on diagnostics zip file
             log_time = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-            self.api_ref.write_to_secure_vault("run_execution.log", f"[{log_time}] {clean_str}\n".encode('utf-8'))
+            self.log_buffer.append(f"[{log_time}] {string.strip()}")
 
             # Parse terminal indicators to drive UI milestones
             if "Loaded" in string and "clients" in string:

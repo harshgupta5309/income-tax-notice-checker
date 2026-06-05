@@ -332,7 +332,16 @@ def run_multi_client_downloads(vault_manager=None):
             # Stage 2: OTP/Password Navigation
             try:
                 page.wait_for_selector("#passwordCheckBox-input", timeout=10000)
-                page.check("#passwordCheckBox-input", force=True)
+                try:
+                    # Click input directly without strict synchronous check assertion
+                    page.locator("#passwordCheckBox-input").click(force=True, timeout=5000)
+                except Exception:
+                    try:
+                        # Fallback to clicking label
+                        page.locator("label[for='passwordCheckBox-input']").click(timeout=5000)
+                    except Exception:
+                        # Standard check fallback
+                        page.check("#passwordCheckBox-input", force=True)
                 page.fill("#loginPasswordField", password)
                 page.keyboard.press("Tab")
             except Exception as e:

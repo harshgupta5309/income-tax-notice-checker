@@ -276,7 +276,7 @@
 </div>
 <div class="w-32 h-32 border border-ink flex flex-col items-center justify-center text-center p-4 bg-white/30 box-shadow-[2px_2px_0px_var(--ink)]">
 <span class="mono-ledger text-[8px] font-bold border-b border-ink w-full mb-2 pb-1">RECORDS_V4</span>
-<span class="sans-bold text-3xl">155</span>
+<span class="sans-bold text-3xl" id="total-records-count">0</span>
 <span class="mono-ledger text-[8px] mt-1 text-emerald font-bold">SHIPPABLE</span>
 </div>
 </div>
@@ -631,9 +631,25 @@
           switchTab('litigation');
 
           // Listen for the secure pywebview handshaking window initialization
-          window.addEventListener('pywebviewready', () => {
+          window.addEventListener('pywebviewready', async () => {
             printToConsole("🔌 Secure pipeline handshake completed successfully! Litigation OS ready.", "success");
             bindNativeInterface();
+
+            // Auto-load default credentials if present
+            try {
+              const defaultCredsJson = await window.pywebview.api.check_default_credentials();
+              const defaultCreds = JSON.parse(defaultCredsJson);
+              if (defaultCreds && defaultCreds.path) {
+                document.getElementById('text-creds-path').innerText = defaultCreds.path;
+                printToConsole(`📁 Auto-loaded credentials sheet: ${defaultCreds.path}`, 'success');
+                if (defaultCreds.clients && defaultCreds.clients.length > 0) {
+                  renderClientCards(defaultCreds.clients);
+                  updateLoadedClientsCount(defaultCreds.clients.length);
+                }
+              }
+            } catch (e) {
+              printToConsole(`⚠️ Auto-load credentials bypassed: ${e}`, 'info');
+            }
           });
         });
 
@@ -646,6 +662,21 @@
               if (selectedPath) {
                 document.getElementById('text-creds-path').innerText = selectedPath;
                 printToConsole(`📁 Excel registry updated: ${selectedPath}`, 'info');
+
+                // Fetch and render clients dynamically
+                try {
+                  const clientsJson = await window.pywebview.api.get_clients_from_registry(selectedPath);
+                  const clients = JSON.parse(clientsJson);
+                  if (clients && clients.length > 0) {
+                    renderClientCards(clients);
+                    updateLoadedClientsCount(clients.length);
+                  } else {
+                    renderClientCards([]);
+                    updateLoadedClientsCount(0);
+                  }
+                } catch (e) {
+                  printToConsole(`🚨 Failed to load clients: ${e}`, 'error');
+                }
               }
             });
           }
@@ -709,6 +740,42 @@
               }
             });
           }
+        }
+
+        function renderClientCards(clients) {
+          const grid = document.querySelector('#view-litigation .grid');
+          if (!grid) return;
+          grid.innerHTML = ''; // Clear hardcoded ones
+          
+          if (!clients || clients.length === 0) {
+            grid.innerHTML = `<div class="col-span-3 text-center py-12 text-muted-ink italic font-serif">No clients loaded. Please select a valid Credentials Excel sheet.</div>`;
+            return;
+          }
+
+          clients.forEach(client => {
+            const card = document.createElement('div');
+            card.className = 'card-editorial flex flex-col h-full bg-white/10';
+            card.id = `card-${client.pan}`;
+            
+            card.innerHTML = `
+              <div class="flex justify-between items-start mb-12">
+                <h3 class="sans-bold text-xl leading-tight truncate max-w-[180px]" title="${client.name}">${client.name}</h3>
+                <span class="status-stamp status-verified" id="status-${client.pan}">Idle</span>
+              </div>
+              <div class="space-y-6 flex-1 vector-border p-4 bg-[#F5F2EA]">
+                <div class="flex flex-col">
+                  <span class="mono-ledger uppercase text-muted-ink font-bold mb-1">Index Code / PAN</span>
+                  <span class="mono-ledger text-lg font-bold">${client.pan}</span>
+                </div>
+                <div class="flex flex-col border-t border-ink pt-4">
+                  <span class="mono-ledger uppercase text-muted-ink font-bold mb-1">Last Update</span>
+                  <span class="serif-italic text-lg" id="update-${client.pan}">Pending Sync</span>
+                </div>
+              </div>
+              <button class="btn-rigid mt-8 w-full py-4 text-[10px] tracking-[0.2em] hover:bg-ink hover:text-parchment hover:shadow-[4px_4px_0px_var(--ink)]" onclick="openDrawer('${client.name.replace(/'/g, "\\'")}', '${client.pan}')">Open Dossier</button>
+            `;
+            grid.appendChild(card);
+          });
         }
 
         async function openDrawer(clientName, pan) {
@@ -778,13 +845,22 @@
 
         function updateLoadedClientsCount(count) {
           printToConsole(`✨ Process loaded ${count} client records from Credentials Sheet.`, 'success');
+          const countEl = document.getElementById('total-records-count');
+          if (countEl) countEl.innerText = count;
         }
 
         function onClientCycleStarted(pan) {
           printToConsole(`🔄 Dispatching scraping agent context for taxpayer: ${pan}`, 'info');
           // Reset Stage 2 extraction progress bar
-          extBar.style.width = '0%';
-          extVal.innerText = 'Syncing...';
+          if (extBar) extBar.style.width = '0%';
+          if (extVal) extVal.innerText = 'Syncing...';
+
+          // Update card status stamp to "Syncing"
+          const statusEl = document.getElementById(`status-${pan}`);
+          if (statusEl) {
+            statusEl.innerText = "Syncing";
+            statusEl.className = "status-stamp status-syncing";
+          }
         }
 
         function updateAuthProgressBar(percent, message) {
@@ -814,7 +890,7 @@
           }
         }
 
-        function onNativeAutomationComplete() {
+        async function onNativeAutomationComplete() {
           const btn = document.getElementById('sync-trigger');
           const statusText = document.getElementById('global-status-text');
           
@@ -828,6 +904,35 @@
           
           document.getElementById('recon-card').classList.remove('hidden');
           printToConsole("✨ Synchronisation cycle completed. Output archives finalized.", "success");
+
+          // Query python backend to see which PANs had new notices or updates
+          try {
+            const flaggedPansJson = await window.pywebview.api.get_flagged_pans();
+            const flaggedPans = JSON.parse(flaggedPansJson);
+
+            // Update all client card statuses
+            const statusStamps = document.querySelectorAll('#view-litigation .status-stamp');
+            statusStamps.forEach(stamp => {
+              const pan = stamp.id.replace('status-', '');
+              const updateEl = document.getElementById(`update-${pan}`);
+              
+              // Update the timestamp text
+              if (updateEl) {
+                const dateStr = new Date().toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' });
+                updateEl.innerText = dateStr;
+              }
+
+              if (flaggedPans.includes(pan)) {
+                stamp.innerText = "Mismatch";
+                stamp.className = "status-stamp status-mismatch font-bold";
+              } else {
+                stamp.innerText = "Verified";
+                stamp.className = "status-stamp status-verified";
+              }
+            });
+          } catch (err) {
+            printToConsole(`⚠️ Status mapping warning: ${err}`, 'warning');
+          }
         }
 
         function onNativeAutomationError(errorText) {

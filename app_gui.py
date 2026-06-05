@@ -124,6 +124,64 @@ class DesktopAPI:
                 return {"success": False, "error": str(e)}
         return {"success": False, "error": f"Notice reconciliation spreadsheet not found."}
 
+    def get_clients_from_registry(self, credentials_path):
+        """Reads the Excel spreadsheet and returns a list of clients (Name and PAN)"""
+        if not os.path.exists(credentials_path):
+            return json.dumps([])
+        try:
+            import pandas as pd
+            df = pd.read_excel(credentials_path)
+            df.columns = df.columns.str.strip()
+            clients = []
+            for _, row in df.iterrows():
+                login_id = str(row.get('Login_ID', '')).strip()
+                name = str(row.get('Name', '')).strip()
+                if login_id:
+                    clients.append({
+                        "name": name if name else "Taxpayer",
+                        "pan": login_id
+                    })
+            return json.dumps(clients)
+        except Exception as e:
+            return json.dumps({"error": str(e)})
+
+    def check_default_credentials(self):
+        """Checks if Credentials.xlsx exists in the app folder and returns its path and client list"""
+        default_path = tax_backend.CREDENTIALS_FILE
+        if os.path.exists(default_path):
+            try:
+                import pandas as pd
+                df = pd.read_excel(default_path)
+                df.columns = df.columns.str.strip()
+                clients = []
+                for _, row in df.iterrows():
+                    login_id = str(row.get('Login_ID', '')).strip()
+                    name = str(row.get('Name', '')).strip()
+                    if login_id:
+                        clients.append({
+                            "name": name if name else "Taxpayer",
+                            "pan": login_id
+                        })
+                return json.dumps({"path": default_path, "clients": clients})
+            except Exception:
+                pass
+        return json.dumps({"path": "", "clients": []})
+
+    def get_flagged_pans(self):
+        """Reads the final report and returns a list of PANs that have flagged updates"""
+        report_path = tax_backend.OUTPUT_REPORT
+        if not os.path.exists(report_path):
+            return json.dumps([])
+        try:
+            import pandas as pd
+            df = pd.read_excel(report_path)
+            if 'PAN' in df.columns:
+                pans = df['PAN'].dropna().unique().tolist()
+                return json.dumps(pans)
+        except Exception:
+            pass
+        return json.dumps([])
+
     # --- AUTOMATION WORKER INTERFACE ---
     def start_notice_check(self, credentials_path, destination_path):
         """Spins up the Playwright scrapers inside a decoupled background daemon thread"""

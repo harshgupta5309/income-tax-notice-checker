@@ -321,7 +321,10 @@ def run_multi_client_downloads(vault_manager=None):
             
             # Stage 1: Login Form Injection
             try:
-                page.fill("#panAdhaarUserId", user_id)
+                page.locator("#panAdhaarUserId").click()
+                page.locator("#panAdhaarUserId").fill("")
+                page.locator("#panAdhaarUserId").press_sequentially(user_id, delay=50)
+                page.locator("#panAdhaarUserId").press("Tab")
                 page.locator('button.large-button-primary:has-text("Continue")').first.click()
             except Exception as e:
                 print(f"🚨 [CRITICAL ERROR] - Login form injection stage failed for {user_id}.")

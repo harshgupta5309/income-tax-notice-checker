@@ -298,6 +298,7 @@ def run_multi_client_downloads(vault_manager=None):
             print(f"\n{'=' * 50}")
             print(f"🏢 STARTING CLIENT: {user_id}")
             print(f"{'=' * 50}")
+            print("🔑 [STAGE-AUTH] - 25% - Login the portal")
 
             print(f"ℹ️ [INFO]  - Scanning for login screen for {user_id}...")
             
@@ -326,6 +327,7 @@ def run_multi_client_downloads(vault_manager=None):
                 page.locator("#panAdhaarUserId").press_sequentially(user_id, delay=50)
                 page.locator("#panAdhaarUserId").press("Tab")
                 page.locator('button.large-button-primary:has-text("Continue")').first.click()
+                print("🔑 [STAGE-AUTH] - 50% - Used ID and Continue Clicked")
             except Exception as e:
                 print(f"🚨 [CRITICAL ERROR] - Login form injection stage failed for {user_id}.")
                 capture_diagnostic_screenshot(page, user_id, "LOGIN_INJECT", vault_manager)
@@ -347,6 +349,7 @@ def run_multi_client_downloads(vault_manager=None):
                         page.check("#passwordCheckBox-input", force=True)
                 page.fill("#loginPasswordField", password)
                 page.keyboard.press("Tab")
+                print("🔑 [STAGE-AUTH] - 75% - Password Input and Login Clicked")
             except Exception as e:
                 print(f"🚨 [CRITICAL ERROR] - Password navigation stage failed for {user_id}.")
                 capture_diagnostic_screenshot(page, user_id, "PASSWORD_NAV", vault_manager)
@@ -396,6 +399,7 @@ def run_multi_client_downloads(vault_manager=None):
                     page.get_by_text("e-Proceedings", exact=True).click()
                     
                 page.wait_for_load_state("networkidle")
+                print("🔑 [STAGE-AUTH] - 100% - Portal loaded and Eproceedings Page has been opened")
             except Exception as e:
                 print(f"🚨 [CRITICAL ERROR] - Navigating to e-Proceedings stage failed for {user_id}.")
                 capture_diagnostic_screenshot(page, user_id, "EPROC_NAV", vault_manager)
@@ -409,6 +413,8 @@ def run_multi_client_downloads(vault_manager=None):
             except Exception:
                 taxpayer_name = str(row['Name']).strip() if pd.notna(row['Name']) else "Taxpayer"
 
+            print(f"👤 CLIENT_INFO: {user_id} | {taxpayer_name}")
+
             # AX Download
             try:
                 download_and_rename(page, user_id, taxpayer_name, "AX")
@@ -416,6 +422,7 @@ def run_multi_client_downloads(vault_manager=None):
                 print(f"🚨 [CRITICAL ERROR] - AX download stage failed for {user_id}.")
                 capture_diagnostic_screenshot(page, user_id, "AX_DOWNLOAD", vault_manager)
                 logging.exception(f"AX download stage failed for {user_id}")
+            print("📥 [STAGE-EXTRACTION] - 25% - AX File downloaded")
             
             # BX Download
             try:
@@ -426,6 +433,7 @@ def run_multi_client_downloads(vault_manager=None):
                 print(f"🚨 [CRITICAL ERROR] - BX download stage failed for {user_id}.")
                 capture_diagnostic_screenshot(page, user_id, "BX_DOWNLOAD", vault_manager)
                 logging.exception(f"BX download stage failed for {user_id}")
+            print("📥 [STAGE-EXTRACTION] - 50% - BX File downloaded")
             
             # AY Download
             try:
@@ -436,6 +444,7 @@ def run_multi_client_downloads(vault_manager=None):
                 print(f"🚨 [CRITICAL ERROR] - AY download stage failed for {user_id}.")
                 capture_diagnostic_screenshot(page, user_id, "AY_DOWNLOAD", vault_manager)
                 logging.exception(f"AY download stage failed for {user_id}")
+            print("📥 [STAGE-EXTRACTION] - 75% - AY File downloaded")
             
             # BY Download
             try:
@@ -449,7 +458,6 @@ def run_multi_client_downloads(vault_manager=None):
 
             processed_pans.append(user_id)
 
-
             try:
                 login_again_btn = page.locator('button.registerButton:has-text("Log In Again")')
                 login_again_btn.wait_for(state="visible", timeout=5000)
@@ -458,6 +466,7 @@ def run_multi_client_downloads(vault_manager=None):
             except:
                 print("Could not find 'Log In Again' button. Hard navigating back to login page...")
                 page.goto("https://eportal.incometax.gov.in/iec/foservices/#/login?language-code=en", wait_until="networkidle")
+            print("📥 [STAGE-EXTRACTION] - 100% - BY File downloaded and Logout completed")
 
         print("\nAll clients processed. Closing browser...")
         browser.close()

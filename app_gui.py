@@ -78,6 +78,39 @@ class DesktopAPI:
         except Exception:
             pass
 
+    # --- DIRECTORY PERSISTENCE SETTINGS HELPERS ---
+    def _save_settings(self, credentials_path=None, destination_path=None):
+        """Saves credentials_path and destination_path to settings.json inside APP_DIR"""
+        settings_path = os.path.join(APP_DIR, "settings.json")
+        settings = {}
+        if os.path.exists(settings_path):
+            try:
+                with open(settings_path, "r") as f:
+                    settings = json.load(f)
+            except Exception:
+                pass
+        if credentials_path is not None:
+            settings["credentials_path"] = credentials_path
+        if destination_path is not None:
+            settings["destination_path"] = destination_path
+        try:
+            with open(settings_path, "w") as f:
+                json.dump(settings, f, indent=4)
+        except Exception:
+            pass
+
+    def load_saved_settings(self):
+        """Exposed API to load saved paths from settings.json"""
+        settings_path = os.path.join(APP_DIR, "settings.json")
+        if os.path.exists(settings_path):
+            try:
+                with open(settings_path, "r") as f:
+                    settings = json.load(f)
+                return json.dumps(settings)
+            except Exception:
+                pass
+        return json.dumps({"credentials_path": "", "destination_path": ""})
+
     # --- NATIVE FILE/FOLDER PICKERS ---
     def browse_credentials(self):
         """Launches a topmost native file picker to select the client spreadsheet"""
@@ -90,7 +123,10 @@ class DesktopAPI:
                 filetypes=[("Excel Files", "*.xlsx")]
             )
             root.destroy()
-            return file_path if file_path else ""
+            if file_path:
+                self._save_settings(credentials_path=file_path)
+                return file_path
+            return ""
         except Exception as e:
             return f"Error: {str(e)}"
 
@@ -102,7 +138,10 @@ class DesktopAPI:
             root.attributes("-topmost", True)
             folder_path = filedialog.askdirectory(title="Configure Target Output Folder")
             root.destroy()
-            return folder_path if folder_path else ""
+            if folder_path:
+                self._save_settings(destination_path=folder_path)
+                return folder_path
+            return ""
         except Exception as e:
             return f"Error: {str(e)}"
 
@@ -304,14 +343,25 @@ class JSLogRedirector:
                 client_pan = string.split("🏢 STARTING CLIENT:")[-1].strip()
                 self.window.evaluate_js(f"onClientCycleStarted('{client_pan}')")
 
-            elif "Scanning for login screen" in string:
-                self.window.evaluate_js("updateAuthProgressBar(30, 'Searching for secure login portal form...')")
+            elif "🔑 [STAGE-AUTH] -" in string:
+                match = re.search(r'🔑 \[STAGE-AUTH\] -\s*(\d+)%\s*-\s*(.*)', string)
+                if match:
+                    pct = int(match.group(1))
+                    msg = match.group(2).strip()
+                    self.window.evaluate_js(f"updateAuthProgressBar({pct}, '{msg}')")
 
-            elif "✅ Portal loaded! Injecting credentials..." in string:
-                self.window.evaluate_js("updateAuthProgressBar(65, 'Decrypting and injecting password payload...')")
+            elif "📥 [STAGE-EXTRACTION] -" in string:
+                match = re.search(r'📥 \[STAGE-EXTRACTION\] -\s*(\d+)%\s*-\s*(.*)', string)
+                if match:
+                    pct = int(match.group(1))
+                    msg = match.group(2).strip()
+                    self.window.evaluate_js(f"updateExtractionProgressBar({pct}, '{msg}')")
 
-            elif "Navigating to e-Proceedings..." in string:
-                self.window.evaluate_js("updateAuthProgressBar(90, 'Opening secure e-Proceedings sector...')")
+            elif "👤 CLIENT_INFO:" in string:
+                parts = string.split("👤 CLIENT_INFO:")[-1].strip().split(" | ")
+                if len(parts) == 2:
+                    pan, name = parts[0].strip(), parts[1].strip()
+                    self.window.evaluate_js(f"onClientLoggedIn('{pan}', '{name}')")
 
             elif "Triggering download for ID:" in string:
                 file_id = string.split("Triggering download for ID:")[-1].strip()
@@ -322,11 +372,18 @@ class JSLogRedirector:
                 pool_match = re.search(r'_(AX|BX|AY|BY)_', file_info)
                 pool_type = pool_match.group(1) if pool_match else "Notice Pool"
                 self.window.evaluate_js(f"onFileDownloaded('{pool_type}', '{file_info}', true)")
+                self.window.evaluate_js(f"onFileStatusUpdated('{pool_type}', 'Downloaded', 'success')")
 
             elif "has no active rows" in string or "No Records Found" in string:
-                match = re.search(r'File (AX|BX|AY|BY) for', string)
+                match = re.search(r'File\s+(AX|BX|AY|BY)', string)
                 pool_type = match.group(1) if match else "Notice Pool"
                 self.window.evaluate_js(f"onFileDownloaded('{pool_type}', 'No records found on server.', false)")
+                self.window.evaluate_js(f"onFileStatusUpdated('{pool_type}', 'No Records', 'warning')")
+
+            elif "download stage failed for" in string:
+                match = re.search(r'(AX|BX|AY|BY) download stage failed for', string)
+                pool_type = match.group(1) if match else "Notice Pool"
+                self.window.evaluate_js(f"onFileStatusUpdated('{pool_type}', 'Failed', 'error')")
 
     def flush(self):
         pass

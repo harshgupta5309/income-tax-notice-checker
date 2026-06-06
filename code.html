@@ -183,15 +183,79 @@
         /* Technical Figure Animation */
         .processing-agent {
             position: absolute;
-            right: -16px;
-            bottom: 50%;
-            transform: translateY(50%);
-            width: 32px;
-            height: 32px;
+            right: -20px;
+            bottom: -14px;
+            width: 40px;
+            height: 40px;
             pointer-events: none;
             color: var(--ink);
+            overflow: visible;
         }
         .meter-fill-rust .processing-agent { color: var(--rust); }
+
+        @keyframes crawl-legs {
+            0%, 100% { transform: rotate(0deg); }
+            50% { transform: rotate(15deg); }
+        }
+        @keyframes crawl-legs-reverse {
+            0%, 100% { transform: rotate(0deg); }
+            50% { transform: rotate(-15deg); }
+        }
+        @keyframes bobbing {
+            0%, 100% { transform: translateY(0px); }
+            50% { transform: translateY(-3px); }
+        }
+        .crawler-body {
+            animation: bobbing 0.5s infinite ease-in-out;
+        }
+        .leg-left {
+            transform-origin: 40px 50px;
+            animation: crawl-legs 0.35s infinite ease-in-out;
+        }
+        .leg-right {
+            transform-origin: 60px 50px;
+            animation: crawl-legs-reverse 0.35s infinite ease-in-out;
+        }
+
+        /* Speech/Thought bubble */
+        .thought-bubble {
+            position: absolute;
+            bottom: 45px;
+            right: -50px;
+            width: 140px;
+            background: var(--ink);
+            color: var(--parchment);
+            padding: 5px 8px;
+            border-radius: 6px;
+            font-size: 8.5px;
+            line-height: 1.2;
+            text-align: center;
+            border: 1px solid var(--border-ink);
+            box-shadow: 2px 2px 6px rgba(0,0,0,0.25);
+            z-index: 10;
+            pointer-events: none;
+            font-family: var(--font-mono);
+            font-weight: 500;
+        }
+        .thought-bubble::after {
+            content: '';
+            position: absolute;
+            bottom: -5px;
+            left: 50%;
+            transform: translateX(-50%);
+            border-width: 5px 5px 0;
+            border-style: solid;
+            border-color: var(--ink) transparent;
+            display: block;
+            width: 0;
+        }
+        .meter-fill-rust .thought-bubble {
+            background: var(--rust);
+            border-color: var(--rust);
+        }
+        .meter-fill-rust .thought-bubble::after {
+            border-color: var(--rust) transparent;
+        }
 
         /* Brutalist Directory Cards */
         .directory-card {
@@ -355,36 +419,22 @@
 <div class="meter-container">
 <div class="meter-fill" id="auth-bar">
 <div class="processing-agent">
-<svg viewbox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
-<style>
-    @keyframes detailed-pulse {
-      0%, 100% { transform: translateY(0) scale(1); opacity: 0.8; }
-      50% { transform: translateY(-5px) scale(1.05); opacity: 1; }
-    }
-    .figure-path {
-      fill: none;
-      stroke: currentColor;
-      stroke-width: 1.5;
-      stroke-linecap: round;
-      stroke-linejoin: round;
-      animation: detailed-pulse 2s infinite ease-in-out;
-    }
-    .gear {
-      transform-origin: center;
-      animation: spin 4s linear infinite;
-    }
-    @keyframes spin {
-      from { transform: rotate(0deg); }
-      to { transform: rotate(360deg); }
-    }
-  </style>
-<circle class="figure-path" cx="50" cy="30" r="8"></circle>
-<path class="figure-path" d="M50,38 L50,60 M50,45 L35,55 M50,45 L65,55 M50,60 L40,80 M50,60 L60,80"></path>
-<circle class="figure-path" cx="50" cy="50" r="45" stroke-dasharray="2 4"></circle>
-<g class="gear figure-path">
-<circle cx="50" cy="50" r="10"></circle>
-<path d="M50,35 L50,40 M65,50 L60,50 M50,65 L50,60 M35,50 L40,50"></path>
-</g>
+<div class="thought-bubble" id="auth-bubble">Waking up scraping engines...</div>
+<svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
+  <line x1="30" y1="50" x2="15" y2="40" class="leg-left" stroke="currentColor" stroke-width="3.5" stroke-linecap="round"></line>
+  <line x1="70" y1="50" x2="85" y2="40" class="leg-right" stroke="currentColor" stroke-width="3.5" stroke-linecap="round"></line>
+  <line x1="28" y1="55" x2="10" y2="55" class="leg-left" stroke="currentColor" stroke-width="3.5" stroke-linecap="round"></line>
+  <line x1="72" y1="55" x2="90" y2="55" class="leg-right" stroke="currentColor" stroke-width="3.5" stroke-linecap="round"></line>
+  <line x1="32" y1="60" x2="18" y2="72" class="leg-left" stroke="currentColor" stroke-width="3.5" stroke-linecap="round"></line>
+  <line x1="68" y1="60" x2="82" y2="72" class="leg-right" stroke="currentColor" stroke-width="3.5" stroke-linecap="round"></line>
+  <circle cx="50" cy="55" r="22" class="crawler-body" fill="currentColor"></circle>
+  <circle cx="42" cy="48" r="4" fill="#ffffff"></circle>
+  <circle cx="58" cy="48" r="4" fill="#ffffff"></circle>
+  <circle cx="42" cy="48" r="2" fill="#000000"></circle>
+  <circle cx="58" cy="48" r="2" fill="#000000"></circle>
+  <circle cx="38" cy="54" r="2" fill="#ff9999"></circle>
+  <circle cx="62" cy="54" r="2" fill="#ff9999"></circle>
+  <path d="M46,55 Q50,59 54,55" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"></path>
 </svg>
 </div>
 </div>
@@ -393,41 +443,27 @@
 <div>
 <div class="flex justify-between items-baseline mb-4">
 <span class="mono-ledger uppercase font-bold text-ink">II. Notice Aggregation</span>
-<span class="mono-ledger font-bold" id="ext-val">Idle</span>
+<span class="mono-ledger font-bold" id="ext-val">0%</span>
 </div>
 <div class="meter-container">
 <div class="meter-fill meter-fill-rust" id="ext-bar">
 <div class="processing-agent">
-<svg viewbox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
-<style>
-    @keyframes detailed-pulse {
-      0%, 100% { transform: translateY(0) scale(1); opacity: 0.8; }
-      50% { transform: translateY(-5px) scale(1.05); opacity: 1; }
-    }
-    .figure-path {
-      fill: none;
-      stroke: currentColor;
-      stroke-width: 1.5;
-      stroke-linecap: round;
-      stroke-linejoin: round;
-      animation: detailed-pulse 2s infinite ease-in-out;
-    }
-    .gear {
-      transform-origin: center;
-      animation: spin 4s linear infinite;
-    }
-    @keyframes spin {
-      from { transform: rotate(0deg); }
-      to { transform: rotate(360deg); }
-    }
-  </style>
-<circle class="figure-path" cx="50" cy="30" r="8"></circle>
-<path class="figure-path" d="M50,38 L50,60 M50,45 L35,55 M50,45 L65,55 M50,60 L40,80 M50,60 L60,80"></path>
-<circle class="figure-path" cx="50" cy="50" r="45" stroke-dasharray="2 4"></circle>
-<g class="gear figure-path">
-<circle cx="50" cy="50" r="10"></circle>
-<path d="M50,35 L50,40 M65,50 L60,50 M50,65 L50,60 M35,50 L40,50"></path>
-</g>
+<div class="thought-bubble" id="ext-bubble">Ready to pull notice archives...</div>
+<svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
+  <line x1="30" y1="50" x2="15" y2="40" class="leg-left" stroke="currentColor" stroke-width="3.5" stroke-linecap="round"></line>
+  <line x1="70" y1="50" x2="85" y2="40" class="leg-right" stroke="currentColor" stroke-width="3.5" stroke-linecap="round"></line>
+  <line x1="28" y1="55" x2="10" y2="55" class="leg-left" stroke="currentColor" stroke-width="3.5" stroke-linecap="round"></line>
+  <line x1="72" y1="55" x2="90" y2="55" class="leg-right" stroke="currentColor" stroke-width="3.5" stroke-linecap="round"></line>
+  <line x1="32" y1="60" x2="18" y2="72" class="leg-left" stroke="currentColor" stroke-width="3.5" stroke-linecap="round"></line>
+  <line x1="68" y1="60" x2="82" y2="72" class="leg-right" stroke="currentColor" stroke-width="3.5" stroke-linecap="round"></line>
+  <circle cx="50" cy="55" r="22" class="crawler-body" fill="currentColor"></circle>
+  <circle cx="42" cy="48" r="4" fill="#ffffff"></circle>
+  <circle cx="58" cy="48" r="4" fill="#ffffff"></circle>
+  <circle cx="42" cy="48" r="2" fill="#000000"></circle>
+  <circle cx="58" cy="48" r="2" fill="#000000"></circle>
+  <circle cx="38" cy="54" r="2" fill="#ff9999"></circle>
+  <circle cx="62" cy="54" r="2" fill="#ff9999"></circle>
+  <path d="M46,55 Q50,59 54,55" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"></path>
 </svg>
 </div>
 </div>
@@ -465,15 +501,65 @@
 <button class="btn-rigid px-6 py-2 bg-rust text-white mono-ledger font-bold hover:shadow-[3px_3px_0px_var(--ink)]">Open Flagged Notice Report</button>
 </div>
 </div>
-<!-- Ledger Panel -->
-<div class="col-span-12 lg:col-span-7 flex flex-col p-12">
-<div class="flex justify-between items-end border-b border-ink pb-4 mb-4">
-<span class="sans-bold text-sm">Transaction Ledger_V4</span>
-<span class="mono-ledger text-muted-ink">EST: 2024-05-24</span>
-</div>
-<div class="bg-white/40 vector-border flex-1 p-8 h-[500px] overflow-y-auto mono-ledger space-y-2 leading-relaxed text-muted-ink" id="ledger-body">
-<div class="italic">&gt;&gt;&gt; Awaiting initialization sequence...</div>
-</div>
+<!-- Ledger & Progress Panel -->
+<div class="col-span-12 lg:col-span-7 flex flex-col p-12 space-y-8">
+  <!-- Progress Window -->
+  <div class="bg-white/40 vector-border p-8 flex-1 flex flex-col space-y-6">
+    <div class="flex justify-between items-center border-b border-ink pb-3">
+      <span class="sans-bold text-sm uppercase tracking-wider">Progress window</span>
+      <span class="mono-ledger text-xs text-muted-ink" id="progress-client-pan">-</span>
+    </div>
+    
+    <!-- Active Client Info Box -->
+    <div class="flex items-center gap-4 py-4 bg-ink/5 px-6 rounded-md">
+      <span class="material-symbols-outlined text-3xl text-ink">account_circle</span>
+      <div class="flex flex-col">
+        <span class="mono-ledger font-bold text-[9px] uppercase text-muted-ink">Active Client Session</span>
+        <span class="serif-italic text-2xl text-ink" id="progress-client-name">Awaiting Start...</span>
+      </div>
+    </div>
+    
+    <!-- Download Statuses Grid -->
+    <div class="grid grid-cols-2 gap-4">
+      <div class="border border-ink/20 p-4 bg-white/50 rounded flex items-center justify-between transition-all" id="status-card-AX">
+        <span class="mono-ledger font-bold text-sm">AX File</span>
+        <span class="mono-ledger text-xs text-muted-ink" id="label-AX">Pending</span>
+      </div>
+      <div class="border border-ink/20 p-4 bg-white/50 rounded flex items-center justify-between transition-all" id="status-card-BX">
+        <span class="mono-ledger font-bold text-sm">BX File</span>
+        <span class="mono-ledger text-xs text-muted-ink" id="label-BX">Pending</span>
+      </div>
+      <div class="border border-ink/20 p-4 bg-white/50 rounded flex items-center justify-between transition-all" id="status-card-AY">
+        <span class="mono-ledger font-bold text-sm">AY File</span>
+        <span class="mono-ledger text-xs text-muted-ink" id="label-AY">Pending</span>
+      </div>
+      <div class="border border-ink/20 p-4 bg-white/50 rounded flex items-center justify-between transition-all" id="status-card-BY">
+        <span class="mono-ledger font-bold text-sm">BY File</span>
+        <span class="mono-ledger text-xs text-muted-ink" id="label-BY">Pending</span>
+      </div>
+    </div>
+    
+    <!-- Summary Success Box -->
+    <div class="mt-auto py-4 px-6 border border-dashed border-ink/30 italic text-center font-serif text-muted-ink bg-white/20 rounded transition-all" id="progress-summary-msg">
+      System idle. Waiting to initiate sync pipeline.
+    </div>
+  </div>
+
+  <!-- Collapsible Security Log -->
+  <div class="border border-ink bg-white/80 rounded shadow-sm flex flex-col overflow-hidden">
+    <button class="w-full flex justify-between items-center px-6 py-4 bg-ink text-parchment hover:bg-ink/90 transition-colors focus:outline-none" onclick="toggleSecurityLog()">
+      <div class="flex items-center gap-2">
+        <span class="material-symbols-outlined text-sm">terminal</span>
+        <span class="sans-bold text-xs uppercase tracking-wider">Security Log</span>
+      </div>
+      <span class="material-symbols-outlined text-sm" id="sec-log-toggle-icon">expand_more</span>
+    </button>
+    <div class="h-0 overflow-hidden transition-all duration-300 bg-white/40" id="sec-log-body-container">
+      <div class="p-6 h-[250px] overflow-y-auto mono-ledger space-y-2 leading-relaxed text-muted-ink text-xs border-t border-ink" id="ledger-body">
+        <div class="italic">&gt;&gt;&gt; Awaiting initialization sequence...</div>
+      </div>
+    </div>
+  </div>
 </div>
 </div>
 </div>
@@ -635,20 +721,49 @@
             printToConsole("🔌 Secure pipeline handshake completed successfully! Litigation OS ready.", "success");
             bindNativeInterface();
 
-            // Auto-load default credentials if present
+            // Auto-load saved settings
+            let hasLoadedSavedCreds = false;
             try {
-              const defaultCredsJson = await window.pywebview.api.check_default_credentials();
-              const defaultCreds = JSON.parse(defaultCredsJson);
-              if (defaultCreds && defaultCreds.path) {
-                document.getElementById('text-creds-path').innerText = defaultCreds.path;
-                printToConsole(`📁 Auto-loaded credentials sheet: ${defaultCreds.path}`, 'success');
-                if (defaultCreds.clients && defaultCreds.clients.length > 0) {
-                  renderClientCards(defaultCreds.clients);
-                  updateLoadedClientsCount(defaultCreds.clients.length);
+              const settingsJson = await window.pywebview.api.load_saved_settings();
+              const settings = JSON.parse(settingsJson);
+              if (settings) {
+                if (settings.credentials_path) {
+                  document.getElementById('text-creds-path').innerText = settings.credentials_path;
+                  printToConsole(`📁 Loaded saved credentials sheet: ${settings.credentials_path}`, 'success');
+                  hasLoadedSavedCreds = true;
+                  // Fetch and render clients dynamically
+                  const clientsJson = await window.pywebview.api.get_clients_from_registry(settings.credentials_path);
+                  const clients = JSON.parse(clientsJson);
+                  if (clients && clients.length > 0) {
+                    renderClientCards(clients);
+                    updateLoadedClientsCount(clients.length);
+                  }
+                }
+                if (settings.destination_path) {
+                  document.getElementById('text-dest-path').innerText = settings.destination_path;
+                  printToConsole(`🎯 Loaded saved destination folder: ${settings.destination_path}`, 'success');
                 }
               }
             } catch (e) {
-              printToConsole(`⚠️ Auto-load credentials bypassed: ${e}`, 'info');
+              printToConsole(`⚠️ Load settings failed: ${e}`, 'info');
+            }
+
+            if (!hasLoadedSavedCreds) {
+              // Auto-load default credentials if present
+              try {
+                const defaultCredsJson = await window.pywebview.api.check_default_credentials();
+                const defaultCreds = JSON.parse(defaultCredsJson);
+                if (defaultCreds && defaultCreds.path) {
+                  document.getElementById('text-creds-path').innerText = defaultCreds.path;
+                  printToConsole(`📁 Auto-loaded credentials sheet: ${defaultCreds.path}`, 'success');
+                  if (defaultCreds.clients && defaultCreds.clients.length > 0) {
+                    renderClientCards(defaultCreds.clients);
+                    updateLoadedClientsCount(defaultCreds.clients.length);
+                  }
+                }
+              } catch (e) {
+                printToConsole(`⚠️ Auto-load credentials bypassed: ${e}`, 'info');
+              }
             }
           });
         });
@@ -742,7 +857,9 @@
           }
         }
 
+        let localClients = [];
         function renderClientCards(clients) {
+          localClients = clients;
           const grid = document.querySelector('#view-litigation .grid');
           if (!grid) return;
           grid.innerHTML = ''; // Clear hardcoded ones
@@ -849,11 +966,58 @@
           if (countEl) countEl.innerText = count;
         }
 
+        function toggleSecurityLog() {
+          const container = document.getElementById('sec-log-body-container');
+          const icon = document.getElementById('sec-log-toggle-icon');
+          if (container.style.height === '250px') {
+            container.style.height = '0';
+            icon.innerText = 'expand_more';
+          } else {
+            container.style.height = '250px';
+            icon.innerText = 'expand_less';
+          }
+        }
+
         function onClientCycleStarted(pan) {
           printToConsole(`🔄 Dispatching scraping agent context for taxpayer: ${pan}`, 'info');
-          // Reset Stage 2 extraction progress bar
+          
+          const client = localClients.find(c => c.pan === pan);
+          const name = client ? client.name : "Taxpayer";
+          
+          // Reset progress window for new client
+          document.getElementById('progress-client-pan').innerText = pan;
+          document.getElementById('progress-client-name').innerText = name;
+          
+          // Reset file status labels
+          ['AX', 'BX', 'AY', 'BY'].forEach(pool => {
+            const lbl = document.getElementById(`label-${pool}`);
+            if (lbl) {
+              lbl.innerText = 'Pending';
+              lbl.className = 'mono-ledger text-xs text-muted-ink';
+            }
+            const card = document.getElementById(`status-card-${pool}`);
+            if (card) {
+              card.className = 'border border-ink/20 p-4 bg-white/50 rounded flex items-center justify-between transition-all';
+            }
+          });
+          
+          document.getElementById('progress-summary-msg').innerText = `Authenticating client ${name} (${pan})...`;
+          document.getElementById('progress-summary-msg').className = 'mt-auto py-4 px-6 border border-dashed border-ink/30 italic text-center font-serif text-muted-ink bg-white/20 rounded transition-all';
+          
+          // Reset extraction progress bar
           if (extBar) extBar.style.width = '0%';
-          if (extVal) extVal.innerText = 'Syncing...';
+          if (extVal) extVal.innerText = '0%';
+          
+          // Also reset auth progress bar
+          if (authBar) authBar.style.width = '0%';
+          if (authVal) authVal.innerText = '0%';
+          if (authLabel) authLabel.innerText = "Securing login...";
+
+          // Reset bubbles
+          const authBubble = document.getElementById('auth-bubble');
+          if (authBubble) authBubble.innerText = "Waking up scraping engines...";
+          const extBubble = document.getElementById('ext-bubble');
+          if (extBubble) extBubble.innerText = "Ready to pull notice archives...";
 
           // Update card status stamp to "Syncing"
           const statusEl = document.getElementById(`status-${pan}`);
@@ -863,14 +1027,75 @@
           }
         }
 
+        function onClientLoggedIn(pan, name) {
+          document.getElementById('progress-client-name').innerText = name;
+          document.getElementById('progress-summary-msg').innerText = `Logged in. Starting notice extraction for ${name}...`;
+        }
+
         function updateAuthProgressBar(percent, message) {
           if (authBar) authBar.style.width = percent + '%';
           if (authVal) authVal.innerText = percent + '%';
           if (authLabel) {
             authLabel.innerText = message;
           }
+
+          const bubble = document.getElementById('auth-bubble');
+          if (bubble) {
+            if (percent <= 25) bubble.innerText = "Login the portal...";
+            else if (percent <= 50) bubble.innerText = "Used ID and Continue Clicked...";
+            else if (percent <= 75) bubble.innerText = "Password Input and Login Clicked...";
+            else if (percent <= 100) bubble.innerText = "Portal loaded and Eproceedings Page has been opened!";
+          }
+
           if (percent === 100) {
             printToConsole("✅ Portal authentication validated successfully.", "success");
+          }
+        }
+
+        function updateExtractionProgressBar(percent, message) {
+          if (extBar) extBar.style.width = percent + '%';
+          if (extVal) extVal.innerText = percent + '%';
+
+          const bubble = document.getElementById('ext-bubble');
+          if (bubble) {
+            if (percent <= 25) bubble.innerText = "AX File downloaded...";
+            else if (percent <= 50) bubble.innerText = "BX File downloaded...";
+            else if (percent <= 75) bubble.innerText = "AY File downloaded...";
+            else if (percent <= 100) bubble.innerText = "BY File downloaded and Logout completed!";
+          }
+
+          if (percent === 100) {
+            const activeName = document.getElementById('progress-client-name').innerText;
+            const summaryEl = document.getElementById('progress-summary-msg');
+            if (summaryEl) {
+              summaryEl.innerText = `Successfully downloaded and saved the Records for ${activeName}`;
+              summaryEl.className = 'mt-auto py-4 px-6 border border-emerald-300 font-bold text-center text-emerald-700 bg-emerald-50 rounded shadow-sm transition-all';
+            }
+          }
+        }
+
+        function onFileStatusUpdated(pool, status, type) {
+          const lbl = document.getElementById(`label-${pool}`);
+          if (lbl) {
+            lbl.innerText = status;
+            lbl.className = 'mono-ledger text-xs font-bold';
+            if (type === 'success') {
+              lbl.classList.add('text-indigo-600');
+            } else if (type === 'warning') {
+              lbl.classList.add('text-rust');
+            } else if (type === 'error') {
+              lbl.classList.add('text-rust');
+            }
+          }
+          const card = document.getElementById(`status-card-${pool}`);
+          if (card) {
+            if (type === 'success') {
+              card.className = 'border border-indigo-300 p-4 bg-indigo-50/20 rounded flex items-center justify-between shadow-sm transition-all';
+            } else if (type === 'warning') {
+              card.className = 'border border-rust/30 p-4 bg-rust/5 rounded flex items-center justify-between transition-all';
+            } else if (type === 'error') {
+              card.className = 'border border-rust p-4 bg-rust/10 rounded flex items-center justify-between transition-all';
+            }
           }
         }
 
@@ -879,10 +1104,6 @@
         }
 
         function onFileDownloaded(poolType, filename, success) {
-          // Set Extraction bar to complete dynamically
-          if (extBar) extBar.style.width = '100%';
-          if (extVal) extVal.innerText = 'Completed';
-          
           if (success) {
             printToConsole(`💾 Download Complete: Pool ${poolType} -> File saved as ${filename}`, 'success');
           } else {

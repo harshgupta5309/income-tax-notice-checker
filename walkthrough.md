@@ -1,17 +1,39 @@
-# Income Tax Notice Checker — HTML GUI Integration Walkthrough
+# Litigation OS — Custom Progress, Character Crawling & UI Enhancements Walkthrough
 
-We have successfully migrated our desktop application from the legacy CustomTkinter GUI wrapper to a premium, lightweight **HTML/CSS/JS frontend** using the **`pywebview` framework**. 
-
-By binding a borderless native Windows frame leveraging Microsoft Edge WebView2, the application achieves a modern web app look and feel with zero Chromium engine overhead.
+We have successfully implemented configuration persistence, mapped precise progress bar stages, added an animated crawling character with thought bubbles, and restructured the right panel layout with a live Progress Window and collapsible Security Log.
 
 ---
 
-## 💻 Visual & Tech Stack Overview
+## 💻 Key Features Added
 
-- **Frontend**: Local HTML (`tax-litigation-suite.html`) styled dynamically with TailwindCSS, supporting smooth tab selections, collapsible terminals, active client states, progress tickers, and animations.
-- **Backend Bridge (`app_gui.py`)**: `pywebview` framework instantiating a local Python client, binding a `DesktopAPI` object directly to the Javascript `window.pywebview.api` scope.
-- **Playwright Threading**: Long-running notice check operations are dispatched on a background daemon thread to maintain visual framerates and response in the UI.
-- **Memory/Size footprint**: Kept to **84.5 MB** by avoiding bundling heavy packages and browsers.
+### 1. Persistent Configuration Settings (`settings.json`) ✅
+- **Persistence**: Added auto-save hooks when selecting paths inside `browse_credentials()` and `browse_destination()`. Selected folders/spreadsheets are written immediately to `settings.json` next to the executable.
+- **Auto-loading**: On application launch, settings are parsed and populated back into the input forms, fetching client cards automatically. Fallback to local `Credentials.xlsx` remains in place if no saved configurations exist.
+
+### 2. Precise Dual Progress Ticker Stages ✅
+- **Secure Authentication (Bar 1)**:
+  - **25%**: Login the portal initiated
+  - **50%**: User ID entered and Continue Clicked
+  - **75%**: Password entered and Login Clicked
+  - **100%**: Portal loaded and e-Proceedings page opened
+- **Notice Aggregation (Bar 2)**:
+  - **25%**: AX File downloaded
+  - **50%**: BX File downloaded
+  - **75%**: AY File downloaded
+  - **100%**: BY File downloaded and Logout completed (restarts for the next client session)
+
+### 3. Sideways Crawling Character & Thought Loops ✅
+- **Crawling Character**: An inline SVG cute insect crawler with keyframe leg crawl rotation (`leg-left`, `leg-right`) and bobbing body animations crawls sideways, pinned directly to the right edge of both progress bar fills.
+- **Dynamic Thoughts**: A floating speech bubble updates thoughts based on progress stages:
+  - *Auth Stage*: "Login the portal...", "Used ID and Continue Clicked...", "Password Input and Login Clicked...", "Portal loaded and Eproceedings Page has been opened!"
+  - *Extraction Stage*: "AX File downloaded...", "BX File downloaded...", "AY File downloaded...", "BY File downloaded and Logout completed!"
+
+### 4. Right Panel Restructuring ✅
+- **Progress Window Panel**: Added a status dashboard for the active client showing:
+  - Active client taxpayer name and PAN card.
+  - Interactive grid cards for AX, BX, AY, BY file download states (Pending, Downloaded, No Records, Failed) with color-coded borders and text.
+  - Live summary box displaying success/reconciliation messages upon completion: `Successfully downloaded and saved the Records for [Name]`.
+- **Collapsible Security Log**: Renamed the Transaction Ledger to "Security Log". It is minimized (height: 0px) at the bottom, and can be toggled open or closed with smooth CSS height transitions by clicking its header.
 
 ---
 
@@ -19,52 +41,21 @@ By binding a borderless native Windows frame leveraging Microsoft Edge WebView2,
 
 ```mermaid
 graph TD
-    A[HTML Frontend: tax-litigation-suite.html] -->|User clicks Start| B[pywebview Bridge]
-    B -->|Calls window.pywebview.api.start_notice_check| C[Python Controller: app_gui.py]
-    C -->|Spawns Thread| D[Playwright Scraper: Try_1_IncomeTax.py]
-    D -->|Prints stdout| E[JSLogRedirector Class]
+    A[HTML GUI: code.html] -->|Loads on Startup| B[API: load_saved_settings]
+    B -->|Parses settings.json| A
+    A -->|User triggers Start| C[API: start_notice_check]
+    C -->|Spawns Thread| D[Scraper: Try_1_IncomeTax.py]
+    D -->|Stage Print Logs| E[JSLogRedirector Class]
     E -->|Regex Matches & evaluate_js| A
-    E -->|Appends logs| A
+    A -->|onClientCycleStarted / update progress| A
+    A -->|Updates crawler thoughts & position| A
+    A -->|Updates AX/BX/AY/BY status cards| A
 ```
 
 ---
 
-## 1. Native API Bindings (`DesktopAPI`) ✅
+## 📦 Size and Compilation Audit ✅
 
-The Python script exposes native operations to the browser window:
-- **`browse_credentials()`**: Spawns an isolated topmost `tkinter` file browser window to return the path to the selected `.xlsx` file registry.
-- **`browse_destination()`**: Spawns a native folder dialog to target the download workspace.
-- **`open_excel_report()`**: Uses Windows native launcher (`os.startfile`) to launch `New_Notices_Flagged_Report.xlsx` directly in Microsoft Excel on successful check runs.
-
----
-
-## 2. Stdout Print Interception (`JSLogRedirector`) ✅
-
-Instead of manual callback mapping, the script intercepts Python's stdout stream (`sys.stdout`) and matches terminal lines in real-time to drive frontend animations:
-- `Loaded {X] clients` ➔ updates client accounts count.
-- `🏢 STARTING CLIENT: [PAN]` ➔ transitions target client inventory card state.
-- `Scanning for login screen` / `Portal loaded!` ➔ drives Stage 1 Authentication progress bar increments (25%, 55%, 85%).
-- `Triggering download` ➔ starts estimated countdown tracker.
-- `✅ Successfully saved: [filename]` ➔ appends a green dot `• Saved Successfully` ledger entry row and fast-forwards progress.
-- `No active rows` ➔ appends an amber dot `• No Records Found` ledger entry.
-
----
-
-## 3. Packaging & Footprint Audit ✅
-
-- **PyInstaller Command**:
-  ```bash
-  pyinstaller --noconfirm IncomeTaxNoticeChecker.spec
-  ```
-- **File Asset Bundling**: `tax-litigation-suite.html` is injected into the executable's virtual directory (`sys._MEIPASS`) at runtime.
-- **Bundle Bloat Exclusions**: Torch, SciPy, Matplotlib, PIL, PyArrow, NumPy, etc., are explicitly excluded from compilation.
-- **Binary Size**: **94.6 MB** (Fully within the 103MB size footprint constraint).
-
----
-
-## 4. GitHub Repository Synchronized ✅
-
-All files have been committed and pushed to the remote repository:
-- **Repository**: [harshgupta5309/income-tax-notice-checker](https://github.com/harshgupta5309/income-tax-notice-checker)
-- **Branch**: `main`
-- **Latest Commit**: `173f986` (Updated with HTML integration files)
+- **Binary Size**: Optimized to **99.2 MB** (well under the 103MB size footprint constraint).
+- **Executable**: Rebuilt cleanly into `dist/LitigationOS.exe` using `IncomeTaxNoticeChecker.spec`.
+- **Exclusions**: Kept Pandas, openpyxl, pyzipper, and NumPy hidden imports intact, while excluding unused heavy libraries like Torch and OpenCV.

@@ -366,7 +366,7 @@
         .directory-card {
             border: 1.5px solid var(--border-color-custom);
             border-radius: 20px;
-            padding: 1.5rem;
+            padding: 2.25rem 2rem;
             background: var(--directory-card-bg);
             transition: all 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275);
         }
@@ -662,44 +662,7 @@
 </div>
 </div>
 </div>
-<!-- Abort Scraper Pipeline Button (Hidden by default) -->
-<div class="pb-6" id="abort-container" style="display: none;">
-  <button class="btn-rigid px-6 py-3 bg-rust text-white font-bold text-xs tracking-wider w-full hover:shadow-[3px_3px_0px_var(--ink)]" onclick="abortPipeline()">Abort Scraper Pipeline</button>
-</div>
-
-<!-- Technical Path Configuration -->
-<div class="space-y-6 pt-6 border-t border-ink">
-<h3 class="sans-bold text-xs tracking-widest text-muted-ink">Technical Path Configuration</h3>
-<div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-  <!-- Left Side: Credentials Directory & Template Download -->
-  <div class="flex flex-col gap-2">
-    <div class="directory-card flex items-center gap-4 cursor-pointer" id="btn-browse-creds">
-      <div class="w-10 h-10 rounded-full bg-indigo-50 flex items-center justify-center border border-indigo-200">
-        <span class="material-symbols-outlined text-indigo-500">folder_open</span>
-      </div>
-      <div class="flex flex-col">
-        <span class="mono-ledger font-bold text-[10px] text-muted-ink uppercase">Credential Directory <span class="opacity-50 text-[8px] font-mono ml-1">Ctrl+O</span></span>
-        <span class="mono-ledger text-xs text-ink" id="text-creds-path">Credentials.xlsx</span>
-      </div>
-    </div>
-    <button class="btn-rigid px-4 py-2 text-[9px] hover:bg-ink hover:text-parchment font-mono w-full bg-sidebar/40" onclick="downloadTemplate()">Download Template Spreadsheet</button>
-  </div>
-  
-  <!-- Right Side: Download Destination & Folder Opening -->
-  <div class="flex flex-col gap-2">
-    <div class="directory-card flex items-center gap-4 cursor-pointer" id="btn-browse-dest">
-      <div class="w-10 h-10 rounded-full bg-rust/5 flex items-center justify-center border border-rust/20">
-        <span class="material-symbols-outlined text-rust">download</span>
-      </div>
-      <div class="flex flex-col">
-        <span class="mono-ledger font-bold text-[10px] text-muted-ink uppercase">Download Destination <span class="opacity-50 text-[8px] font-mono ml-1">Ctrl+N</span></span>
-        <span class="mono-ledger text-xs text-ink truncate max-w-[240px]" id="text-dest-path">D:/Downloaded_CSV_Notices</span>
-      </div>
-    </div>
-    <button class="btn-rigid px-4 py-2 text-[9px] hover:bg-ink hover:text-parchment font-mono w-full bg-sidebar/40" onclick="openDestFolder()">Explore Destination Folder</button>
-  </div>
-</div>
-</div>
+<!-- Technical Path Configuration and Abort elements moved to full-width bottom section -->
 <div class="hidden p-8 border border-ink bg-rust/5 relative shadow-[4px_4px_0px_var(--rust)]" id="recon-card">
 <div class="absolute top-0 left-0 w-full h-1 bg-rust"></div>
 <p class="sans-bold text-rust text-lg mb-2">Notice Check Completed</p>
@@ -770,6 +733,47 @@
   </div>
 
 
+</div>
+
+<!-- Technical Path Configuration & Abort Section (Full-Width Bottom Panel) -->
+<div class="col-span-12 border-t border-ink bg-panel p-12 space-y-8">
+  <!-- Abort Scraper Pipeline Button (Hidden by default) -->
+  <div id="abort-container" style="display: none;" class="w-full">
+    <button class="btn-rigid px-6 py-4 bg-rust text-white font-bold text-sm tracking-wider w-full hover:shadow-[4px_4px_0px_var(--ink)]" onclick="abortPipeline()">Abort Scraper Pipeline</button>
+  </div>
+
+  <div class="space-y-6">
+    <h3 class="sans-bold text-xs tracking-widest text-muted-ink uppercase">Technical Path Configuration</h3>
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-12">
+      <!-- Left Side: Credentials Directory & Template Download -->
+      <div class="flex flex-col gap-3">
+        <div class="directory-card flex items-center gap-6 cursor-pointer" id="btn-browse-creds">
+          <div class="w-14 h-14 rounded-full bg-indigo-50 flex items-center justify-center border border-indigo-200 flex-shrink-0">
+            <span class="material-symbols-outlined text-indigo-500 text-3xl">folder_open</span>
+          </div>
+          <div class="flex flex-col min-w-0">
+            <span class="mono-ledger font-bold text-xs text-muted-ink uppercase mb-1">Credential Directory <span class="opacity-50 text-[10px] font-mono ml-2">Ctrl+O</span></span>
+            <span class="mono-ledger text-sm text-ink break-all font-mono" id="text-creds-path">Credentials.xlsx</span>
+          </div>
+        </div>
+        <button class="btn-rigid px-6 py-3 text-xs hover:bg-ink hover:text-parchment font-mono w-full bg-sidebar/40" onclick="downloadTemplate()">Download Template Spreadsheet</button>
+      </div>
+      
+      <!-- Right Side: Download Destination & Folder Opening -->
+      <div class="flex flex-col gap-3">
+        <div class="directory-card flex items-center gap-6 cursor-pointer" id="btn-browse-dest">
+          <div class="w-14 h-14 rounded-full bg-rust/5 flex items-center justify-center border border-rust/20 flex-shrink-0">
+            <span class="material-symbols-outlined text-rust text-3xl">download</span>
+          </div>
+          <div class="flex flex-col min-w-0">
+            <span class="mono-ledger font-bold text-xs text-muted-ink uppercase mb-1">Download Destination <span class="opacity-50 text-[10px] font-mono ml-2">Ctrl+N</span></span>
+            <span class="mono-ledger text-sm text-ink break-all font-mono" id="text-dest-path">D:/Downloaded_CSV_Notices</span>
+          </div>
+        </div>
+        <button class="btn-rigid px-6 py-3 text-xs hover:bg-ink hover:text-parchment font-mono w-full bg-sidebar/40" onclick="openDestFolder()">Explore Destination Folder</button>
+      </div>
+    </div>
+  </div>
 </div>
 </div>
 </div>

@@ -9,6 +9,7 @@ import playwright_stealth
 
 added_files = [
     ('code.html', '.'),
+    ('security_log.html', '.'),
     (os.path.join(os.path.dirname(playwright.__file__), 'driver'), 'playwright/driver'),
     (os.path.join(os.path.dirname(playwright_stealth.__file__), 'js'), 'playwright_stealth/js')
 ]

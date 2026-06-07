@@ -37,6 +37,8 @@ from playwright_stealth import Stealth
 # ─────────────────────────────────────────────
 OUTPUT_REPORT = os.path.join(BASE_DIR, "New_Notices_Flagged_Report.xlsx")
 CREDENTIALS_FILE = os.path.join(APP_DIR, "Credentials.xlsx")
+ABORT_SIGNAL = False
+
 
 
 # ─────────────────────────────────────────────
@@ -239,47 +241,67 @@ class StopPipelineException(Exception):
 
 def robust_wait_for_selector(page, selector, state="visible", timeout_sec=20, pan="", api_ref=None):
     """Waits for a selector, and if it fails within timeout_sec, prompts the user via PyWebView API"""
+    start_time = datetime.now()
     while True:
+        if globals().get('ABORT_SIGNAL', False):
+            raise StopPipelineException()
+            
         try:
-            page.wait_for_selector(selector, state=state, timeout=timeout_sec * 1000)
+            page.wait_for_selector(selector, state=state, timeout=1000)
             return True
         except Exception as e:
-            if api_ref:
-                print(f"⏳ Selector '{selector}' not loaded within {timeout_sec} seconds. Prompting user...")
-                decision = api_ref.prompt_user_server_delay(pan, selector)
-                if decision == 'wait':
-                    print("User requested to WAIT. Retrying wait for 30 seconds...")
-                    timeout_sec = 30
-                    continue
-                elif decision == 'skip':
-                    print("User requested to SKIP this client.")
-                    raise SkipClientException()
-                elif decision == 'stop':
-                    print("User requested to STOP the automation pipeline.")
-                    raise StopPipelineException()
-            raise e
+            if globals().get('ABORT_SIGNAL', False):
+                raise StopPipelineException()
+                
+            elapsed = (datetime.now() - start_time).total_seconds()
+            if elapsed >= timeout_sec:
+                if api_ref:
+                    print(f"⏳ Selector '{selector}' not loaded within {timeout_sec} seconds. Prompting user...")
+                    decision = api_ref.prompt_user_server_delay(pan, selector)
+                    if decision == 'wait':
+                        print("User requested to WAIT. Retrying wait for 30 seconds...")
+                        timeout_sec = 30
+                        start_time = datetime.now()
+                        continue
+                    elif decision == 'skip':
+                        print("User requested to SKIP this client.")
+                        raise SkipClientException()
+                    elif decision == 'stop':
+                        print("User requested to STOP the automation pipeline.")
+                        raise StopPipelineException()
+                raise e
 
 def robust_wait_for_locator(locator, state="visible", timeout_sec=20, pan="", api_ref=None):
     """Waits for a Playwright locator, and if it fails, prompts the user"""
+    start_time = datetime.now()
     while True:
+        if globals().get('ABORT_SIGNAL', False):
+            raise StopPipelineException()
+            
         try:
-            locator.wait_for(state=state, timeout=timeout_sec * 1000)
+            locator.wait_for(state=state, timeout=1000)
             return True
         except Exception as e:
-            if api_ref:
-                print(f"⏳ Locator not loaded within {timeout_sec} seconds. Prompting user...")
-                decision = api_ref.prompt_user_server_delay(pan, "Element Load")
-                if decision == 'wait':
-                    print("User requested to WAIT. Retrying wait for 30 seconds...")
-                    timeout_sec = 30
-                    continue
-                elif decision == 'skip':
-                    print("User requested to SKIP this client.")
-                    raise SkipClientException()
-                elif decision == 'stop':
-                    print("User requested to STOP the automation pipeline.")
-                    raise StopPipelineException()
-            raise e
+            if globals().get('ABORT_SIGNAL', False):
+                raise StopPipelineException()
+                
+            elapsed = (datetime.now() - start_time).total_seconds()
+            if elapsed >= timeout_sec:
+                if api_ref:
+                    print(f"⏳ Locator not loaded within {timeout_sec} seconds. Prompting user...")
+                    decision = api_ref.prompt_user_server_delay(pan, "Element Load")
+                    if decision == 'wait':
+                        print("User requested to WAIT. Retrying wait for 30 seconds...")
+                        timeout_sec = 30
+                        start_time = datetime.now()
+                        continue
+                    elif decision == 'skip':
+                        print("User requested to SKIP this client.")
+                        raise SkipClientException()
+                    elif decision == 'stop':
+                        print("User requested to STOP the automation pipeline.")
+                        raise StopPipelineException()
+                raise e
 
 # --- HELPER FUNCTIONS ---
 
@@ -303,9 +325,6 @@ def download_and_rename(page, pan, name, file_id):
         return True
     except Exception as e:
         print(f"⚠️ [WARNING] - Failed to download {file_id}: {e}")
-        return False
-
-
 def get_latest_and_prev_files(pan, file_id):
     """Finds the two most recent CSV files for comparison"""
     search_pattern = os.path.join(BASE_DIR, f"*_{pan}_{file_id}_*.csv")
@@ -337,21 +356,16 @@ def run_multi_client_downloads(vault_manager=None, api_ref=None):
 
     processed_pans = []
 
-    with Stealth().use_sync(sync_playwright()) as p:
+    with sync_playwright() as p:
         browser = p.chromium.launch(headless=False, args=["--window-position=-2000,-2000", "--window-size=1920,1080"])
-        context = browser.new_context(viewport={'width': 1920, 'height': 1080})
-        context.set_default_timeout(30000)
-        context.set_default_navigation_timeout(30000)
-        page = context.new_page()
-
-        print("\nℹ️ [INFO]  - Launching Income Tax Portal...")
-        try:
-            page.goto("https://eportal.incometax.gov.in/iec/foservices/#/login?language-code=en", wait_until="networkidle", timeout=45000)
-        except Exception as e:
-            print(f"⚠️ [WARNING] - Navigation to portal timed out or failed: {e}. Attempting recovery...")
-
+        
         try:
             for index, row in df_creds.iterrows():
+                # Check abort signal before starting a client
+                if globals().get('ABORT_SIGNAL', False):
+                    print("\n🛑 [ABORT] - Abort signal received. Terminating loop...")
+                    break
+                    
                 user_id = str(row['Login_ID']).strip()
                 password = str(row['Password']).strip()
                 
@@ -360,7 +374,23 @@ def run_multi_client_downloads(vault_manager=None, api_ref=None):
                 print(f"{'=' * 50}")
                 print("🔑 [STAGE-AUTH] - 0% - Portal launched / loading")
 
+                # Create a fresh browser context and page for this client
+                context = browser.new_context(viewport={'width': 1920, 'height': 1080})
+                context.set_default_timeout(30000)
+                context.set_default_navigation_timeout(30000)
+                page = context.new_page()
+                
+                # Apply stealth sync to the fresh page
+                from playwright_stealth import stealth_sync
+                stealth_sync(page)
+
                 try:
+                    print("\nℹ️ [INFO]  - Launching Income Tax Portal...")
+                    try:
+                        page.goto("https://eportal.incometax.gov.in/iec/foservices/#/login?language-code=en", wait_until="networkidle", timeout=45000)
+                    except Exception as e:
+                        print(f"⚠️ [WARNING] - Navigation to portal timed out: {e}. Attempting recovery...")
+
                     print(f"ℹ️ [INFO]  - Scanning for login screen for {user_id}...")
                     
                     try:
@@ -418,6 +448,8 @@ def run_multi_client_downloads(vault_manager=None, api_ref=None):
                         attempt = 0
                         login_success = False
                         while attempt < 10:
+                            if globals().get('ABORT_SIGNAL', False):
+                                raise StopPipelineException()
                             if "/dashboard" in page.url.lower():
                                 login_success = True
                                 break
@@ -437,6 +469,8 @@ def run_multi_client_downloads(vault_manager=None, api_ref=None):
                         if not login_success:
                             raise Exception("Dashboard not loaded after 10 attempts.")
                         print("🔑 [STAGE-AUTH] - 75% - Logged in to Income Tax Portal dashboard")
+                    except (SkipClientException, StopPipelineException) as e:
+                        raise e
                     except Exception as e:
                         print(f"🚨 [CRITICAL ERROR] - Login authentication stage failed for {user_id}.")
                         capture_diagnostic_screenshot(page, user_id, "LOGIN_AUTH", vault_manager)
@@ -466,12 +500,8 @@ def run_multi_client_downloads(vault_manager=None, api_ref=None):
                         logging.exception(f"e-Proceedings navigation failed for {user_id}")
                         continue
 
-                    try:
-                        page.wait_for_selector(f"text={user_id}", timeout=10000)
-                        raw_name = page.locator(".mdc-button__label").filter(has_text="Welcome").first.inner_text()
-                        taxpayer_name = raw_name.replace("Welcome", "").strip()
-                    except Exception:
-                        taxpayer_name = str(row['Name']).strip() if pd.notna(row['Name']) else "Taxpayer"
+                    # Directly read name from sheet as requested to bypass slow name-scraping checks
+                    taxpayer_name = str(row['Name']).strip() if (pd.notna(row.get('Name')) and str(row.get('Name')).strip()) else "Taxpayer"
 
                     print(f"👤 CLIENT_INFO: {user_id} | {taxpayer_name}")
 
@@ -517,19 +547,9 @@ def run_multi_client_downloads(vault_manager=None, api_ref=None):
                         logging.exception(f"BY download stage failed for {user_id}")
 
                     processed_pans.append(user_id)
-
-                    try:
-                        login_again_btn = page.locator('button.registerButton:has-text("Log In Again")')
-                        login_again_btn.wait_for(state="visible", timeout=5000)
-                        login_again_btn.click()
-                        page.wait_for_load_state("networkidle")
-                    except:
-                        print("Could not find 'Log In Again' button. Hard navigating back to login page...")
-                        page.goto("https://eportal.incometax.gov.in/iec/foservices/#/login?language-code=en", wait_until="networkidle")
-                    print("📥 [STAGE-EXTRACTION] - 100% - BY File downloaded and Logout completed")
+                    print(f"📥 [STAGE-EXTRACTION] - 100% - All files downloaded successfully for client: {user_id}")
 
                 except SkipClientException:
-                    print(f"⏩ [SKIP] - User requested to skip client: {user_id}. Navigating back to login...")
                     try:
                         page.goto("https://eportal.incometax.gov.in/iec/foservices/#/login?language-code=en", timeout=15000)
                     except Exception:

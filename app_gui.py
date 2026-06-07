@@ -18,10 +18,12 @@ if getattr(sys, 'frozen', False):
     APP_DIR = os.path.dirname(sys.executable)
     # PyInstaller temporary extraction folder containing bundled assets
     HTML_PATH = os.path.join(sys._MEIPASS, "code.html")
+    LOG_HTML_PATH = os.path.join(sys._MEIPASS, "security_log.html")
 else:
     # Running in a standard local python interpreter
     APP_DIR = os.path.dirname(os.path.abspath(__file__))
     HTML_PATH = os.path.join(APP_DIR, "code.html")
+    LOG_HTML_PATH = os.path.join(APP_DIR, "security_log.html")
 
 # Enforce our dynamic portable root output directories
 BASE_DIR = os.path.join(APP_DIR, "Income_tax_folder")
@@ -47,6 +49,7 @@ class DesktopAPI:
         self.vault_folder = None
         self._decision_event = threading.Event()
         self.user_decision = None
+        self._log_window = None
         
         # Load saved settings immediately on initialization to sync Python backend state
         try:
@@ -91,6 +94,150 @@ class DesktopAPI:
             self._window.toggle_fullscreen()
             return True
         return False
+
+    def abort_pipeline(self):
+        """Sets the global abort flag to stop the backend automation run immediately"""
+        tax_backend.ABORT_SIGNAL = True
+        return True
+
+    def download_credentials_template(self):
+        """Launches a topmost native file save dialog to download the template credentials spreadsheet"""
+        try:
+            root = tk.Tk()
+            root.withdraw()
+            root.attributes("-topmost", True)
+            file_path = filedialog.asksaveasfilename(
+                title="Save Credentials Template",
+                defaultextension=".xlsx",
+                filetypes=[("Excel Files", "*.xlsx"), ("CSV Files", "*.csv")],
+                initialfile="Credentials_Template.xlsx"
+            )
+            root.destroy()
+            if file_path:
+                import pandas as pd
+                df = pd.DataFrame(columns=["Login_ID", "Password", "Name"])
+                # Add a sample row to guide the user
+                df.loc[0] = ["PAN1234567", "Password123", "Sample Taxpayer Name"]
+                
+                if file_path.endswith('.csv'):
+                    df.to_csv(file_path, index=False)
+                else:
+                    df.to_excel(file_path, index=False)
+                return json.dumps({"success": True, "path": file_path})
+            return json.dumps({"success": False, "error": "Cancelled by user"})
+        except Exception as e:
+            return json.dumps({"success": False, "error": str(e)})
+
+    def open_destination_folder(self):
+        """Opens the destination folder in Windows Explorer"""
+        base_dir = tax_backend.BASE_DIR
+        if os.path.exists(base_dir):
+            try:
+                if sys.platform == "win32":
+                    os.startfile(base_dir)
+                    return json.dumps({"success": True})
+                else:
+                    import subprocess
+                    opener = "open" if sys.platform == "darwin" else "xdg-open"
+                    subprocess.call([opener, base_dir])
+                    return json.dumps({"success": True})
+            except Exception as e:
+                return json.dumps({"success": False, "error": str(e)})
+        return json.dumps({"success": False, "error": "Folder not found"})
+
+    def open_security_log_window(self):
+        """Opens a new native window to display the Security Log stream."""
+        if self._log_window:
+            return True
+            
+        # Write default security_log.html template if it doesn't exist
+        if not os.path.exists(LOG_HTML_PATH):
+            default_log_html = """<!DOCTYPE html>
+<html>
+<head>
+    <title>Litigation OS | Security Log</title>
+    <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700&family=Inter:wght@400;700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            background-color: #0A0A0A;
+            color: rgba(255, 255, 255, 0.9);
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 11px;
+            padding: 20px;
+            margin: 0;
+            overflow-y: auto;
+            line-height: 1.6;
+        }
+        .log-entry {
+            border-left: 2px solid rgba(255,255,255,0.1);
+            padding-left: 10px;
+            margin-bottom: 6px;
+            white-space: pre-wrap;
+            word-break: break-all;
+        }
+        .log-info { border-color: rgba(255,255,255,0.2); }
+        .log-success { border-color: #34D399; color: #34D399; }
+        .log-warning { border-color: #E05A47; color: #E05A47; }
+        .log-error { border-color: #EF4444; color: #EF4444; font-weight: bold; }
+        .title-bar {
+            font-family: 'Inter', sans-serif;
+            font-size: 10px;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.1em;
+            color: rgba(255, 255, 255, 0.4);
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+            padding-bottom: 8px;
+            margin-bottom: 15px;
+        }
+    </style>
+</head>
+<body>
+    <div class="title-bar">System Diagnostic Stream &bull; Live Ledger</div>
+    <div id="log-container"></div>
+    <script>
+        function printToLogWindow(msg) {
+            const container = document.getElementById('log-container');
+            const entry = document.createElement('div');
+            entry.className = 'log-entry';
+            
+            // Highlight styles based on prefix
+            if (msg.includes('✅') || msg.includes('SUCCESS')) {
+                entry.className += ' log-success';
+            } else if (msg.includes('⚠️') || msg.includes('WARNING')) {
+                entry.className += ' log-warning';
+            } else if (msg.includes('🚨') || msg.includes('CRITICAL') || msg.includes('ERROR')) {
+                entry.className += ' log-error';
+            } else {
+                entry.className += ' log-info';
+            }
+            
+            entry.innerText = msg;
+            container.appendChild(entry);
+            window.scrollTo(0, document.body.scrollHeight);
+        }
+    </script>
+</body>
+</html>
+"""
+            try:
+                with open(LOG_HTML_PATH, "w", encoding="utf-8") as f:
+                    f.write(default_log_html)
+            except Exception:
+                pass
+                
+        self._log_window = webview.create_window(
+            title="Litigation OS | Security Log Ledger",
+            url=LOG_HTML_PATH,
+            width=700,
+            height=500,
+            background_color='#0A0A0A'
+        )
+        self._log_window.events.closed += self._on_log_window_closed
+        return True
+
+    def _on_log_window_closed(self):
+        self._log_window = None
 
     # --- PORTABLE DIAGNOSTICS VAULT ENGINE ---
     def _initialize_vault(self, destination_path):
@@ -329,6 +476,9 @@ class DesktopAPI:
             ch.setFormatter(formatter)
             logger.addHandler(ch)
             
+            # Reset the abort signal before starting the pipeline
+            tax_backend.ABORT_SIGNAL = False
+            
             # Start backend scraper routine
             successful_pans = tax_backend.run_multi_client_downloads(api_ref=self)
             tax_backend.process_and_flag(successful_pans)
@@ -486,6 +636,13 @@ class JSLogRedirector:
             
             # Safely append console string inside JS
             self.window.evaluate_js(f"printToConsole('{clean_str}', 'info')")
+            
+            # Streaming to the child log window if it exists
+            if self.api_ref._log_window:
+                try:
+                    self.api_ref._log_window.evaluate_js(f"printToLogWindow('{clean_str}')")
+                except Exception:
+                    pass
             
             # Accumulate logs in memory buffer to prevent locks on diagnostics zip file
             log_time = datetime.now().strftime("%Y-%m-%d %H:%M:%S")

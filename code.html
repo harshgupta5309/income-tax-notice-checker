@@ -662,28 +662,42 @@
 </div>
 </div>
 </div>
+<!-- Abort Scraper Pipeline Button (Hidden by default) -->
+<div class="pb-6" id="abort-container" style="display: none;">
+  <button class="btn-rigid px-6 py-3 bg-rust text-white font-bold text-xs tracking-wider w-full hover:shadow-[3px_3px_0px_var(--ink)]" onclick="abortPipeline()">Abort Scraper Pipeline</button>
+</div>
+
 <!-- Technical Path Configuration -->
 <div class="space-y-6 pt-6 border-t border-ink">
 <h3 class="sans-bold text-xs tracking-widest text-muted-ink">Technical Path Configuration</h3>
-<div class="grid grid-cols-1 gap-4">
-<div class="directory-card flex items-center gap-4 cursor-pointer" id="btn-browse-creds">
-<div class="w-10 h-10 rounded-full bg-indigo-50 flex items-center justify-center border border-indigo-200">
-<span class="material-symbols-outlined text-indigo-500">folder_open</span>
-</div>
-<div class="flex flex-col">
-<span class="mono-ledger font-bold text-[10px] text-muted-ink uppercase">Credential Directory <span class="opacity-50 text-[8px] font-mono ml-1">Ctrl+O</span></span>
-<span class="mono-ledger text-xs text-ink" id="text-creds-path">Credentials.xlsx</span>
-</div>
-</div>
-<div class="directory-card flex items-center gap-4 cursor-pointer" id="btn-browse-dest">
-<div class="w-10 h-10 rounded-full bg-rust/5 flex items-center justify-center border border-rust/20">
-<span class="material-symbols-outlined text-rust">download</span>
-</div>
-<div class="flex flex-col">
-<span class="mono-ledger font-bold text-[10px] text-muted-ink uppercase">Download Destination <span class="opacity-50 text-[8px] font-mono ml-1">Ctrl+N</span></span>
-<span class="mono-ledger text-xs text-ink truncate max-w-[240px]" id="text-dest-path">D:/Downloaded_CSV_Notices</span>
-</div>
-</div>
+<div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+  <!-- Left Side: Credentials Directory & Template Download -->
+  <div class="flex flex-col gap-2">
+    <div class="directory-card flex items-center gap-4 cursor-pointer" id="btn-browse-creds">
+      <div class="w-10 h-10 rounded-full bg-indigo-50 flex items-center justify-center border border-indigo-200">
+        <span class="material-symbols-outlined text-indigo-500">folder_open</span>
+      </div>
+      <div class="flex flex-col">
+        <span class="mono-ledger font-bold text-[10px] text-muted-ink uppercase">Credential Directory <span class="opacity-50 text-[8px] font-mono ml-1">Ctrl+O</span></span>
+        <span class="mono-ledger text-xs text-ink" id="text-creds-path">Credentials.xlsx</span>
+      </div>
+    </div>
+    <button class="btn-rigid px-4 py-2 text-[9px] hover:bg-ink hover:text-parchment font-mono w-full bg-sidebar/40" onclick="downloadTemplate()">Download Template Spreadsheet</button>
+  </div>
+  
+  <!-- Right Side: Download Destination & Folder Opening -->
+  <div class="flex flex-col gap-2">
+    <div class="directory-card flex items-center gap-4 cursor-pointer" id="btn-browse-dest">
+      <div class="w-10 h-10 rounded-full bg-rust/5 flex items-center justify-center border border-rust/20">
+        <span class="material-symbols-outlined text-rust">download</span>
+      </div>
+      <div class="flex flex-col">
+        <span class="mono-ledger font-bold text-[10px] text-muted-ink uppercase">Download Destination <span class="opacity-50 text-[8px] font-mono ml-1">Ctrl+N</span></span>
+        <span class="mono-ledger text-xs text-ink truncate max-w-[240px]" id="text-dest-path">D:/Downloaded_CSV_Notices</span>
+      </div>
+    </div>
+    <button class="btn-rigid px-4 py-2 text-[9px] hover:bg-ink hover:text-parchment font-mono w-full bg-sidebar/40" onclick="openDestFolder()">Explore Destination Folder</button>
+  </div>
 </div>
 </div>
 <div class="hidden p-8 border border-ink bg-rust/5 relative shadow-[4px_4px_0px_var(--rust)]" id="recon-card">
@@ -755,21 +769,7 @@
     </div>
   </div>
 
-  <!-- Collapsible Security Log -->
-  <div class="border border-sec-log-border bg-sec-log-header rounded shadow-sm flex flex-col overflow-hidden">
-    <button class="w-full flex justify-between items-center px-6 py-4 bg-ink text-parchment hover:bg-ink/90 transition-colors focus:outline-none" onclick="toggleSecurityLog()">
-      <div class="flex items-center gap-2">
-        <span class="material-symbols-outlined text-sm">terminal</span>
-        <span class="sans-bold text-xs uppercase tracking-wider">Security Log</span>
-      </div>
-      <span class="material-symbols-outlined text-sm" id="sec-log-toggle-icon">expand_more</span>
-    </button>
-    <div class="h-0 overflow-hidden transition-all duration-300 bg-sec-log-body" id="sec-log-body-container" style="height: 0px;">
-      <div class="p-6 h-[250px] overflow-y-auto mono-ledger space-y-2 leading-relaxed text-muted-ink text-xs border-t border-ink" id="ledger-body">
-        <div class="italic">&gt;&gt;&gt; Awaiting initialization sequence...</div>
-      </div>
-    </div>
-  </div>
+
 </div>
 </div>
 </div>
@@ -1178,9 +1178,7 @@
                   startBtn.classList.add('opacity-40', 'cursor-not-allowed');
                   document.getElementById('global-status-text').innerText = "Sync Active";
                   printToConsole("🔥 Automation worker threads dispatched cleanly.", "info");
-                  
-                  // Wipe old logs
-                  document.getElementById('ledger-body').innerHTML = '';
+                  document.getElementById('abort-container').style.display = 'block';
                 } else {
                   printToConsole(`🚨 Core failure: ${response.error}`, 'error');
                 }
@@ -1606,6 +1604,7 @@
             statusText.innerText = "Engine Idle";
           }
           
+          document.getElementById('abort-container').style.display = 'none';
           document.getElementById('recon-card').classList.remove('hidden');
           printToConsole("✨ Synchronisation cycle completed. Output archives finalized.", "success");
 
@@ -1642,6 +1641,37 @@
         function onNativeAutomationError(errorText) {
           onNativeAutomationComplete();
           printToConsole(`🚨 PIPELINE AUTOMATION RUNTIME FAILURE: ${errorText}`, 'error');
+        }
+
+        function abortPipeline() {
+          printToConsole("🛑 Abort request received. Signaling backend pipeline to terminate...", "warning");
+          if (window.pywebview && window.pywebview.api && window.pywebview.api.abort_pipeline) {
+            window.pywebview.api.abort_pipeline();
+          }
+        }
+
+        async function downloadTemplate() {
+          if (window.pywebview && window.pywebview.api && window.pywebview.api.download_credentials_template) {
+            printToConsole("📂 Launching directory save window for credentials template spreadsheet...", "info");
+            const responseJson = await window.pywebview.api.download_credentials_template();
+            const result = JSON.parse(responseJson);
+            if (result.success) {
+              printToConsole(`✅ Template spreadsheet saved successfully at: ${result.path}`, "success");
+            } else if (result.error !== "Cancelled by user") {
+              printToConsole(`🚨 Failed to save template spreadsheet: ${result.error}`, "error");
+            }
+          }
+        }
+
+        async function openDestFolder() {
+          if (window.pywebview && window.pywebview.api && window.pywebview.api.open_destination_folder) {
+            printToConsole("📂 Requesting Windows Explorer to open output destination folder...", "info");
+            const responseJson = await window.pywebview.api.open_destination_folder();
+            const result = JSON.parse(responseJson);
+            if (!result.success) {
+              printToConsole(`🚨 Failed to open folder: ${result.error}`, "error");
+            }
+          }
         }
 
         function toggleFullScreen() {
@@ -1718,6 +1748,14 @@
             e.preventDefault();
             toggleFullScreen();
           }
+
+          // Ctrl + T (Open separate Security Log window)
+          if (e.ctrlKey && e.key.toLowerCase() === 't') {
+            e.preventDefault();
+            if (window.pywebview && window.pywebview.api && window.pywebview.api.open_security_log_window) {
+              window.pywebview.api.open_security_log_window();
+            }
+          }
           
           // '1'
           if (!isInputActive && e.key === '1') {
@@ -1783,6 +1821,10 @@
               <div class="flex justify-between border-b border-ink/5 pb-1">
                 <span class="text-muted-ink">Toggle Fullscreen</span>
                 <span class="font-bold text-indigo-500">Ctrl + F</span>
+              </div>
+              <div class="flex justify-between border-b border-ink/5 pb-1">
+                <span class="text-muted-ink">Open Security Window</span>
+                <span class="font-bold text-rust">Ctrl + T</span>
               </div>
               <div class="flex justify-between border-b border-ink/5 pb-1">
                 <span class="text-muted-ink">Operational Monitor</span>

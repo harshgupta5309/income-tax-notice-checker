@@ -1,0 +1,67 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Litigation OS | Security Log</title>
+    <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700&family=Inter:wght@400;700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            background-color: #0A0A0A;
+            color: rgba(255, 255, 255, 0.9);
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 11px;
+            padding: 20px;
+            margin: 0;
+            overflow-y: auto;
+            line-height: 1.6;
+        }
+        .log-entry {
+            border-left: 2px solid rgba(255,255,255,0.1);
+            padding-left: 10px;
+            margin-bottom: 6px;
+            white-space: pre-wrap;
+            word-break: break-all;
+        }
+        .log-info { border-color: rgba(255,255,255,0.2); }
+        .log-success { border-color: #34D399; color: #34D399; }
+        .log-warning { border-color: #E05A47; color: #E05A47; }
+        .log-error { border-color: #EF4444; color: #EF4444; font-weight: bold; }
+        .title-bar {
+            font-family: 'Inter', sans-serif;
+            font-size: 10px;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.1em;
+            color: rgba(255, 255, 255, 0.4);
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+            padding-bottom: 8px;
+            margin-bottom: 15px;
+        }
+    </style>
+</head>
+<body>
+    <div class="title-bar">System Diagnostic Stream &bull; Live Ledger</div>
+    <div id="log-container"></div>
+    <script>
+        function printToLogWindow(msg) {
+            const container = document.getElementById('log-container');
+            const entry = document.createElement('div');
+            entry.className = 'log-entry';
+            
+            // Highlight styles based on prefix
+            if (msg.includes('✅') || msg.includes('SUCCESS')) {
+                entry.className += ' log-success';
+            } else if (msg.includes('⚠️') || msg.includes('WARNING')) {
+                entry.className += ' log-warning';
+            } else if (msg.includes('🚨') || msg.includes('CRITICAL') || msg.includes('ERROR')) {
+                entry.className += ' log-error';
+            } else {
+                entry.className += ' log-info';
+            }
+            
+            entry.innerText = msg;
+            container.appendChild(entry);
+            window.scrollTo(0, document.body.scrollHeight);
+        }
+    </script>
+</body>
+</html>

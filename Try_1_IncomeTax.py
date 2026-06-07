@@ -338,7 +338,7 @@ def run_multi_client_downloads(vault_manager=None, api_ref=None):
     processed_pans = []
 
     with Stealth().use_sync(sync_playwright()) as p:
-        browser = p.chromium.launch(headless=True, args=["--start-maximized"])
+        browser = p.chromium.launch(headless=False, args=["--window-position=-2000,-2000", "--window-size=1920,1080"])
         context = browser.new_context(viewport={'width': 1920, 'height': 1080})
         context.set_default_timeout(30000)
         context.set_default_navigation_timeout(30000)
@@ -377,8 +377,10 @@ def run_multi_client_downloads(vault_manager=None, api_ref=None):
                     try:
                         page.locator("#panAdhaarUserId").click(force=True)
                         page.locator("#panAdhaarUserId").fill("")
-                        page.locator("#panAdhaarUserId").press_sequentially(user_id, delay=50)
+                        page.locator("#panAdhaarUserId").press_sequentially(user_id, delay=100)
+                        page.wait_for_timeout(1000)
                         page.locator("#panAdhaarUserId").press("Tab")
+                        page.wait_for_timeout(500)
                         page.locator('button.large-button-primary:has-text("Continue")').first.click(force=True)
                         print("🔑 [STAGE-AUTH] - 25% - User ID Entered and Continue Clicked")
                     except Exception as e:

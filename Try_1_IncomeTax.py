@@ -364,7 +364,7 @@ def run_multi_client_downloads(vault_manager=None, api_ref=None):
     processed_pans = []
 
     with sync_playwright() as p:
-        browser = p.chromium.launch(headless=True)
+        browser = p.chromium.launch(headless=False, args=["--window-position=-2000,-2000", "--window-size=1920,1080"])
         
         try:
             for index, row in df_creds.iterrows():
@@ -439,7 +439,9 @@ def run_multi_client_downloads(vault_manager=None, api_ref=None):
                             except Exception:
                                 # Standard check fallback
                                 page.check("#passwordCheckBox-input", force=True)
-                        page.fill("#loginPasswordField", password)
+                        page.locator("#loginPasswordField").click(force=True)
+                        page.locator("#loginPasswordField").fill("")
+                        page.locator("#loginPasswordField").press_sequentially(password, delay=100)
                         page.keyboard.press("Tab")
                         print("🔑 [STAGE-AUTH] - 50% - Password Entered and Login Clicked")
                     except (SkipClientException, StopPipelineException) as e:

@@ -487,7 +487,11 @@
 <header class="vector-border-b px-12 py-6 flex items-center justify-between bg-header">
 <div class="flex items-center gap-12">
 <div class="flex flex-col">
-<h1 class="sans-bold text-2xl leading-none">Litigation OS</h1>
+<div class="flex items-baseline gap-2">
+  <h1 class="sans-bold text-2xl leading-none">Litigation OS</h1>
+  <span class="px-1.5 py-0.5 text-[8px] tracking-widest font-mono uppercase bg-rust/10 text-rust border border-rust/20 rounded">BETA</span>
+  <span class="text-[9px] font-mono text-muted-ink">by Harsh Gupta</span>
+</div>
 <span class="serif-italic text-sm text-rust">VOL. 04 • ISSUE N° 12</span>
 </div>
 <div class="hidden md:flex flex-col border-l border-ink pl-12" id="status-mount">
@@ -500,12 +504,14 @@
 </div>
 <div class="flex items-center gap-8">
 <nav class="flex gap-2">
-<button class="tab-pill tab-inactive" id="tab-op" onclick="switchTab('operational')">Operational Monitor</button>
-<button class="tab-pill tab-active" id="tab-lit" onclick="switchTab('litigation')">Litigation Suite</button>
+<button class="tab-pill tab-inactive" id="tab-op" onclick="switchTab('operational')">Operational Monitor <span class="opacity-50 text-[8px] font-mono ml-1">1</span></button>
+<button class="tab-pill tab-active" id="tab-lit" onclick="switchTab('litigation')">Litigation Suite <span class="opacity-50 text-[8px] font-mono ml-1">2</span></button>
+<button class="tab-pill tab-inactive" id="tab-help" onclick="openHelpModal()">Help <span class="opacity-50 text-[8px] font-mono ml-1">F1</span></button>
 </nav>
 <button class="theme-toggle-btn" id="theme-toggle-btn" onclick="toggleTheme()">🌙 Dark Mode</button>
+<button class="theme-toggle-btn" id="fullscreen-btn" onclick="toggleFullScreen()">🖥️ Full Screen <span class="opacity-50 text-[8px] font-mono ml-1">Ctrl+F</span></button>
 <button class="btn-rigid btn-rust px-8 py-3 text-[10px] flex items-center gap-4" id="sync-trigger">
-<span class="">Sync Notices</span>
+<span class="">Sync Notices <span class="opacity-50 text-[8px] font-mono ml-1">Ctrl+Enter</span></span>
 <span class="text-xs">→</span>
 </button>
 </div>
@@ -665,7 +671,7 @@
 <span class="material-symbols-outlined text-indigo-500">folder_open</span>
 </div>
 <div class="flex flex-col">
-<span class="mono-ledger font-bold text-[10px] text-muted-ink uppercase">Credential Directory</span>
+<span class="mono-ledger font-bold text-[10px] text-muted-ink uppercase">Credential Directory <span class="opacity-50 text-[8px] font-mono ml-1">Ctrl+O</span></span>
 <span class="mono-ledger text-xs text-ink" id="text-creds-path">Credentials.xlsx</span>
 </div>
 </div>
@@ -674,7 +680,7 @@
 <span class="material-symbols-outlined text-rust">download</span>
 </div>
 <div class="flex flex-col">
-<span class="mono-ledger font-bold text-[10px] text-muted-ink uppercase">Download Destination</span>
+<span class="mono-ledger font-bold text-[10px] text-muted-ink uppercase">Download Destination <span class="opacity-50 text-[8px] font-mono ml-1">Ctrl+N</span></span>
 <span class="mono-ledger text-xs text-ink truncate max-w-[240px]" id="text-dest-path">D:/Downloaded_CSV_Notices</span>
 </div>
 </div>
@@ -697,11 +703,29 @@
     </div>
     
     <!-- Active Client Info Box -->
-    <div class="flex items-center gap-4 py-4 bg-ink/5 px-6 rounded-md">
-      <span class="material-symbols-outlined text-3xl text-ink">account_circle</span>
-      <div class="flex flex-col">
-        <span class="mono-ledger font-bold text-[9px] uppercase text-muted-ink">Active Client Session</span>
-        <span class="serif-italic text-2xl text-ink" id="progress-client-name">Awaiting Start...</span>
+    <div class="flex flex-col gap-4 py-4 bg-ink/5 px-6 rounded-md">
+      <div class="flex items-center gap-4">
+        <span class="material-symbols-outlined text-3xl text-ink">account_circle</span>
+        <div class="flex flex-col">
+          <span class="mono-ledger font-bold text-[9px] uppercase text-muted-ink">Active Client Session</span>
+          <span class="serif-italic text-2xl text-ink" id="progress-client-name">Awaiting Start...</span>
+        </div>
+      </div>
+      
+      <!-- Server Delay Prompt Card (Hidden by default) -->
+      <div id="server-delay-prompt-container" class="hidden border border-amber-500/35 bg-amber-500/5 p-4 rounded mt-1 flex flex-col space-y-3">
+        <div class="flex items-center gap-2 text-amber-600 dark:text-amber-400">
+          <span class="material-symbols-outlined text-sm animate-pulse">warning</span>
+          <span class="mono-ledger text-xs font-bold uppercase">Portal takes too long to load</span>
+        </div>
+        <p class="text-xs text-ink/75 serif-italic">
+          The server is response-fluctuating. Wait another 30s, skip this client, or stop the automation?
+        </p>
+        <div class="flex gap-2 justify-end">
+          <button class="btn-rigid px-3 py-1 bg-amber-600 text-white text-[9px] font-bold mono-ledger hover:bg-amber-700" onclick="submitDelayDecision('wait')">Wait (30s)</button>
+          <button class="btn-rigid px-3 py-1 bg-rust text-white text-[9px] font-bold mono-ledger hover:shadow-sm" onclick="submitDelayDecision('skip')">Skip Client</button>
+          <button class="btn-rigid px-3 py-1 bg-ink text-parchment text-[9px] font-bold mono-ledger hover:bg-ink/80" onclick="submitDelayDecision('stop')">Stop Pipeline</button>
+        </div>
       </div>
     </div>
     
@@ -1620,6 +1644,172 @@
           printToConsole(`🚨 PIPELINE AUTOMATION RUNTIME FAILURE: ${errorText}`, 'error');
         }
 
-        window.addEventListener('keydown', (e) => { if (e.key === 'Escape') closeDrawer(); });
+        function toggleFullScreen() {
+          if (window.pywebview && window.pywebview.api && window.pywebview.api.toggle_fullscreen) {
+            window.pywebview.api.toggle_fullscreen();
+          } else {
+            if (!document.fullscreenElement) {
+              document.documentElement.requestFullscreen().catch(err => {});
+            } else {
+              document.exitFullscreen().catch(err => {});
+            }
+          }
+        }
+
+        function openHelpModal() {
+          const modal = document.getElementById('help-modal');
+          modal.classList.remove('hidden');
+          modal.classList.add('flex');
+        }
+
+        function closeHelpModal() {
+          const modal = document.getElementById('help-modal');
+          modal.classList.add('hidden');
+          modal.classList.remove('flex');
+        }
+
+        function showServerDelayPrompt(pan, selector) {
+          const container = document.getElementById('server-delay-prompt-container');
+          container.classList.remove('hidden');
+          printToConsole(`⚠️ Warning: Server is taking too long to load '${selector}' for ${pan}. Waiting for user decision...`, 'warning');
+        }
+
+        function submitDelayDecision(decision) {
+          const container = document.getElementById('server-delay-prompt-container');
+          container.classList.add('hidden');
+          printToConsole(`Decision submitted: User chose to ${decision.toUpperCase()}`, 'info');
+          if (window.pywebview && window.pywebview.api && window.pywebview.api.submit_user_decision) {
+            window.pywebview.api.submit_user_decision(decision);
+          }
+        }
+
+        window.addEventListener('keydown', (e) => {
+          if (e.key === 'Escape') {
+            closeDrawer();
+            closeHelpModal();
+          }
+          
+          const targetTag = e.target.tagName.toLowerCase();
+          const isInputActive = targetTag === 'input' || targetTag === 'textarea' || e.target.isContentEditable;
+          
+          // Ctrl + Enter
+          if (e.ctrlKey && e.key === 'Enter') {
+            e.preventDefault();
+            const btn = document.getElementById('sync-trigger');
+            if (btn && !btn.disabled) btn.click();
+          }
+          
+          // Ctrl + O
+          if (e.ctrlKey && e.key.toLowerCase() === 'o') {
+            e.preventDefault();
+            const btn = document.getElementById('btn-browse-creds');
+            if (btn) btn.click();
+          }
+          
+          // Ctrl + N
+          if (e.ctrlKey && e.key.toLowerCase() === 'n') {
+            e.preventDefault();
+            const btn = document.getElementById('btn-browse-dest');
+            if (btn) btn.click();
+          }
+          
+          // Ctrl + F
+          if (e.ctrlKey && e.key.toLowerCase() === 'f') {
+            e.preventDefault();
+            toggleFullScreen();
+          }
+          
+          // '1'
+          if (!isInputActive && e.key === '1') {
+            e.preventDefault();
+            switchTab('operational');
+          }
+          
+          // '2'
+          if (!isInputActive && e.key === '2') {
+            e.preventDefault();
+            switchTab('litigation');
+          }
+          
+          // F1
+          if (e.key === 'F1') {
+            e.preventDefault();
+            openHelpModal();
+          }
+        });
     </script>
+    
+    <!-- Help Modal Dialog -->
+    <div class="fixed inset-0 bg-black/60 backdrop-blur-sm z-[999] hidden items-center justify-center p-8 transition-opacity duration-300" id="help-modal">
+      <div class="bg-sidebar border border-ink/40 w-full max-w-2xl p-10 flex flex-col space-y-6 relative shadow-2xl">
+        <div class="flex justify-between items-start border-b border-ink/20 pb-4">
+          <div class="flex flex-col gap-1">
+            <span class="mono-ledger font-bold text-rust uppercase text-[10px] tracking-widest">Documentation Guide</span>
+            <h2 class="serif-title text-3xl">System User Manual</h2>
+          </div>
+          <button class="text-ink text-2xl font-light hover:rotate-90 transition-transform" onclick="closeHelpModal()">✕</button>
+        </div>
+        
+        <div class="flex-1 overflow-y-auto space-y-6 max-h-[450px] pr-2 custom-scroll serif-italic text-sm leading-relaxed text-ink/90">
+          <div>
+            <h4 class="sans-bold text-xs uppercase tracking-wider text-muted-ink mb-2">How Does It Work?</h4>
+            <p class="mb-3">
+              To check litigation notices, click the <strong class="not-italic text-rust font-bold">Sync Notices</strong> button. The automation engine runs the following steps:
+            </p>
+            <ul class="list-disc list-inside space-y-2 ml-2 font-mono text-xs not-italic text-ink/80">
+              <li>1. Launches a secure backend browser session to access the Income Tax E-Portal.</li>
+              <li>2. Logs in using client credentials from the Excel Registry Sheet.</li>
+              <li>3. Navigates to the official e-Proceedings panel.</li>
+              <li>4. Automatically downloads notices in CSV format (AX, BX, AY, and BY files) to the Destination folder.</li>
+              <li>5. Highlights new notices and lists all downloads for tracking and reconciliation.</li>
+            </ul>
+          </div>
+          
+          <div class="border-t border-ink/10 pt-4">
+            <h4 class="sans-bold text-xs uppercase tracking-wider text-muted-ink mb-2">Keyboard Shortcuts</h4>
+            <div class="grid grid-cols-2 gap-4 font-mono text-xs not-italic text-ink/90">
+              <div class="flex justify-between border-b border-ink/5 pb-1">
+                <span class="text-muted-ink">Start Sync</span>
+                <span class="font-bold text-rust">Ctrl + Enter</span>
+              </div>
+              <div class="flex justify-between border-b border-ink/5 pb-1">
+                <span class="text-muted-ink">Select Credentials</span>
+                <span class="font-bold text-indigo-500">Ctrl + O</span>
+              </div>
+              <div class="flex justify-between border-b border-ink/5 pb-1">
+                <span class="text-muted-ink">Select Dest Folder</span>
+                <span class="font-bold text-rust">Ctrl + N</span>
+              </div>
+              <div class="flex justify-between border-b border-ink/5 pb-1">
+                <span class="text-muted-ink">Toggle Fullscreen</span>
+                <span class="font-bold text-indigo-500">Ctrl + F</span>
+              </div>
+              <div class="flex justify-between border-b border-ink/5 pb-1">
+                <span class="text-muted-ink">Operational Monitor</span>
+                <span class="font-bold text-rust">1</span>
+              </div>
+              <div class="flex justify-between border-b border-ink/5 pb-1">
+                <span class="text-muted-ink">Litigation Suite</span>
+                <span class="font-bold text-indigo-500">2</span>
+              </div>
+              <div class="flex justify-between border-b border-ink/5 pb-1">
+                <span class="text-muted-ink">Open Help Manual</span>
+                <span class="font-bold text-rust">F1</span>
+              </div>
+            </div>
+          </div>
+
+          <div class="border-t border-ink/10 pt-4">
+            <h4 class="sans-bold text-xs uppercase tracking-wider text-muted-ink mb-2">Server Delays & Timeout Options</h4>
+            <p class="text-xs">
+              If the portal takes longer than 20 seconds to respond, the system displays a choice box inside the progress window. You can choose to <strong class="not-italic text-rust font-bold">Wait</strong> (an extra 30s), <strong class="not-italic text-rust font-bold">Skip</strong> the current client taxpayer, or <strong class="not-italic text-rust font-bold">Stop</strong> the run entirely.
+            </p>
+          </div>
+        </div>
+        
+        <div class="flex justify-end pt-4 border-t border-ink/20">
+          <button class="btn-rigid px-6 py-2 bg-ink text-parchment text-xs font-bold mono-ledger hover:shadow-[3px_3px_0px_var(--rust)]" onclick="closeHelpModal()">Got It</button>
+        </div>
+      </div>
+    </div>
 </body></html>

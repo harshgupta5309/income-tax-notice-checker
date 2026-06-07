@@ -227,6 +227,60 @@ def capture_diagnostic_screenshot(page, pan, stage, vault_manager):
         print(f"⚠️ [WARNING] - Could not capture diagnostic snapshot: {e}")
 
 
+# --- CUSTOM EXCEPTIONS FOR USER DECISIONS ---
+
+class SkipClientException(Exception):
+    """Custom exception raised when the user decides to skip the current client due to delay"""
+    pass
+
+class StopPipelineException(Exception):
+    """Custom exception raised when the user decides to stop the automation run entirely"""
+    pass
+
+def robust_wait_for_selector(page, selector, state="visible", timeout_sec=20, pan="", api_ref=None):
+    """Waits for a selector, and if it fails within timeout_sec, prompts the user via PyWebView API"""
+    while True:
+        try:
+            page.wait_for_selector(selector, state=state, timeout=timeout_sec * 1000)
+            return True
+        except Exception as e:
+            if api_ref:
+                print(f"⏳ Selector '{selector}' not loaded within {timeout_sec} seconds. Prompting user...")
+                decision = api_ref.prompt_user_server_delay(pan, selector)
+                if decision == 'wait':
+                    print("User requested to WAIT. Retrying wait for 30 seconds...")
+                    timeout_sec = 30
+                    continue
+                elif decision == 'skip':
+                    print("User requested to SKIP this client.")
+                    raise SkipClientException()
+                elif decision == 'stop':
+                    print("User requested to STOP the automation pipeline.")
+                    raise StopPipelineException()
+            raise e
+
+def robust_wait_for_locator(locator, state="visible", timeout_sec=20, pan="", api_ref=None):
+    """Waits for a Playwright locator, and if it fails, prompts the user"""
+    while True:
+        try:
+            locator.wait_for(state=state, timeout=timeout_sec * 1000)
+            return True
+        except Exception as e:
+            if api_ref:
+                print(f"⏳ Locator not loaded within {timeout_sec} seconds. Prompting user...")
+                decision = api_ref.prompt_user_server_delay(pan, "Element Load")
+                if decision == 'wait':
+                    print("User requested to WAIT. Retrying wait for 30 seconds...")
+                    timeout_sec = 30
+                    continue
+                elif decision == 'skip':
+                    print("User requested to SKIP this client.")
+                    raise SkipClientException()
+                elif decision == 'stop':
+                    print("User requested to STOP the automation pipeline.")
+                    raise StopPipelineException()
+            raise e
+
 # --- HELPER FUNCTIONS ---
 
 def download_and_rename(page, pan, name, file_id):
@@ -266,7 +320,7 @@ def get_latest_and_prev_files(pan, file_id):
 
 # --- MAIN AUTOMATION LOGIC ---
 
-def run_multi_client_downloads(vault_manager=None):
+def run_multi_client_downloads(vault_manager=None, api_ref=None):
     if vault_manager is None:
         vault_manager = SecureVaultManager(BASE_DIR)
     if not os.path.exists(BASE_DIR):
@@ -286,191 +340,207 @@ def run_multi_client_downloads(vault_manager=None):
     with Stealth().use_sync(sync_playwright()) as p:
         browser = p.chromium.launch(headless=True, args=["--start-maximized"])
         context = browser.new_context(viewport={'width': 1920, 'height': 1080})
+        context.set_default_timeout(30000)
+        context.set_default_navigation_timeout(30000)
         page = context.new_page()
 
         print("\nℹ️ [INFO]  - Launching Income Tax Portal...")
-        page.goto("https://eportal.incometax.gov.in/iec/foservices/#/login?language-code=en", wait_until="networkidle")
+        try:
+            page.goto("https://eportal.incometax.gov.in/iec/foservices/#/login?language-code=en", wait_until="networkidle", timeout=45000)
+        except Exception as e:
+            print(f"⚠️ [WARNING] - Navigation to portal timed out or failed: {e}. Attempting recovery...")
 
-        for index, row in df_creds.iterrows():
-            user_id = str(row['Login_ID']).strip()
-            password = str(row['Password']).strip()
-            
-            print(f"\n{'=' * 50}")
-            print(f"🏢 STARTING CLIENT: {user_id}")
-            print(f"{'=' * 50}")
-            print("🔑 [STAGE-AUTH] - 0% - Portal launched / loading")
+        try:
+            for index, row in df_creds.iterrows():
+                user_id = str(row['Login_ID']).strip()
+                password = str(row['Password']).strip()
+                
+                print(f"\n{'=' * 50}")
+                print(f"🏢 STARTING CLIENT: {user_id}")
+                print(f"{'=' * 50}")
+                print("🔑 [STAGE-AUTH] - 0% - Portal launched / loading")
 
-            print(f"ℹ️ [INFO]  - Scanning for login screen for {user_id}...")
-            
-            portal_ready = False
-            max_checks = 20 
-            checks = 0
-            
-            while not portal_ready and checks < max_checks:
                 try:
-                    page.wait_for_selector("#panAdhaarUserId", state="visible", timeout=3000)
-                    portal_ready = True
-                    print("✅ [SUCCESS] - Portal loaded! Injecting credentials...")
-                except Exception:
-                    checks += 1
-                    print(f"⏳ Portal still lagging... searching again. (Check {checks}/{max_checks})")
-            
-            if not portal_ready:
-                print(f"🚨 [CRITICAL ERROR] - Portal seems completely down or stuck. Skipping {user_id}.")
-                logging.error(f"Portal down/stuck when scanning login screen for {user_id}")
-                continue 
-            
-            # Stage 1: Login Form Injection
-            try:
-                page.locator("#panAdhaarUserId").click(force=True)
-                page.locator("#panAdhaarUserId").fill("")
-                page.locator("#panAdhaarUserId").press_sequentially(user_id, delay=50)
-                page.locator("#panAdhaarUserId").press("Tab")
-                page.locator('button.large-button-primary:has-text("Continue")').first.click(force=True)
-                print("🔑 [STAGE-AUTH] - 25% - User ID Entered and Continue Clicked")
-            except Exception as e:
-                print(f"🚨 [CRITICAL ERROR] - Login form injection stage failed for {user_id}.")
-                capture_diagnostic_screenshot(page, user_id, "LOGIN_INJECT", vault_manager)
-                logging.exception(f"Login ID injection failed for {user_id}")
-                continue
-
-            # Stage 2: OTP/Password Navigation
-            try:
-                page.wait_for_selector("#passwordCheckBox-input", timeout=10000)
-                try:
-                    # Click input directly without strict synchronous check assertion
-                    page.locator("#passwordCheckBox-input").click(force=True, timeout=5000)
-                except Exception:
-                    try:
-                        # Fallback to clicking label
-                        page.locator("label[for='passwordCheckBox-input']").click(timeout=5000)
-                    except Exception:
-                        # Standard check fallback
-                        page.check("#passwordCheckBox-input", force=True)
-                page.fill("#loginPasswordField", password)
-                page.keyboard.press("Tab")
-                print("🔑 [STAGE-AUTH] - 50% - Password Entered and Login Clicked")
-            except Exception as e:
-                print(f"🚨 [CRITICAL ERROR] - Password navigation stage failed for {user_id}.")
-                capture_diagnostic_screenshot(page, user_id, "PASSWORD_NAV", vault_manager)
-                logging.exception(f"Password screen navigation failed for {user_id}")
-                continue
-
-            # Stage 3: Login Authentication
-            try:
-                attempt = 0
-                login_success = False
-                while attempt < 10:
-                    if "/dashboard" in page.url.lower():
-                        login_success = True
-                        break
-                    attempt += 1
+                    print(f"ℹ️ [INFO]  - Scanning for login screen for {user_id}...")
                     
-                    dual_login_btn = page.get_by_role("button", name="Login Here")
-                    if dual_login_btn.is_visible(timeout=2000):
-                        dual_login_btn.click()
-                        page.wait_for_timeout(3000)
+                    try:
+                        robust_wait_for_selector(page, "#panAdhaarUserId", state="visible", timeout_sec=20, pan=user_id, api_ref=api_ref)
+                        print("✅ [SUCCESS] - Portal loaded! Injecting credentials...")
+                    except (SkipClientException, StopPipelineException) as e:
+                        raise e
+                    except Exception:
+                        print(f"🚨 [CRITICAL ERROR] - Portal seems completely down or stuck. Skipping {user_id}.")
+                        logging.error(f"Portal down/stuck when scanning login screen for {user_id}")
                         continue
                     
-                    login_btn = page.locator('button.marTop26')
-                    if login_btn.is_visible(timeout=2000):
-                        login_btn.click(force=True)
-                        page.wait_for_timeout(4000)
+                    # Stage 1: Login Form Injection
+                    try:
+                        page.locator("#panAdhaarUserId").click(force=True)
+                        page.locator("#panAdhaarUserId").fill("")
+                        page.locator("#panAdhaarUserId").press_sequentially(user_id, delay=50)
+                        page.locator("#panAdhaarUserId").press("Tab")
+                        page.locator('button.large-button-primary:has-text("Continue")').first.click(force=True)
+                        print("🔑 [STAGE-AUTH] - 25% - User ID Entered and Continue Clicked")
+                    except Exception as e:
+                        print(f"🚨 [CRITICAL ERROR] - Login form injection stage failed for {user_id}.")
+                        capture_diagnostic_screenshot(page, user_id, "LOGIN_INJECT", vault_manager)
+                        logging.exception(f"Login ID injection failed for {user_id}")
+                        continue
 
-                if not login_success:
-                    raise Exception("Dashboard not loaded after 10 attempts.")
-                print("🔑 [STAGE-AUTH] - 75% - Logged in to Income Tax Portal dashboard")
-            except Exception as e:
-                print(f"🚨 [CRITICAL ERROR] - Login authentication stage failed for {user_id}.")
-                capture_diagnostic_screenshot(page, user_id, "LOGIN_AUTH", vault_manager)
-                logging.exception(f"Login authentication failed for {user_id}")
-                continue
+                    # Stage 2: OTP/Password Navigation
+                    try:
+                        robust_wait_for_selector(page, "#passwordCheckBox-input", timeout_sec=20, pan=user_id, api_ref=api_ref)
+                        try:
+                            # Click input directly without strict synchronous check assertion
+                            page.locator("#passwordCheckBox-input").click(force=True, timeout=5000)
+                        except Exception:
+                            try:
+                                # Fallback to clicking label
+                                page.locator("label[for='passwordCheckBox-input']").click(timeout=5000)
+                            except Exception:
+                                # Standard check fallback
+                                page.check("#passwordCheckBox-input", force=True)
+                        page.fill("#loginPasswordField", password)
+                        page.keyboard.press("Tab")
+                        print("🔑 [STAGE-AUTH] - 50% - Password Entered and Login Clicked")
+                    except (SkipClientException, StopPipelineException) as e:
+                        raise e
+                    except Exception as e:
+                        print(f"🚨 [CRITICAL ERROR] - Password navigation stage failed for {user_id}.")
+                        capture_diagnostic_screenshot(page, user_id, "PASSWORD_NAV", vault_manager)
+                        logging.exception(f"Password screen navigation failed for {user_id}")
+                        continue
 
-            # Stage 4: Navigating to e-Proceedings
-            try:
-                print(f"ℹ️ [INFO]  - Navigating to e-Proceedings for {user_id}...")
-                page.wait_for_load_state("networkidle")
-                page.locator('[id="Pending Actions"]').wait_for(state="visible", timeout=15000)
-                page.locator('[id="Pending Actions"]').click(force=True)
-                
-                try:
-                    page.locator('role=menuitem[name="e-Proceedings"]').wait_for(state="visible", timeout=5000)
-                    page.locator('role=menuitem[name="e-Proceedings"]').click()
-                except Exception:
-                    page.get_by_text("e-Proceedings", exact=True).click()
+                    # Stage 3: Login Authentication
+                    try:
+                        attempt = 0
+                        login_success = False
+                        while attempt < 10:
+                            if "/dashboard" in page.url.lower():
+                                login_success = True
+                                break
+                            attempt += 1
+                            
+                            dual_login_btn = page.get_by_role("button", name="Login Here")
+                            if dual_login_btn.is_visible(timeout=2000):
+                                dual_login_btn.click()
+                                page.wait_for_timeout(3000)
+                                continue
+                            
+                            login_btn = page.locator('button.marTop26')
+                            if login_btn.is_visible(timeout=2000):
+                                login_btn.click(force=True)
+                                page.wait_for_timeout(4000)
+
+                        if not login_success:
+                            raise Exception("Dashboard not loaded after 10 attempts.")
+                        print("🔑 [STAGE-AUTH] - 75% - Logged in to Income Tax Portal dashboard")
+                    except Exception as e:
+                        print(f"🚨 [CRITICAL ERROR] - Login authentication stage failed for {user_id}.")
+                        capture_diagnostic_screenshot(page, user_id, "LOGIN_AUTH", vault_manager)
+                        logging.exception(f"Login authentication failed for {user_id}")
+                        continue
+
+                    # Stage 4: Navigating to e-Proceedings
+                    try:
+                        print(f"ℹ️ [INFO]  - Navigating to e-Proceedings for {user_id}...")
+                        page.wait_for_load_state("networkidle")
+                        robust_wait_for_locator(page.locator('[id="Pending Actions"]'), state="visible", timeout_sec=20, pan=user_id, api_ref=api_ref)
+                        page.locator('[id="Pending Actions"]').click(force=True)
+                        
+                        try:
+                            page.locator('role=menuitem[name="e-Proceedings"]').wait_for(state="visible", timeout=5000)
+                            page.locator('role=menuitem[name="e-Proceedings"]').click()
+                        except Exception:
+                            page.get_by_text("e-Proceedings", exact=True).click()
+                            
+                        page.wait_for_load_state("networkidle")
+                        print("🔑 [STAGE-AUTH] - 100% - Portal loaded and Eproceedings Page has been opened")
+                    except (SkipClientException, StopPipelineException) as e:
+                        raise e
+                    except Exception as e:
+                        print(f"🚨 [CRITICAL ERROR] - Navigating to e-Proceedings stage failed for {user_id}.")
+                        capture_diagnostic_screenshot(page, user_id, "EPROC_NAV", vault_manager)
+                        logging.exception(f"e-Proceedings navigation failed for {user_id}")
+                        continue
+
+                    try:
+                        page.wait_for_selector(f"text={user_id}", timeout=10000)
+                        raw_name = page.locator(".mdc-button__label").filter(has_text="Welcome").first.inner_text()
+                        taxpayer_name = raw_name.replace("Welcome", "").strip()
+                    except Exception:
+                        taxpayer_name = str(row['Name']).strip() if pd.notna(row['Name']) else "Taxpayer"
+
+                    print(f"👤 CLIENT_INFO: {user_id} | {taxpayer_name}")
+
+                    # AX Download
+                    try:
+                        download_and_rename(page, user_id, taxpayer_name, "AX")
+                    except Exception as e:
+                        print(f"🚨 [CRITICAL ERROR] - AX download stage failed for {user_id}.")
+                        capture_diagnostic_screenshot(page, user_id, "AX_DOWNLOAD", vault_manager)
+                        logging.exception(f"AX download stage failed for {user_id}")
+                    print("📥 [STAGE-EXTRACTION] - 25% - AX File downloaded")
                     
-                page.wait_for_load_state("networkidle")
-                print("🔑 [STAGE-AUTH] - 100% - Portal loaded and Eproceedings Page has been opened")
-            except Exception as e:
-                print(f"🚨 [CRITICAL ERROR] - Navigating to e-Proceedings stage failed for {user_id}.")
-                capture_diagnostic_screenshot(page, user_id, "EPROC_NAV", vault_manager)
-                logging.exception(f"e-Proceedings navigation failed for {user_id}")
-                continue
+                    # BX Download
+                    try:
+                        page.get_by_text("For your Information", exact=False).click()
+                        page.wait_for_timeout(2000)
+                        download_and_rename(page, user_id, taxpayer_name, "BX")
+                    except Exception as e:
+                        print(f"🚨 [CRITICAL ERROR] - BX download stage failed for {user_id}.")
+                        capture_diagnostic_screenshot(page, user_id, "BX_DOWNLOAD", vault_manager)
+                        logging.exception(f"BX download stage failed for {user_id}")
+                    print("📥 [STAGE-EXTRACTION] - 50% - BX File downloaded")
+                    
+                    # AY Download
+                    try:
+                        page.locator('span.mat-button-toggle-label-content:has-text("Of Other PAN/TAN")').click()
+                        page.wait_for_timeout(3000)
+                        download_and_rename(page, user_id, taxpayer_name, "AY")
+                    except Exception as e:
+                        print(f"🚨 [CRITICAL ERROR] - AY download stage failed for {user_id}.")
+                        capture_diagnostic_screenshot(page, user_id, "AY_DOWNLOAD", vault_manager)
+                        logging.exception(f"AY download stage failed for {user_id}")
+                    print("📥 [STAGE-EXTRACTION] - 75% - AY File downloaded")
+                    
+                    # BY Download
+                    try:
+                        page.get_by_text("For your Information", exact=False).click()
+                        page.wait_for_timeout(2000)
+                        download_and_rename(page, user_id, taxpayer_name, "BY")
+                    except Exception as e:
+                        print(f"🚨 [CRITICAL ERROR] - BY download stage failed for {user_id}.")
+                        capture_diagnostic_screenshot(page, user_id, "BY_DOWNLOAD", vault_manager)
+                        logging.exception(f"BY download stage failed for {user_id}")
 
-            try:
-                page.wait_for_selector(f"text={user_id}", timeout=10000)
-                raw_name = page.locator(".mdc-button__label").filter(has_text="Welcome").first.inner_text()
-                taxpayer_name = raw_name.replace("Welcome", "").strip()
-            except Exception:
-                taxpayer_name = str(row['Name']).strip() if pd.notna(row['Name']) else "Taxpayer"
+                    processed_pans.append(user_id)
 
-            print(f"👤 CLIENT_INFO: {user_id} | {taxpayer_name}")
+                    try:
+                        login_again_btn = page.locator('button.registerButton:has-text("Log In Again")')
+                        login_again_btn.wait_for(state="visible", timeout=5000)
+                        login_again_btn.click()
+                        page.wait_for_load_state("networkidle")
+                    except:
+                        print("Could not find 'Log In Again' button. Hard navigating back to login page...")
+                        page.goto("https://eportal.incometax.gov.in/iec/foservices/#/login?language-code=en", wait_until="networkidle")
+                    print("📥 [STAGE-EXTRACTION] - 100% - BY File downloaded and Logout completed")
 
-            # AX Download
-            try:
-                download_and_rename(page, user_id, taxpayer_name, "AX")
-            except Exception as e:
-                print(f"🚨 [CRITICAL ERROR] - AX download stage failed for {user_id}.")
-                capture_diagnostic_screenshot(page, user_id, "AX_DOWNLOAD", vault_manager)
-                logging.exception(f"AX download stage failed for {user_id}")
-            print("📥 [STAGE-EXTRACTION] - 25% - AX File downloaded")
-            
-            # BX Download
-            try:
-                page.get_by_text("For your Information", exact=False).click()
-                page.wait_for_timeout(2000)
-                download_and_rename(page, user_id, taxpayer_name, "BX")
-            except Exception as e:
-                print(f"🚨 [CRITICAL ERROR] - BX download stage failed for {user_id}.")
-                capture_diagnostic_screenshot(page, user_id, "BX_DOWNLOAD", vault_manager)
-                logging.exception(f"BX download stage failed for {user_id}")
-            print("📥 [STAGE-EXTRACTION] - 50% - BX File downloaded")
-            
-            # AY Download
-            try:
-                page.locator('span.mat-button-toggle-label-content:has-text("Of Other PAN/TAN")').click()
-                page.wait_for_timeout(3000)
-                download_and_rename(page, user_id, taxpayer_name, "AY")
-            except Exception as e:
-                print(f"🚨 [CRITICAL ERROR] - AY download stage failed for {user_id}.")
-                capture_diagnostic_screenshot(page, user_id, "AY_DOWNLOAD", vault_manager)
-                logging.exception(f"AY download stage failed for {user_id}")
-            print("📥 [STAGE-EXTRACTION] - 75% - AY File downloaded")
-            
-            # BY Download
-            try:
-                page.get_by_text("For your Information", exact=False).click()
-                page.wait_for_timeout(2000)
-                download_and_rename(page, user_id, taxpayer_name, "BY")
-            except Exception as e:
-                print(f"🚨 [CRITICAL ERROR] - BY download stage failed for {user_id}.")
-                capture_diagnostic_screenshot(page, user_id, "BY_DOWNLOAD", vault_manager)
-                logging.exception(f"BY download stage failed for {user_id}")
+                except SkipClientException:
+                    print(f"⏩ [SKIP] - User requested to skip client: {user_id}. Navigating back to login...")
+                    try:
+                        page.goto("https://eportal.incometax.gov.in/iec/foservices/#/login?language-code=en", timeout=15000)
+                    except Exception:
+                        pass
+                    continue
 
-            processed_pans.append(user_id)
-
-            try:
-                login_again_btn = page.locator('button.registerButton:has-text("Log In Again")')
-                login_again_btn.wait_for(state="visible", timeout=5000)
-                login_again_btn.click()
-                page.wait_for_load_state("networkidle")
-            except:
-                print("Could not find 'Log In Again' button. Hard navigating back to login page...")
-                page.goto("https://eportal.incometax.gov.in/iec/foservices/#/login?language-code=en", wait_until="networkidle")
-            print("📥 [STAGE-EXTRACTION] - 100% - BY File downloaded and Logout completed")
+        except StopPipelineException:
+            print("\n🛑 [STOP] - Synchronization stopped by user request. Exiting loop...")
 
         print("\nAll clients processed. Closing browser...")
         browser.close()
+        
+    return processed_pans
         
     return processed_pans
 

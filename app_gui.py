@@ -45,6 +45,8 @@ class DesktopAPI:
         self.running_thread = None
         self._thread_lock = threading.Lock()
         self.vault_folder = None
+        self._decision_event = threading.Event()
+        self.user_decision = None
         
         # Load saved settings immediately on initialization to sync Python backend state
         try:
@@ -61,6 +63,34 @@ class DesktopAPI:
 
     def set_window(self, window):
         self._window = window
+
+    def prompt_user_server_delay(self, pan, selector):
+        """Called by the background thread to display the delay prompt in the UI and await decision."""
+        self._decision_event = threading.Event()
+        self.user_decision = None
+        
+        # Fire evaluation on UI to show the dialog/prompt below client name
+        js_cmd = f"showServerDelayPrompt('{pan}', '{selector}')"
+        self._window.evaluate_js(js_cmd)
+        
+        # Block until self._decision_event is set
+        self._decision_event.wait()
+        
+        # Return the choice: 'wait', 'skip', or 'stop'
+        return self.user_decision
+
+    def submit_user_decision(self, decision):
+        """Called by the UI thread to resolve the blocked wait in the background thread."""
+        self.user_decision = decision
+        self._decision_event.set()
+        return True
+
+    def toggle_fullscreen(self):
+        """Toggles fullscreen state of the native webview window"""
+        if self._window:
+            self._window.toggle_fullscreen()
+            return True
+        return False
 
     # --- PORTABLE DIAGNOSTICS VAULT ENGINE ---
     def _initialize_vault(self, destination_path):
@@ -300,7 +330,7 @@ class DesktopAPI:
             logger.addHandler(ch)
             
             # Start backend scraper routine
-            successful_pans = tax_backend.run_multi_client_downloads()
+            successful_pans = tax_backend.run_multi_client_downloads(api_ref=self)
             tax_backend.process_and_flag(successful_pans)
             
             # Fire completion actions on UI

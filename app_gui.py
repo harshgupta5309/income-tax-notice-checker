@@ -45,6 +45,19 @@ class DesktopAPI:
         self.running_thread = None
         self._thread_lock = threading.Lock()
         self.vault_folder = None
+        
+        # Load saved settings immediately on initialization to sync Python backend state
+        try:
+            settings_path = os.path.join(APP_DIR, "settings.json")
+            if os.path.exists(settings_path):
+                with open(settings_path, "r") as f:
+                    settings = json.load(f)
+                if "credentials_path" in settings and settings["credentials_path"]:
+                    tax_backend.CREDENTIALS_FILE = settings["credentials_path"]
+                if "destination_path" in settings and settings["destination_path"]:
+                    tax_backend.BASE_DIR = settings["destination_path"]
+        except Exception:
+            pass
 
     def set_window(self, window):
         self._window = window
@@ -106,6 +119,11 @@ class DesktopAPI:
             try:
                 with open(settings_path, "r") as f:
                     settings = json.load(f)
+                # Apply paths to backend when loading settings
+                if "credentials_path" in settings and settings["credentials_path"]:
+                    tax_backend.CREDENTIALS_FILE = settings["credentials_path"]
+                if "destination_path" in settings and settings["destination_path"]:
+                    tax_backend.BASE_DIR = settings["destination_path"]
                 return json.dumps(settings)
             except Exception:
                 pass
@@ -143,6 +161,7 @@ class DesktopAPI:
             root.destroy()
             if file_path:
                 self._save_settings(credentials_path=file_path)
+                tax_backend.CREDENTIALS_FILE = file_path
                 return file_path
             return ""
         except Exception as e:
@@ -158,6 +177,7 @@ class DesktopAPI:
             root.destroy()
             if folder_path:
                 self._save_settings(destination_path=folder_path)
+                tax_backend.BASE_DIR = folder_path
                 return folder_path
             return ""
         except Exception as e:
@@ -339,27 +359,35 @@ class DesktopAPI:
         if not base_dir or not os.path.exists(base_dir):
             return json.dumps([])
 
+        pan_upper = pan.upper().strip()
+
         # Gather files from BASE_DIR and BASE_DIR/Archive
         files = []
         # Pattern 1: in base_dir
-        pattern_base = os.path.join(base_dir, f"*_{pan}_*.csv")
+        pattern_base = os.path.join(base_dir, f"*_{pan_upper}_*.csv")
         files.extend(glob.glob(pattern_base))
 
         # Pattern 2: in Archive folder
         archive_dir = os.path.join(base_dir, "Archive")
         if os.path.exists(archive_dir):
-            pattern_archive = os.path.join(archive_dir, f"*_{pan}_*.csv")
+            pattern_archive = os.path.join(archive_dir, f"*_{pan_upper}_*.csv")
             files.extend(glob.glob(pattern_archive))
 
         # Also search lowercase 'archive' just in case
         archive_dir_lower = os.path.join(base_dir, "archive")
         if os.path.exists(archive_dir_lower) and archive_dir_lower != archive_dir:
-            pattern_archive_lower = os.path.join(archive_dir_lower, f"*_{pan}_*.csv")
+            pattern_archive_lower = os.path.join(archive_dir_lower, f"*_{pan_upper}_*.csv")
             files.extend(glob.glob(pattern_archive_lower))
 
+        seen_paths = set()
         records = []
         for f in files:
-            filename = os.path.basename(f)
+            abs_path = os.path.abspath(f)
+            if abs_path in seen_paths:
+                continue
+            seen_paths.add(abs_path)
+
+            filename = os.path.basename(abs_path)
             # Try to identify file_id (AX, BX, AY, BY) from filename
             file_id = "Unknown"
             for fid in ["AX", "BX", "AY", "BY"]:
@@ -368,21 +396,25 @@ class DesktopAPI:
                     break
             
             # Get mtime as fallback
-            mtime = os.path.getmtime(f)
+            mtime = os.path.getmtime(abs_path)
             dt = datetime.fromtimestamp(mtime)
             formatted_time = dt.strftime("%Y-%m-%d %H:%M:%S")
 
-            # Try to parse timestamp from filename (e.g. name_PAN_FID_YYYY-MM-DD_HH-MM-SS.csv)
+            # Try to parse timestamp from filename robustly (supports space, dash, or underscore separators)
             import re
-            ts_match = re.search(r'(\d{4}-\d{2}-\d{2})_(\d{2})-(\d{2})-(\d{2})', filename)
+            ts_match = re.search(r'(\d{4})[ -_](\d{2})[ -_](\d{2})[ -_](\d{2})[ -_](\d{2})(?:[ -_](\d{2}))?', filename)
             if ts_match:
-                date_part = ts_match.group(1)
-                time_part = f"{ts_match.group(2)}:{ts_match.group(3)}:{ts_match.group(4)}"
-                formatted_time = f"{date_part} {time_part}"
+                year = ts_match.group(1)
+                month = ts_match.group(2)
+                day = ts_match.group(3)
+                hour = ts_match.group(4)
+                minute = ts_match.group(5)
+                second = ts_match.group(6) if ts_match.group(6) else "00"
+                formatted_time = f"{year}-{month}-{day} {hour}:{minute}:{second}"
 
             records.append({
                 "filename": filename,
-                "filepath": os.path.abspath(f),
+                "filepath": abs_path,
                 "file_id": file_id,
                 "timestamp": formatted_time,
                 "raw_time": mtime

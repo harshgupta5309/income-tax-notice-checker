@@ -364,7 +364,7 @@ def run_multi_client_downloads(vault_manager=None, api_ref=None):
     processed_pans = []
 
     with sync_playwright() as p:
-        browser = p.chromium.launch(headless=False, args=["--window-position=-2000,-2000", "--window-size=1920,1080"])
+        browser = p.chromium.launch(headless=True)
         
         try:
             for index, row in df_creds.iterrows():
@@ -387,9 +387,9 @@ def run_multi_client_downloads(vault_manager=None, api_ref=None):
                 context.set_default_navigation_timeout(30000)
                 page = context.new_page()
                 
-                # Apply stealth sync to the fresh page
-                from playwright_stealth import stealth_sync
-                stealth_sync(page)
+                # Apply stealth sync to the fresh context and page
+                Stealth().apply_stealth_sync(context)
+                Stealth().apply_stealth_sync(page)
 
                 try:
                     print("\nℹ️ [INFO]  - Launching Income Tax Portal...")

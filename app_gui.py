@@ -29,6 +29,9 @@ else:
 BASE_DIR = os.path.join(APP_DIR, "Income_tax_folder")
 os.makedirs(BASE_DIR, exist_ok=True)
 
+def escape_arg(arg):
+    return str(arg).replace('\\', '\\\\').replace("'", "\\'").replace('"', '\\"').replace('\n', '\\n').replace('\r', '\\r')
+
 # Force Playwright's browser context to remain entirely inside a local subfolder
 # This prevents the app from needing admin rights to write to %LOCALAPPDATA%
 os.environ["PLAYWRIGHT_BROWSERS_PATH"] = os.path.join(APP_DIR, "ms-playwright")
@@ -75,7 +78,7 @@ class DesktopAPI:
         self.user_decision = None
         
         # Fire evaluation on UI to show the dialog/prompt below client name
-        js_cmd = f"showServerDelayPrompt('{pan}', '{selector}')"
+        js_cmd = f"showServerDelayPrompt('{escape_arg(pan)}', '{escape_arg(selector)}')"
         self._window.evaluate_js(js_cmd)
         
         # Block until self._decision_event is set
@@ -508,7 +511,7 @@ class DesktopAPI:
             # Write error stack traces securely to our hidden, encrypted diagnostics archive
             error_msg = f"Fatal Pipeline Error: {str(e)}"
             self.write_to_secure_vault(f"error_{int(datetime.now().timestamp())}.txt", error_msg.encode('utf-8'))
-            self._window.evaluate_js(f"onNativeAutomationError('{str(e)}')")
+            self._window.evaluate_js(f"onNativeAutomationError('{escape_arg(str(e))}')")
         finally:
             sys.stdout = sys.__stdout__ # Reset print redirects back to default output
             # Write the complete execution log to the vault at the end of the run to prevent file lock contention
@@ -678,49 +681,49 @@ class JSLogRedirector:
 
             elif "🏢 STARTING CLIENT:" in string:
                 client_pan = string.split("🏢 STARTING CLIENT:")[-1].strip()
-                self.window.evaluate_js(f"onClientCycleStarted('{client_pan}')")
+                self.window.evaluate_js(f"onClientCycleStarted('{escape_arg(client_pan)}')")
 
             elif "🔑 [STAGE-AUTH] -" in string:
                 match = re.search(r'🔑 \[STAGE-AUTH\] -\s*(\d+)%\s*-\s*(.*)', string)
                 if match:
                     pct = int(match.group(1))
                     msg = match.group(2).strip()
-                    self.window.evaluate_js(f"updateAuthProgressBar({pct}, '{msg}')")
+                    self.window.evaluate_js(f"updateAuthProgressBar({pct}, '{escape_arg(msg)}')")
 
             elif "📥 [STAGE-EXTRACTION] -" in string:
                 match = re.search(r'📥 \[STAGE-EXTRACTION\] -\s*(\d+)%\s*-\s*(.*)', string)
                 if match:
                     pct = int(match.group(1))
                     msg = match.group(2).strip()
-                    self.window.evaluate_js(f"updateExtractionProgressBar({pct}, '{msg}')")
+                    self.window.evaluate_js(f"updateExtractionProgressBar({pct}, '{escape_arg(msg)}')")
 
             elif "👤 CLIENT_INFO:" in string:
                 parts = string.split("👤 CLIENT_INFO:")[-1].strip().split(" | ")
                 if len(parts) == 2:
                     pan, name = parts[0].strip(), parts[1].strip()
-                    self.window.evaluate_js(f"onClientLoggedIn('{pan}', '{name}')")
+                    self.window.evaluate_js(f"onClientLoggedIn('{escape_arg(pan)}', '{escape_arg(name)}')")
 
             elif "Triggering download for ID:" in string:
                 file_id = string.split("Triggering download for ID:")[-1].strip().rstrip('.')
-                self.window.evaluate_js(f"onExtractionStarted('{file_id}')")
+                self.window.evaluate_js(f"onExtractionStarted('{escape_arg(file_id)}')")
 
             elif "Successfully saved:" in string:
                 file_info = string.split("Successfully saved:")[-1].strip()
                 pool_match = re.search(r'_(AX|BX|AY|BY)_', file_info)
                 pool_type = pool_match.group(1) if pool_match else "Notice Pool"
-                self.window.evaluate_js(f"onFileDownloaded('{pool_type}', '{file_info}', true)")
-                self.window.evaluate_js(f"onFileStatusUpdated('{pool_type}', 'Downloaded', 'success')")
+                self.window.evaluate_js(f"onFileDownloaded('{escape_arg(pool_type)}', '{escape_arg(file_info)}', true)")
+                self.window.evaluate_js(f"onFileStatusUpdated('{escape_arg(pool_type)}', 'Downloaded', 'success')")
 
             elif "has no active rows" in string or "No Records Found" in string:
                 match = re.search(r'File\s+(AX|BX|AY|BY)', string)
                 pool_type = match.group(1) if match else "Notice Pool"
-                self.window.evaluate_js(f"onFileDownloaded('{pool_type}', 'No records found on server.', false)")
-                self.window.evaluate_js(f"onFileStatusUpdated('{pool_type}', 'No Records', 'warning')")
+                self.window.evaluate_js(f"onFileDownloaded('{escape_arg(pool_type)}', 'No records found on server.', false)")
+                self.window.evaluate_js(f"onFileStatusUpdated('{escape_arg(pool_type)}', 'No Records', 'warning')")
 
             elif "download stage failed for" in string:
                 match = re.search(r'(AX|BX|AY|BY) download stage failed for', string)
                 pool_type = match.group(1) if match else "Notice Pool"
-                self.window.evaluate_js(f"onFileStatusUpdated('{pool_type}', 'Failed', 'error')")
+                self.window.evaluate_js(f"onFileStatusUpdated('{escape_arg(pool_type)}', 'Failed', 'error')")
 
     def flush(self):
         pass

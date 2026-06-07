@@ -111,6 +111,24 @@ class DesktopAPI:
                 pass
         return json.dumps({"credentials_path": "", "destination_path": ""})
 
+    def save_theme_preference(self, theme_name):
+        """Saves the UI theme preference ('obsidian' or 'charcoal') to settings.json"""
+        self._save_settings()  # ensure file exists
+        settings_path = os.path.join(APP_DIR, "settings.json")
+        settings = {}
+        if os.path.exists(settings_path):
+            try:
+                with open(settings_path, "r") as f:
+                    settings = json.load(f)
+            except Exception:
+                pass
+        settings["theme"] = theme_name
+        try:
+            with open(settings_path, "w") as f:
+                json.dump(settings, f, indent=4)
+        except Exception:
+            pass
+
     # --- NATIVE FILE/FOLDER PICKERS ---
     def browse_credentials(self):
         """Launches a topmost native file picker to select the client spreadsheet"""
@@ -313,6 +331,84 @@ class DesktopAPI:
         except Exception as e:
             return json.dumps({"error": str(e)})
 
+    def get_client_download_history(self, pan):
+        """Searches BASE_DIR and BASE_DIR/Archive for downloaded CSV files for this PAN"""
+        import glob
+        from datetime import datetime
+        base_dir = tax_backend.BASE_DIR
+        if not base_dir or not os.path.exists(base_dir):
+            return json.dumps([])
+
+        # Gather files from BASE_DIR and BASE_DIR/Archive
+        files = []
+        # Pattern 1: in base_dir
+        pattern_base = os.path.join(base_dir, f"*_{pan}_*.csv")
+        files.extend(glob.glob(pattern_base))
+
+        # Pattern 2: in Archive folder
+        archive_dir = os.path.join(base_dir, "Archive")
+        if os.path.exists(archive_dir):
+            pattern_archive = os.path.join(archive_dir, f"*_{pan}_*.csv")
+            files.extend(glob.glob(pattern_archive))
+
+        # Also search lowercase 'archive' just in case
+        archive_dir_lower = os.path.join(base_dir, "archive")
+        if os.path.exists(archive_dir_lower) and archive_dir_lower != archive_dir:
+            pattern_archive_lower = os.path.join(archive_dir_lower, f"*_{pan}_*.csv")
+            files.extend(glob.glob(pattern_archive_lower))
+
+        records = []
+        for f in files:
+            filename = os.path.basename(f)
+            # Try to identify file_id (AX, BX, AY, BY) from filename
+            file_id = "Unknown"
+            for fid in ["AX", "BX", "AY", "BY"]:
+                if f"_{fid}_" in filename:
+                    file_id = fid
+                    break
+            
+            # Get mtime as fallback
+            mtime = os.path.getmtime(f)
+            dt = datetime.fromtimestamp(mtime)
+            formatted_time = dt.strftime("%Y-%m-%d %H:%M:%S")
+
+            # Try to parse timestamp from filename (e.g. name_PAN_FID_YYYY-MM-DD_HH-MM-SS.csv)
+            import re
+            ts_match = re.search(r'(\d{4}-\d{2}-\d{2})_(\d{2})-(\d{2})-(\d{2})', filename)
+            if ts_match:
+                date_part = ts_match.group(1)
+                time_part = f"{ts_match.group(2)}:{ts_match.group(3)}:{ts_match.group(4)}"
+                formatted_time = f"{date_part} {time_part}"
+
+            records.append({
+                "filename": filename,
+                "filepath": os.path.abspath(f),
+                "file_id": file_id,
+                "timestamp": formatted_time,
+                "raw_time": mtime
+            })
+
+        # Sort by raw_time descending (newest first)
+        records.sort(key=lambda x: x["raw_time"], reverse=True)
+        return json.dumps(records)
+
+    def open_downloaded_file(self, filepath):
+        """Opens the specified CSV file with the default system application"""
+        import sys
+        if os.path.exists(filepath):
+            try:
+                if sys.platform == "win32":
+                    os.startfile(filepath)
+                    return json.dumps({"success": True})
+                else:
+                    import subprocess
+                    opener = "open" if sys.platform == "darwin" else "xdg-open"
+                    subprocess.call([opener, filepath])
+                    return json.dumps({"success": True})
+            except Exception as e:
+                return json.dumps({"success": False, "error": str(e)})
+        return json.dumps({"success": False, "error": "File not found."})
+
 class JSLogRedirector:
     """Interceptors to catch raw console print messages and stream them directly to the HTML UI"""
     def __init__(self, window, api_ref):
@@ -364,7 +460,7 @@ class JSLogRedirector:
                     self.window.evaluate_js(f"onClientLoggedIn('{pan}', '{name}')")
 
             elif "Triggering download for ID:" in string:
-                file_id = string.split("Triggering download for ID:")[-1].strip()
+                file_id = string.split("Triggering download for ID:")[-1].strip().rstrip('.')
                 self.window.evaluate_js(f"onExtractionStarted('{file_id}')")
 
             elif "Successfully saved:" in string:

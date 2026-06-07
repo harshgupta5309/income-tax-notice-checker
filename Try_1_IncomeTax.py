@@ -298,7 +298,7 @@ def run_multi_client_downloads(vault_manager=None):
             print(f"\n{'=' * 50}")
             print(f"🏢 STARTING CLIENT: {user_id}")
             print(f"{'=' * 50}")
-            print("🔑 [STAGE-AUTH] - 25% - Login the portal")
+            print("🔑 [STAGE-AUTH] - 0% - Portal launched / loading")
 
             print(f"ℹ️ [INFO]  - Scanning for login screen for {user_id}...")
             
@@ -322,12 +322,12 @@ def run_multi_client_downloads(vault_manager=None):
             
             # Stage 1: Login Form Injection
             try:
-                page.locator("#panAdhaarUserId").click()
+                page.locator("#panAdhaarUserId").click(force=True)
                 page.locator("#panAdhaarUserId").fill("")
                 page.locator("#panAdhaarUserId").press_sequentially(user_id, delay=50)
                 page.locator("#panAdhaarUserId").press("Tab")
-                page.locator('button.large-button-primary:has-text("Continue")').first.click()
-                print("🔑 [STAGE-AUTH] - 50% - Used ID and Continue Clicked")
+                page.locator('button.large-button-primary:has-text("Continue")').first.click(force=True)
+                print("🔑 [STAGE-AUTH] - 25% - User ID Entered and Continue Clicked")
             except Exception as e:
                 print(f"🚨 [CRITICAL ERROR] - Login form injection stage failed for {user_id}.")
                 capture_diagnostic_screenshot(page, user_id, "LOGIN_INJECT", vault_manager)
@@ -349,7 +349,7 @@ def run_multi_client_downloads(vault_manager=None):
                         page.check("#passwordCheckBox-input", force=True)
                 page.fill("#loginPasswordField", password)
                 page.keyboard.press("Tab")
-                print("🔑 [STAGE-AUTH] - 75% - Password Input and Login Clicked")
+                print("🔑 [STAGE-AUTH] - 50% - Password Entered and Login Clicked")
             except Exception as e:
                 print(f"🚨 [CRITICAL ERROR] - Password navigation stage failed for {user_id}.")
                 capture_diagnostic_screenshot(page, user_id, "PASSWORD_NAV", vault_manager)
@@ -379,6 +379,7 @@ def run_multi_client_downloads(vault_manager=None):
 
                 if not login_success:
                     raise Exception("Dashboard not loaded after 10 attempts.")
+                print("🔑 [STAGE-AUTH] - 75% - Logged in to Income Tax Portal dashboard")
             except Exception as e:
                 print(f"🚨 [CRITICAL ERROR] - Login authentication stage failed for {user_id}.")
                 capture_diagnostic_screenshot(page, user_id, "LOGIN_AUTH", vault_manager)

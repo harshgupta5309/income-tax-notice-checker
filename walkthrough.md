@@ -1,61 +1,39 @@
-# Litigation OS — Custom Progress, Character Crawling & UI Enhancements Walkthrough
+# Litigation OS — Bug Fixes & Visual Sequence Walkthrough
 
-We have successfully implemented configuration persistence, mapped precise progress bar stages, added an animated crawling character with thought bubbles, and restructured the right panel layout with a live Progress Window and collapsible Security Log.
-
----
-
-## 💻 Key Features Added
-
-### 1. Persistent Configuration Settings (`settings.json`) ✅
-- **Persistence**: Added auto-save hooks when selecting paths inside `browse_credentials()` and `browse_destination()`. Selected folders/spreadsheets are written immediately to `settings.json` next to the executable.
-- **Auto-loading**: On application launch, settings are parsed and populated back into the input forms, fetching client cards automatically. Fallback to local `Credentials.xlsx` remains in place if no saved configurations exist.
-
-### 2. Precise Dual Progress Ticker Stages ✅
-- **Secure Authentication (Bar 1)**:
-  - **25%**: Login the portal initiated
-  - **50%**: User ID entered and Continue Clicked
-  - **75%**: Password entered and Login Clicked
-  - **100%**: Portal loaded and e-Proceedings page opened
-- **Notice Aggregation (Bar 2)**:
-  - **25%**: AX File downloaded
-  - **50%**: BX File downloaded
-  - **75%**: AY File downloaded
-  - **100%**: BY File downloaded and Logout completed (restarts for the next client session)
-
-### 3. Sideways Crawling Character & Thought Loops ✅
-- **Crawling Character**: An inline SVG cute insect crawler with keyframe leg crawl rotation (`leg-left`, `leg-right`) and bobbing body animations crawls sideways, pinned directly to the right edge of both progress bar fills.
-- **Dynamic Thoughts**: A floating speech bubble updates thoughts based on progress stages:
-  - *Auth Stage*: "Login the portal...", "Used ID and Continue Clicked...", "Password Input and Login Clicked...", "Portal loaded and Eproceedings Page has been opened!"
-  - *Extraction Stage*: "AX File downloaded...", "BX File downloaded...", "AY File downloaded...", "BY File downloaded and Logout completed!"
-
-### 4. Right Panel Restructuring ✅
-- **Progress Window Panel**: Added a status dashboard for the active client showing:
-  - Active client taxpayer name and PAN card.
-  - Interactive grid cards for AX, BX, AY, BY file download states (Pending, Downloaded, No Records, Failed) with color-coded borders and text.
-  - Live summary box displaying success/reconciliation messages upon completion: `Successfully downloaded and saved the Records for [Name]`.
-- **Collapsible Security Log**: Renamed the Transaction Ledger to "Security Log". It is minimized (height: 0px) at the bottom, and can be toggled open or closed with smooth CSS height transitions by clicking its header.
+We have successfully resolved the Playwright pointer interception issue, implemented smooth predictive animations for progress bars, updated z-indexes to push motion trails behind UI components, and improved page viewport density.
 
 ---
 
-## ⚙️ Architecture Blueprint
+## 🛠️ Resolved Issues & Enhancements
 
-```mermaid
-graph TD
-    A[HTML GUI: code.html] -->|Loads on Startup| B[API: load_saved_settings]
-    B -->|Parses settings.json| A
-    A -->|User triggers Start| C[API: start_notice_check]
-    C -->|Spawns Thread| D[Scraper: Try_1_IncomeTax.py]
-    D -->|Stage Print Logs| E[JSLogRedirector Class]
-    E -->|Regex Matches & evaluate_js| A
-    A -->|onClientCycleStarted / update progress| A
-    A -->|Updates crawler thoughts & position| A
-    A -->|Updates AX/BX/AY/BY status cards| A
-```
+### 1. Playwright Click Interception Fix 🛡️
+- **The Bug**: Playwright timed out with a `TimeoutError` when clicking the User ID input `#panAdhaarUserId` and the `Continue` button because of invisible loading overlays/spinners intercepting pointer events.
+- **The Fix**: Added `force=True` on click operations to bypass Playwright's actionability checks and force click events directly via DOM event dispatching.
+- **Auth Milestones Re-mapped**:
+  - **0%**: Portal launched / loading.
+  - **25%**: User ID Entered and Continue Clicked.
+  - **50%**: Password Entered and Login Clicked.
+  - **75%**: Logged in to Income Tax Portal dashboard.
+  - **100%**: Portal loaded and e-Proceedings Page has been opened.
+
+### 2. Behind-the-Box Flow Paths ⚡
+- **Z-Index Stacking**:
+  - Set `#energy-flow-svg` to `z-index: 5` and `.motion-trail` to `z-index: 6`.
+  - Main containers (`header`, `.card-editorial`, `.meter-container`, `.btn-rigid`, status cards, etc.) were configured with `position: relative` and `z-index: 10`.
+  - As a result, the energy flows travel *behind* the boxes rather than over them.
+
+### 3. Fluid Predictive Progress Fills 🔄
+- **Predictive Crawler**: Added `FluidProgressAnimator` in JS. It continuously animates progress bar crawls (using ease-out cubic transitions) towards target milestones over configured durations (15s for login, 20s for file extraction).
+- **Snapping**: Snaps immediately to the exact milestone percentage when the backend reports event completion, and begins crawling towards the next stage.
+- **Thoughts cycling**: Cycles cute thought phrases (e.g. *"Bypassing portal loading gates..."*, *"Structuring CSV records..."*) inside the crawler bubbles every 4 seconds.
+
+### 4. 80% Default Viewport Zoom & Security Log Dropdown 🔎
+- **App Zoom**: Added `zoom: 80%` on `body` in `code.html` to fit directories, progress panel, and collapsed security log on a single screen.
+- **Closed & Copyable Log**: Enabled selectable text (`user-select: text`) on `#ledger-body` so log strings can be copied. Set the log to initialize collapsed (`style="height: 0px;"`).
 
 ---
 
-## 📦 Size and Compilation Audit ✅
+## 📦 Standalone Binary Compilation
 
-- **Binary Size**: Optimized to **99.2 MB** (well under the 103MB size footprint constraint).
-- **Executable**: Rebuilt cleanly into `dist/LitigationOS.exe` using `IncomeTaxNoticeChecker.spec`.
-- **Exclusions**: Kept Pandas, openpyxl, pyzipper, and NumPy hidden imports intact, while excluding unused heavy libraries like Torch and OpenCV.
+- **Executable**: Rebuilt successfully into `dist/LitigationOS.exe`.
+- **Footprint size**: Built at **94.65 MB**, which fully complies with the 103MB footprint size constraint.

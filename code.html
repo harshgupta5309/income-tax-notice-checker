@@ -5,6 +5,23 @@
 <meta content="width=device-width, initial-scale=1.0" name="viewport"/>
 <title>Litigation OS | Neo-Classical Editorial</title>
 <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<script>
+  tailwind.config = {
+    theme: {
+      extend: {
+        colors: {
+          parchment: 'var(--parchment)',
+          ink: 'var(--ink)',
+          'muted-ink': 'var(--muted-ink)',
+          'border-ink': 'var(--border-ink)',
+          rust: 'var(--rust)',
+          emerald: 'var(--emerald)',
+          indigo: 'var(--indigo)',
+        }
+      }
+    }
+  }
+</script>
 <link href="https://fonts.googleapis.com" rel="preconnect"/>
 <link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/>
 <link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&amp;family=Inter:wght@400;700;900&amp;family=JetBrains+Mono:wght@400;500;700&amp;display=swap" rel="stylesheet"/>
@@ -22,7 +39,78 @@
             --font-serif: 'DM Serif Display', serif;
             --font-sans: 'Inter', sans-serif;
             --font-mono: 'JetBrains Mono', monospace;
+
+            /* Theme specific variables for Light Mode */
+            --sidebar-bg: rgba(255, 255, 255, 0.2);
+            --header-bg: rgba(255, 255, 255, 0.1);
+            --panel-bg: rgba(255, 255, 255, 0.3);
+            --panel-white: #ffffff;
+            --card-bg: rgba(255, 255, 255, 0.1);
+            --card-hover-bg: #FFFFFF;
+            --card-hover-border: var(--ink);
+            --directory-card-bg: white;
+            --directory-card-shadow: var(--ink);
+            --directory-card-hover-border: var(--ink);
+            --btn-rust-text: white;
+            --btn-rust-shadow: var(--ink);
+            --tab-active-text: #FFFFFF;
+            --border-color-custom: var(--ink);
+            --meter-bg: #D9D6CF;
+            
+            --status-card-bg: rgba(255, 255, 255, 0.5);
+            --status-card-border: rgba(28, 27, 25, 0.2);
+            --progress-summary-bg: rgba(255, 255, 255, 0.2);
+            --progress-summary-border: rgba(28, 27, 25, 0.3);
+            --sec-log-header-bg: rgba(255, 255, 255, 0.8);
+            --sec-log-body-bg: rgba(255, 255, 255, 0.4);
+            --sec-log-border: var(--ink);
         }
+
+        body.theme-dark {
+            --parchment: #0A0A0A;
+            --ink: rgba(255, 255, 255, 0.9);
+            --muted-ink: rgba(255, 255, 255, 0.4);
+            --border-ink: rgba(255, 255, 255, 0.04);
+            --rust: #E05A47;
+            --emerald: #34D399;
+            --indigo: #60A5FA;
+
+            /* Theme specific variables for Dark Mode */
+            --sidebar-bg: #111112;
+            --header-bg: rgba(17, 17, 18, 0.9);
+            --panel-bg: #111112;
+            --panel-white: #111112;
+            --card-bg: rgba(17, 17, 18, 0.6);
+            --card-hover-bg: rgba(255, 255, 255, 0.02);
+            --card-hover-border: var(--indigo);
+            --directory-card-bg: #111112;
+            --directory-card-shadow: var(--rust);
+            --directory-card-hover-border: var(--rust);
+            --btn-rust-text: #0A0A0A;
+            --btn-rust-shadow: var(--rust);
+            --tab-active-text: #0A0A0A;
+            --border-color-custom: var(--border-ink);
+            --meter-bg: #1A1A1A;
+
+            --status-card-bg: #111112;
+            --status-card-border: var(--border-ink);
+            --progress-summary-bg: rgba(17, 17, 18, 0.2);
+            --progress-summary-border: var(--border-ink);
+            --sec-log-header-bg: #111112;
+            --sec-log-body-bg: rgba(0, 0, 0, 0.2);
+            --sec-log-border: var(--border-ink);
+        }
+
+        /* Theme-switchable background classes */
+        .bg-sidebar { background: var(--sidebar-bg); }
+        .bg-header { background: var(--header-bg); backdrop-filter: blur(12px); }
+        .bg-panel { background: var(--panel-bg); }
+        .bg-panel-white { background: var(--panel-white); }
+        .bg-card-bg { background: var(--card-bg); }
+        .bg-status-card { background: var(--status-card-bg); }
+        .bg-progress-summary { background: var(--progress-summary-bg); }
+        .bg-sec-log-header { background: var(--sec-log-header-bg); }
+        .bg-sec-log-body { background: var(--sec-log-body-bg); }
 
         body {
             background-color: var(--parchment);
@@ -31,6 +119,21 @@
             -webkit-font-smoothing: antialiased;
             overflow: hidden;
             height: 100vh;
+        }
+
+        /* Selectable security log */
+        #ledger-body, #ledger-body * {
+            user-select: text !important;
+            -webkit-user-select: text !important;
+            -ms-user-select: text !important;
+            -moz-user-select: text !important;
+            cursor: text;
+        }
+
+        /* Stack components on top of energy flow path background vector */
+        header, .card-editorial, .meter-container, .btn-rigid, .col-span-12, .col-span-5, .bg-status-card, .bg-panel, .directory-card {
+            position: relative;
+            z-index: 10;
         }
 
         /* Typography */
@@ -44,11 +147,11 @@
         .mono-ledger { font-family: var(--font-mono); font-size: 11px; letter-spacing: -0.02em; }
 
         /* Structural Framework */
-        .vector-border { border: 1px solid var(--ink); }
-        .vector-border-r { border-right: 1px solid var(--ink); }
-        .vector-border-l { border-left: 1px solid var(--ink); }
-        .vector-border-t { border-top: 1px solid var(--ink); }
-        .vector-border-b { border-bottom: 1px solid var(--ink); }
+        .vector-border { border: 1px solid var(--border-color-custom); }
+        .vector-border-r { border-right: 1px solid var(--border-color-custom); }
+        .vector-border-l { border-left: 1px solid var(--border-color-custom); }
+        .vector-border-t { border-top: 1px solid var(--border-color-custom); }
+        .vector-border-b { border-bottom: 1px solid var(--border-color-custom); }
 
         .crosshair::before, .crosshair::after {
             content: '+';
@@ -72,8 +175,8 @@
         .content-structure {
             display: grid;
             grid-template-rows: auto 1fr;
-            border-left: 1px solid var(--ink);
-            border-right: 1px solid var(--ink);
+            border-left: 1px solid var(--border-color-custom);
+            border-right: 1px solid var(--border-color-custom);
         }
 
         .vertical-label-container {
@@ -94,33 +197,34 @@
             font-weight: 700;
             text-transform: uppercase;
             padding: 6px 14px;
-            border: 1px solid var(--ink);
+            border: 1px solid var(--border-color-custom);
             transition: all 0.2s;
         }
         .tab-active { 
             background: var(--indigo); 
-            color: white; 
-            box-shadow: 2px 2px 0px var(--ink);
-            border-color: var(--ink);
+            color: var(--tab-active-text); 
+            box-shadow: 2px 2px 0px var(--border-color-custom);
+            border-color: var(--border-color-custom);
         }
         .tab-inactive { color: var(--muted-ink); background: transparent; }
-        .tab-inactive:hover { color: var(--ink); background: white; }
+        .tab-inactive:hover { color: var(--ink); background: rgba(255, 255, 255, 0.05); }
 
         .card-editorial {
-            background: transparent;
-            border: 1px solid var(--ink);
+            background: var(--card-bg);
+            border: 1px solid var(--border-color-custom);
             padding: 2rem;
             transition: all 0.2s;
             position: relative;
         }
         .card-editorial:hover {
-            background: white;
-            box-shadow: 4px 4px 0px var(--ink);
+            background: var(--card-hover-bg);
+            box-shadow: 4px 4px 0px var(--border-color-custom);
             transform: translate(-2px, -2px);
+            border-color: var(--card-hover-border);
         }
 
         .btn-rigid {
-            border: 1px solid var(--ink);
+            border: 1px solid var(--border-color-custom);
             font-family: var(--font-mono);
             font-weight: 700;
             text-transform: uppercase;
@@ -134,8 +238,9 @@
 
         .btn-rust {
             background: var(--rust);
-            color: white;
-            box-shadow: 2px 2px 0px var(--ink);
+            color: var(--btn-rust-text);
+            box-shadow: 2px 2px 0px var(--btn-rust-shadow);
+            border-color: var(--rust) !important;
         }
 
         /* Statuses */
@@ -144,7 +249,7 @@
             font-size: 9px;
             font-weight: 700;
             padding: 2px 8px;
-            border: 1px solid var(--ink);
+            border: 1px solid var(--border-color-custom);
             text-transform: uppercase;
         }
         .status-verified { border-color: var(--emerald); color: var(--emerald); }
@@ -154,14 +259,14 @@
         /* Progress Visuals */
         .meter-container {
             height: 12px;
-            background: #D9D6CF;
-            border: 1px solid var(--ink);
+            background: var(--meter-bg);
+            border: 1px solid var(--border-ink);
             position: relative;
             overflow: visible;
         }
         .meter-fill {
             height: 100%;
-            background: var(--ink);
+            background: var(--indigo);
             width: 0%;
             transition: width 0.3s ease;
             position: relative;
@@ -259,39 +364,119 @@
 
         /* Brutalist Directory Cards */
         .directory-card {
-            border: 1.5px solid var(--ink);
+            border: 1.5px solid var(--border-color-custom);
             border-radius: 20px;
             padding: 1.5rem;
-            background: white;
+            background: var(--directory-card-bg);
             transition: all 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275);
         }
         .directory-card:hover {
-            box-shadow: 6px 6px 0px var(--ink);
+            box-shadow: 6px 6px 0px var(--directory-card-shadow);
             transform: translate(-3px, -3px);
+            border-color: var(--directory-card-hover-border);
         }
 
         /* Drawer Overlay */
         .drawer-overlay {
-            background: rgba(28, 27, 25, 0.4);
-            backdrop-filter: blur(2px);
+            background: rgba(10, 10, 10, 0.6);
+            backdrop-filter: blur(4px);
             z-index: 100;
         }
         .drawer-sheet {
             background: var(--parchment);
-            border-left: 1px solid var(--ink);
+            border-left: 1px solid var(--border-color-custom);
             transform: translateX(100%);
             transition: transform 0.5s cubic-bezier(0.16, 1, 0.3, 1);
         }
         .drawer-sheet.active { transform: translateX(0); }
 
-        ::-webkit-scrollbar { width: 6px; border-left: 1px solid var(--ink); }
-        ::-webkit-scrollbar-thumb { background: var(--ink); }
-    </style><style>body { background-image: radial-gradient(var(--border-ink) 1px, transparent 0); background-size: 20px 20px; }</style>
+        ::-webkit-scrollbar { width: 6px; border-left: 1px solid var(--border-color-custom); }
+        ::-webkit-scrollbar-thumb { background: var(--ink); opacity: 0.8; }
+
+        /* SVG Motion Blur Filter Styles */
+        .blur-glow {
+            filter: url(#motion-blur-filter);
+            transition: transform 0.45s cubic-bezier(0.25, 1, 0.5, 1);
+        }
+
+        /* Linear blur trail for traveling coordinate elements */
+        .motion-trail {
+            position: absolute;
+            height: 4px;
+            width: 40px;
+            background: linear-gradient(90deg, transparent 0%, var(--trail-accent, #E05A47) 50%, #ffffff 100%);
+            filter: blur(1.5px);
+            border-radius: 2px;
+            will-change: transform, left, top;
+            pointer-events: none;
+            z-index: 6;
+            box-shadow: 0 0 12px var(--trail-accent, #E05A47), 0 0 24px rgba(255,255,255,0.15);
+        }
+
+        @keyframes fileStrike {
+            0% { transform: scale(0.95); filter: blur(4px); opacity: 0.5; }
+            50% { transform: scale(1.05); filter: blur(0px); opacity: 1; box-shadow: 0 0 20px rgba(224,90,71,0.3); }
+            100% { transform: scale(1); box-shadow: none; }
+        }
+
+        .file-strike-active {
+            animation: fileStrike 0.6s cubic-bezier(0.25, 1, 0.5, 1) forwards;
+            background: linear-gradient(135deg, rgba(224,90,71,0.08) 0%, var(--card-bg) 100%) !important;
+            border-color: var(--rust) !important;
+        }
+        .file-strike-success {
+            animation: fileStrike 0.6s cubic-bezier(0.25, 1, 0.5, 1) forwards;
+            background: linear-gradient(135deg, rgba(52,211,153,0.08) 0%, var(--card-bg) 100%) !important;
+            border-color: var(--emerald) !important;
+        }
+
+        /* Custom Success Summary Box class */
+        .success-summary-box {
+            border-color: #A7F3D0; /* border-emerald-300 */
+            color: #047857; /* text-emerald-700 */
+            background-color: #ECFDF5; /* bg-emerald-50 */
+        }
+        body.theme-dark .success-summary-box {
+            border-color: rgba(52, 211, 153, 0.3) !important;
+            color: #34D399 !important;
+            background-color: rgba(52, 211, 153, 0.1) !important;
+        }
+
+        /* Theme toggle button styling */
+        .theme-toggle-btn {
+            font-family: var(--font-mono);
+            font-size: 9px;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.08em;
+            padding: 6px 12px;
+            border: 1px solid var(--border-color-custom);
+            background: transparent;
+            color: var(--muted-ink);
+            cursor: pointer;
+            transition: all 0.25s cubic-bezier(0.25, 1, 0.5, 1);
+            white-space: nowrap;
+        }
+        .theme-toggle-btn:hover {
+            color: var(--ink);
+            border-color: var(--indigo);
+            box-shadow: 2px 2px 0px var(--indigo);
+            transform: translate(-1px, -1px);
+        }
+    </style><style>body { background-image: radial-gradient(var(--border-ink) 1.5px, transparent 0); background-size: 24px 24px; }</style>
 </head>
 <body>
+<svg xmlns="http://www.w3.org/2000/svg" style="display: none;">
+  <defs>
+    <filter id="motion-blur-filter" x="-50%" y="-50%" width="200%" height="200%">
+      <feGaussianBlur in="SourceGraphic" stdDeviation="5 0" />
+    </filter>
+  </defs>
+</svg>
+<svg id="energy-flow-svg" style="position: fixed; inset: 0; pointer-events: none; z-index: 5; width: 100vw; height: 100vh;"></svg>
 <div class="main-grid"><div class="absolute top-4 left-4 w-4 h-[1px] bg-ink/10 pointer-events-none"></div><div class="absolute top-4 left-4 w-[1px] h-4 bg-ink/10 pointer-events-none"></div><div class="absolute bottom-4 right-4 w-4 h-[1px] bg-ink/10 pointer-events-none"></div><div class="absolute bottom-4 right-4 w-[1px] h-4 bg-ink/10 pointer-events-none"></div>
 <!-- Left Frame Margin -->
-<aside class="flex flex-col items-center py-12 vertical-label-container gap-12 vector-border-r bg-white/20">
+<aside class="flex flex-col items-center py-12 vertical-label-container gap-12 vector-border-r bg-sidebar">
 <span class="">STATUS • PIPELINES • COMPLIANCE</span>
 <div class="h-24 w-1 bg-ink"></div>
 <span class="">SECURE • LOCAL-FIRST • ARCHIVE</span>
@@ -299,7 +484,7 @@
 <!-- Central Document Area -->
 <div class="content-structure overflow-hidden"><div class="absolute top-0 left-0 w-8 h-8 border-t border-l border-ink/20 pointer-events-none z-10"></div><div class="absolute top-0 right-0 w-8 h-8 border-t border-r border-ink/20 pointer-events-none z-10"></div><div class="absolute bottom-0 left-0 w-8 h-8 border-b border-l border-ink/20 pointer-events-none z-10"></div><div class="absolute bottom-0 right-0 w-8 h-8 border-b border-r border-ink/20 pointer-events-none z-10"></div>
 <!-- Header -->
-<header class="vector-border-b px-12 py-6 flex items-center justify-between bg-white/10">
+<header class="vector-border-b px-12 py-6 flex items-center justify-between bg-header">
 <div class="flex items-center gap-12">
 <div class="flex flex-col">
 <h1 class="sans-bold text-2xl leading-none">Litigation OS</h1>
@@ -318,6 +503,7 @@
 <button class="tab-pill tab-inactive" id="tab-op" onclick="switchTab('operational')">Operational Monitor</button>
 <button class="tab-pill tab-active" id="tab-lit" onclick="switchTab('litigation')">Litigation Suite</button>
 </nav>
+<button class="theme-toggle-btn" id="theme-toggle-btn" onclick="toggleTheme()">🌙 Dark Mode</button>
 <button class="btn-rigid btn-rust px-8 py-3 text-[10px] flex items-center gap-4" id="sync-trigger">
 <span class="">Sync Notices</span>
 <span class="text-xs">→</span>
@@ -338,7 +524,7 @@
 <h2 class="serif-title text-6xl">Audit <span class="serif-italic accent-indigo">Registry</span></h2>
 <p class="serif-italic text-xl text-muted-ink mt-2">Historical synchronization of institutional compliance profiles.</p>
 </div>
-<div class="w-32 h-32 border border-ink flex flex-col items-center justify-center text-center p-4 bg-white/30 box-shadow-[2px_2px_0px_var(--ink)]">
+<div class="w-32 h-32 border border-ink flex flex-col items-center justify-center text-center p-4 bg-panel box-shadow-[2px_2px_0px_var(--border-color-custom)]">
 <span class="mono-ledger text-[8px] font-bold border-b border-ink w-full mb-2 pb-1">RECORDS_V4</span>
 <span class="sans-bold text-3xl" id="total-records-count">0</span>
 <span class="mono-ledger text-[8px] mt-1 text-emerald font-bold">SHIPPABLE</span>
@@ -346,12 +532,12 @@
 </div>
 <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
 <!-- Client 1 -->
-<div class="card-editorial flex flex-col h-full bg-white/10">
+<div class="card-editorial flex flex-col h-full bg-card-bg">
 <div class="flex justify-between items-start mb-12">
 <h3 class="sans-bold text-xl leading-tight">Reliance<br/>Industries</h3>
 <span class="status-stamp status-verified">Verified</span>
 </div>
-<div class="space-y-6 flex-1 vector-border p-4 bg-[#F5F2EA]">
+<div class="space-y-6 flex-1 vector-border p-4 bg-sidebar">
 <div class="flex flex-col">
 <span class="mono-ledger uppercase text-muted-ink font-bold mb-1">Index Code / PAN</span>
 <span class="mono-ledger text-lg font-bold">AAACR0000X</span>
@@ -361,15 +547,15 @@
 <span class="serif-italic text-lg">24th May, 2024</span>
 </div>
 </div>
-<button class="btn-rigid mt-8 w-full py-4 text-[10px] tracking-[0.2em] hover:bg-ink hover:text-parchment hover:shadow-[4px_4px_0px_var(--ink)]" onclick="openDrawer('Reliance Industries', 'AAACR0000X')">Open Dossier</button>
+<button class="btn-rigid mt-8 w-full py-4 text-[10px] tracking-[0.2em] hover:bg-ink hover:text-parchment hover:shadow-[4px_4px_0px_var(--border-color-custom)]" onclick="openDrawer('Reliance Industries', 'AAACR0000X')">Open Dossier</button>
 </div>
 <!-- Client 2 -->
-<div class="card-editorial flex flex-col h-full bg-white/10">
+<div class="card-editorial flex flex-col h-full bg-card-bg">
 <div class="flex justify-between items-start mb-12">
 <h3 class="sans-bold text-xl leading-tight">Tata<br/>Consultancy</h3>
 <span class="status-stamp status-syncing">Syncing</span>
 </div>
-<div class="space-y-6 flex-1 vector-border p-4 bg-[#F5F2EA]">
+<div class="space-y-6 flex-1 vector-border p-4 bg-sidebar">
 <div class="flex flex-col">
 <span class="mono-ledger uppercase text-muted-ink font-bold mb-1">Index Code / PAN</span>
 <span class="mono-ledger text-lg font-bold">AAACT1111Y</span>
@@ -379,15 +565,15 @@
 <span class="serif-italic text-lg">22nd May, 2024</span>
 </div>
 </div>
-<button class="btn-rigid mt-8 w-full py-4 text-[10px] tracking-[0.2em] hover:bg-ink hover:text-parchment hover:shadow-[4px_4px_0px_var(--ink)]" onclick="openDrawer('Tata Consultancy', 'AAACT1111Y')">Open Dossier</button>
+<button class="btn-rigid mt-8 w-full py-4 text-[10px] tracking-[0.2em] hover:bg-ink hover:text-parchment hover:shadow-[4px_4px_0px_var(--border-color-custom)]" onclick="openDrawer('Tata Consultancy', 'AAACT1111Y')">Open Dossier</button>
 </div>
 <!-- Client 3 -->
-<div class="card-editorial flex flex-col h-full bg-white/10">
+<div class="card-editorial flex flex-col h-full bg-card-bg">
 <div class="flex justify-between items-start mb-12">
 <h3 class="sans-bold text-xl leading-tight">HDFC<br/>Bank Ltd</h3>
 <span class="status-stamp status-mismatch">Mismatch</span>
 </div>
-<div class="space-y-6 flex-1 vector-border p-4 bg-[#F5F2EA]">
+<div class="space-y-6 flex-1 vector-border p-4 bg-sidebar">
 <div class="flex flex-col">
 <span class="mono-ledger uppercase text-muted-ink font-bold mb-1">Index Code / PAN</span>
 <span class="mono-ledger text-lg font-bold">AAACH2222Z</span>
@@ -397,7 +583,7 @@
 <span class="serif-italic text-lg">23rd May, 2024</span>
 </div>
 </div>
-<button class="btn-rigid mt-8 w-full py-4 text-[10px] tracking-[0.2em] hover:bg-ink hover:text-parchment hover:shadow-[4px_4px_0px_var(--ink)]" onclick="openDrawer('HDFC Bank', 'AAACH2222Z')">Open Dossier</button>
+<button class="btn-rigid mt-8 w-full py-4 text-[10px] tracking-[0.2em] hover:bg-ink hover:text-parchment hover:shadow-[4px_4px_0px_var(--border-color-custom)]" onclick="openDrawer('HDFC Bank', 'AAACH2222Z')">Open Dossier</button>
 </div>
 </div>
 </div>
@@ -405,7 +591,7 @@
 <div class="hidden max-w-7xl mx-auto space-y-12" id="view-operational">
 <div class="grid grid-cols-12 gap-0 vector-border">
 <!-- Pipeline Panel -->
-<div class="col-span-12 lg:col-span-5 p-12 vector-border-r bg-white/10 space-y-12">
+<div class="col-span-12 lg:col-span-5 p-12 vector-border-r bg-panel space-y-12">
 <div class="flex flex-col space-y-4">
 <h2 class="serif-title text-5xl">Extraction <span class="serif-italic accent-rust">Pipeline</span></h2>
 <p class="serif-italic text-lg text-muted-ink">Technical sequence for portal handshaking and JSON mapping.</p>
@@ -504,7 +690,7 @@
 <!-- Ledger & Progress Panel -->
 <div class="col-span-12 lg:col-span-7 flex flex-col p-12 space-y-8">
   <!-- Progress Window -->
-  <div class="bg-white/40 vector-border p-8 flex-1 flex flex-col space-y-6">
+  <div class="bg-sidebar vector-border p-8 flex-1 flex flex-col space-y-6">
     <div class="flex justify-between items-center border-b border-ink pb-3">
       <span class="sans-bold text-sm uppercase tracking-wider">Progress window</span>
       <span class="mono-ledger text-xs text-muted-ink" id="progress-client-pan">-</span>
@@ -521,32 +707,32 @@
     
     <!-- Download Statuses Grid -->
     <div class="grid grid-cols-2 gap-4">
-      <div class="border border-ink/20 p-4 bg-white/50 rounded flex items-center justify-between transition-all" id="status-card-AX">
+      <div class="border border-status-card-border p-4 bg-status-card rounded flex items-center justify-between transition-all" id="status-card-AX">
         <span class="mono-ledger font-bold text-sm">AX File</span>
         <span class="mono-ledger text-xs text-muted-ink" id="label-AX">Pending</span>
       </div>
-      <div class="border border-ink/20 p-4 bg-white/50 rounded flex items-center justify-between transition-all" id="status-card-BX">
+      <div class="border border-status-card-border p-4 bg-status-card rounded flex items-center justify-between transition-all" id="status-card-BX">
         <span class="mono-ledger font-bold text-sm">BX File</span>
         <span class="mono-ledger text-xs text-muted-ink" id="label-BX">Pending</span>
       </div>
-      <div class="border border-ink/20 p-4 bg-white/50 rounded flex items-center justify-between transition-all" id="status-card-AY">
+      <div class="border border-status-card-border p-4 bg-status-card rounded flex items-center justify-between transition-all" id="status-card-AY">
         <span class="mono-ledger font-bold text-sm">AY File</span>
         <span class="mono-ledger text-xs text-muted-ink" id="label-AY">Pending</span>
       </div>
-      <div class="border border-ink/20 p-4 bg-white/50 rounded flex items-center justify-between transition-all" id="status-card-BY">
+      <div class="border border-status-card-border p-4 bg-status-card rounded flex items-center justify-between transition-all" id="status-card-BY">
         <span class="mono-ledger font-bold text-sm">BY File</span>
         <span class="mono-ledger text-xs text-muted-ink" id="label-BY">Pending</span>
       </div>
     </div>
     
     <!-- Summary Success Box -->
-    <div class="mt-auto py-4 px-6 border border-dashed border-ink/30 italic text-center font-serif text-muted-ink bg-white/20 rounded transition-all" id="progress-summary-msg">
+    <div class="mt-auto py-4 px-6 border border-dashed border-progress-summary-border italic text-center font-serif text-muted-ink bg-progress-summary rounded transition-all" id="progress-summary-msg">
       System idle. Waiting to initiate sync pipeline.
     </div>
   </div>
 
   <!-- Collapsible Security Log -->
-  <div class="border border-ink bg-white/80 rounded shadow-sm flex flex-col overflow-hidden">
+  <div class="border border-sec-log-border bg-sec-log-header rounded shadow-sm flex flex-col overflow-hidden">
     <button class="w-full flex justify-between items-center px-6 py-4 bg-ink text-parchment hover:bg-ink/90 transition-colors focus:outline-none" onclick="toggleSecurityLog()">
       <div class="flex items-center gap-2">
         <span class="material-symbols-outlined text-sm">terminal</span>
@@ -554,7 +740,7 @@
       </div>
       <span class="material-symbols-outlined text-sm" id="sec-log-toggle-icon">expand_more</span>
     </button>
-    <div class="h-0 overflow-hidden transition-all duration-300 bg-white/40" id="sec-log-body-container">
+    <div class="h-0 overflow-hidden transition-all duration-300 bg-sec-log-body" id="sec-log-body-container" style="height: 0px;">
       <div class="p-6 h-[250px] overflow-y-auto mono-ledger space-y-2 leading-relaxed text-muted-ink text-xs border-t border-ink" id="ledger-body">
         <div class="italic">&gt;&gt;&gt; Awaiting initialization sequence...</div>
       </div>
@@ -566,7 +752,7 @@
 </main>
 </div>
 <!-- Right Frame Margin -->
-<aside class="flex flex-col items-center py-12 vertical-label-container gap-12 vector-border-l bg-white/20">
+<aside class="flex flex-col items-center py-12 vertical-label-container gap-12 vector-border-l bg-sidebar">
 <span class="">LITIGATION OS • VOL. 04</span>
 <div class="h-24 w-1 bg-ink"></div>
 <span class="">ISSUE N° 12 • APACHE-2.0</span>
@@ -575,17 +761,17 @@
 <!-- Dossier Modal Drawer -->
 <div class="fixed inset-0 drawer-overlay hidden opacity-0 transition-opacity duration-300" id="drawer-overlay" onclick="closeDrawer()"></div>
 <div class="fixed top-0 right-0 h-full w-[850px] drawer-sheet z-[101] flex flex-col" id="drawer-panel">
-<div class="p-12 vector-border-b bg-white/10 flex justify-between items-start">
+<div class="p-12 vector-border-b bg-header flex justify-between items-start">
 <div class="flex flex-col gap-2">
 <span class="mono-ledger font-bold text-rust uppercase border-b border-rust w-max pb-1 mb-2">Classification: Confidential</span>
 <h2 class="serif-title text-5xl" id="drawer-title">Client Ledger</h2>
-<p class="serif-italic text-muted-ink">Detailed extract of litigation history and pending <span class="accent-indigo">portal responses</span>.</p>
+<p class="serif-italic text-muted-ink">Historical logs of CSV notice aggregation spreadsheets saved on disk.</p>
 </div>
 <div class="flex flex-col items-end gap-6">
 <button class="text-ink text-3xl font-light hover:rotate-90 transition-transform" onclick="closeDrawer()">✕</button>
 <div class="flex flex-col gap-3">
-<div class="flex gap-4">
-<button class="btn-rigid px-6 py-2 mono-ledger font-bold hover:bg-white hover:shadow-[3px_3px_0px_var(--ink)] bg-parchment" onclick="handleExport('CSV')">Download CSV</button>
+<div class="flex gap-4 hidden">
+<button class="btn-rigid px-6 py-2 mono-ledger font-bold hover:bg-ink hover:text-parchment hover:shadow-[3px_3px_0px_var(--border-color-custom)] bg-parchment" onclick="handleExport('CSV')">Download CSV</button>
 <button class="btn-rigid px-6 py-2 bg-ink text-parchment mono-ledger font-bold hover:shadow-[3px_3px_0px_var(--indigo)]" onclick="handleExport('PDF')">Export PDF Report</button>
 </div>
 <!-- Drawer Progress Bar -->
@@ -604,39 +790,21 @@
 <div class="flex-1 overflow-y-auto p-12 custom-scroll relative">
 <div class="absolute top-4 left-4 crosshair ch-tl opacity-20"></div>
 <div class="absolute top-4 right-4 crosshair ch-tr opacity-20"></div>
-<div class="vector-border p-1 bg-white">
+<div class="vector-border p-1 bg-panel-white">
 <table class="w-full text-left">
 <thead class="bg-ink text-parchment">
 <tr>
-<th class="px-6 py-3 mono-ledger font-bold uppercase">Notice DIN</th>
-<th class="px-6 py-3 mono-ledger font-bold uppercase">Proceeding</th>
-<th class="px-6 py-3 mono-ledger font-bold uppercase text-center">Section</th>
-<th class="px-6 py-3 mono-ledger font-bold uppercase text-right">Status</th>
+<th class="px-6 py-3 mono-ledger font-bold uppercase">File Type</th>
+<th class="px-6 py-3 mono-ledger font-bold uppercase">Download Date & Time</th>
+<th class="px-6 py-3 mono-ledger font-bold uppercase">Filename</th>
+<th class="px-6 py-3 mono-ledger font-bold uppercase text-right">Action</th>
 </tr>
 </thead>
-<tbody class="mono-ledger text-ink divide-y divide-ink">
-<tr class="hover:bg-indigo-50 transition-colors">
-<td class="px-6 py-4 font-bold">2024/ITC/99281</td>
-<td class="px-6 py-4 serif-italic">u/s 143(1) Assessment</td>
-<td class="px-6 py-4 text-center">143(1)</td>
-<td class="px-6 py-4 text-right"><span class="status-stamp status-verified">Submitted</span></td>
-</tr>
-<tr class="hover:bg-indigo-50 transition-colors">
-<td class="px-6 py-4 font-bold">2024/ITC/11029</td>
-<td class="px-6 py-4 serif-italic">TDS Mismatch Notice</td>
-<td class="px-6 py-4 text-center">154</td>
-<td class="px-6 py-4 text-right"><span class="status-stamp status-syncing">Action Req</span></td>
-</tr>
-<tr class="hover:bg-indigo-50 transition-colors">
-<td class="px-6 py-4 font-bold">2024/ITC/00122</td>
-<td class="px-6 py-4 serif-italic">Section 148A Inquiry</td>
-<td class="px-6 py-4 text-center">148A</td>
-<td class="px-6 py-4 text-right"><span class="status-stamp status-mismatch font-bold">New</span></td>
-</tr>
+<tbody class="mono-ledger text-ink divide-y divide-border-ink">
 </tbody>
 </table>
 </div>
-<div class="grid grid-cols-2 gap-0 mt-16 vector-border bg-white">
+<div class="grid grid-cols-2 gap-0 mt-16 vector-border bg-panel-white hidden">
 <div class="flex flex-col gap-4 p-8 vector-border-r">
 <span class="mono-ledger uppercase text-muted-ink font-bold">Archive Integrity</span>
 <p class="serif-title text-4xl">1,402 <span class="serif-italic text-xl accent-emerald">Files Verified</span></p>
@@ -656,6 +824,121 @@
 </div>
 </div>
 <script>
+        class FluidProgressAnimator {
+          constructor(barEl, valEl, bubbleEl, isAuth = true) {
+            this.barEl = barEl;
+            this.valEl = valEl;
+            this.bubbleEl = bubbleEl;
+            this.isAuth = isAuth;
+            this.duration = isAuth ? 15000 : 20000;
+            this.currentPercent = 0;
+            this.targetPercent = 0;
+            this.startPercent = 0;
+            this.startTime = null;
+            this.animationFrameId = null;
+            this.thoughtInterval = null;
+          }
+
+          reset() {
+            if (this.animationFrameId) {
+              cancelAnimationFrame(this.animationFrameId);
+              this.animationFrameId = null;
+            }
+            this.stopThoughtCycling();
+            this.currentPercent = 0;
+            this.targetPercent = 0;
+            this.startPercent = 0;
+            this.startTime = null;
+            this.updateUI(0);
+          }
+
+          updateTo(percent, message) {
+            if (this.animationFrameId) {
+              cancelAnimationFrame(this.animationFrameId);
+              this.animationFrameId = null;
+            }
+            this.stopThoughtCycling();
+
+            // Snap immediately to the designated percentage
+            this.currentPercent = percent;
+            this.updateUI(percent);
+
+            if (message && this.bubbleEl) {
+              this.bubbleEl.innerText = message;
+            }
+
+            if (percent >= 100) {
+              return;
+            }
+
+            // Set target to the next expected milestone (percent + 25)
+            this.startPercent = percent;
+            this.targetPercent = Math.min(percent + 25, 100);
+            this.startTime = performance.now();
+
+            this.startThoughtCycling();
+            this.animate();
+          }
+
+          animate() {
+            const tick = (now) => {
+              if (!this.startTime) this.startTime = now;
+              const elapsed = now - this.startTime;
+              const progress = Math.min(elapsed / this.duration, 1);
+              
+              // Easing function to slow down as it approaches the milestone (ease-out cubic)
+              const ease = 1 - Math.pow(1 - progress, 3);
+              const current = this.startPercent + (this.targetPercent - this.startPercent) * ease;
+              this.currentPercent = current;
+              
+              this.updateUI(current);
+
+              if (progress < 1) {
+                this.animationFrameId = requestAnimationFrame(tick);
+              }
+            };
+            this.animationFrameId = requestAnimationFrame(tick);
+          }
+
+          updateUI(percent) {
+            const displayVal = Math.round(percent);
+            if (this.barEl) this.barEl.style.width = percent + '%';
+            if (this.valEl) this.valEl.innerText = displayVal + '%';
+          }
+
+          startThoughtCycling() {
+            this.stopThoughtCycling();
+            this.thoughtInterval = setInterval(() => {
+              const thoughts = this.isAuth ? [
+                "Scanning login elements...",
+                "Bypassing portal loading gates...",
+                "Injecting credentials into forms...",
+                "Checking security checkposts...",
+                "Waiting for portal response...",
+                "Almost authenticated..."
+              ] : [
+                "Navigating proceeding records...",
+                "Polling server for notice files...",
+                "Structuring CSV records...",
+                "Re-verifying assessment status...",
+                "Finalizing downloaded tables...",
+                "Clearing current session..."
+              ];
+              if (this.bubbleEl) {
+                const randomThought = thoughts[Math.floor(Math.random() * thoughts.length)];
+                this.bubbleEl.innerText = randomThought;
+              }
+            }, 4000);
+          }
+
+          stopThoughtCycling() {
+            if (this.thoughtInterval) {
+              clearInterval(this.thoughtInterval);
+              this.thoughtInterval = null;
+            }
+          }
+        }
+
         function switchTab(view) {
             const opView = document.getElementById('view-operational');
             const litView = document.getElementById('view-litigation');
@@ -711,8 +994,23 @@
         }
 
         let currentCountdownInterval = null;
+        let authAnimator = null;
+        let extAnimator = null;
 
         document.addEventListener('DOMContentLoaded', () => {
+          authAnimator = new FluidProgressAnimator(
+            document.getElementById('auth-bar'),
+            document.getElementById('auth-val'),
+            document.getElementById('auth-bubble'),
+            true
+          );
+          extAnimator = new FluidProgressAnimator(
+            document.getElementById('ext-bar'),
+            document.getElementById('ext-val'),
+            document.getElementById('ext-bubble'),
+            false
+          );
+
           // Enforce litigation tab active by default on startup
           switchTab('litigation');
 
@@ -727,6 +1025,10 @@
               const settingsJson = await window.pywebview.api.load_saved_settings();
               const settings = JSON.parse(settingsJson);
               if (settings) {
+                // Apply saved theme
+                if (settings.theme) {
+                  applyThemeFromSettings(settings.theme);
+                }
                 if (settings.credentials_path) {
                   document.getElementById('text-creds-path').innerText = settings.credentials_path;
                   printToConsole(`📁 Loaded saved credentials sheet: ${settings.credentials_path}`, 'success');
@@ -838,21 +1140,27 @@
                 return;
               }
 
-              // Call async Python thread
-              const response = await window.pywebview.api.start_notice_check(credsFile, targetFolder);
-              if (response.success) {
-                // Transition UI to locked crawling states
-                startBtn.disabled = true;
-                startBtn.classList.add('opacity-40', 'cursor-not-allowed');
-                document.getElementById('global-status-text').innerText = "Sync Active";
-                printToConsole("🔥 Automation worker threads dispatched cleanly.", "info");
-                
-                // Wipe old logs and switch view to the monitor tab
-                document.getElementById('ledger-body').innerHTML = '';
-                switchTab('operational');
-              } else {
-                printToConsole(`🚨 Core failure: ${response.error}`, 'error');
-              }
+              // Switch view to operational tab first so progress bars are visible and positioned correctly
+              switchTab('operational');
+
+              // Launch motion-blurred path from sync button to Secure Authentication progress bar!
+              const authBarEl = document.getElementById('auth-bar');
+              drawEnergyTrail(startBtn, authBarEl, 'var(--indigo)', async () => {
+                // Call async Python thread
+                const response = await window.pywebview.api.start_notice_check(credsFile, targetFolder);
+                if (response.success) {
+                  // Transition UI to locked crawling states
+                  startBtn.disabled = true;
+                  startBtn.classList.add('opacity-40', 'cursor-not-allowed');
+                  document.getElementById('global-status-text').innerText = "Sync Active";
+                  printToConsole("🔥 Automation worker threads dispatched cleanly.", "info");
+                  
+                  // Wipe old logs
+                  document.getElementById('ledger-body').innerHTML = '';
+                } else {
+                  printToConsole(`🚨 Core failure: ${response.error}`, 'error');
+                }
+              });
             });
           }
         }
@@ -871,7 +1179,7 @@
 
           clients.forEach(client => {
             const card = document.createElement('div');
-            card.className = 'card-editorial flex flex-col h-full bg-white/10';
+            card.className = 'card-editorial flex flex-col h-full bg-card-bg';
             card.id = `card-${client.pan}`;
             
             card.innerHTML = `
@@ -879,7 +1187,7 @@
                 <h3 class="sans-bold text-xl leading-tight truncate max-w-[180px]" title="${client.name}">${client.name}</h3>
                 <span class="status-stamp status-verified" id="status-${client.pan}">Idle</span>
               </div>
-              <div class="space-y-6 flex-1 vector-border p-4 bg-[#F5F2EA]">
+              <div class="space-y-6 flex-1 vector-border p-4 bg-sidebar">
                 <div class="flex flex-col">
                   <span class="mono-ledger uppercase text-muted-ink font-bold mb-1">Index Code / PAN</span>
                   <span class="mono-ledger text-lg font-bold">${client.pan}</span>
@@ -889,7 +1197,7 @@
                   <span class="serif-italic text-lg" id="update-${client.pan}">Pending Sync</span>
                 </div>
               </div>
-              <button class="btn-rigid mt-8 w-full py-4 text-[10px] tracking-[0.2em] hover:bg-ink hover:text-parchment hover:shadow-[4px_4px_0px_var(--ink)]" onclick="openDrawer('${client.name.replace(/'/g, "\\'")}', '${client.pan}')">Open Dossier</button>
+              <button class="btn-rigid mt-8 w-full py-4 text-[10px] tracking-[0.2em] hover:bg-ink hover:text-parchment hover:shadow-[4px_4px_0px_var(--border-color-custom)]" onclick="openDrawer('${client.name.replace(/'/g, "\\'")}', '${client.pan}')">Open Dossier</button>
             `;
             grid.appendChild(card);
           });
@@ -904,33 +1212,171 @@
           setTimeout(() => overlay.classList.add('opacity-100'), 10);
           panel.classList.add('active');
 
-          // Query Python database dynamically
-          const responseJson = await window.pywebview.api.get_client_notices(pan);
-          const data = JSON.parse(responseJson);
+          // Query Python download history dynamically
+          const responseJson = await window.pywebview.api.get_client_download_history(pan);
+          const records = JSON.parse(responseJson);
 
           const tbody = document.querySelector('#drawer-panel table tbody');
           tbody.innerHTML = ''; // Wipe stale traces
 
-          if (!data.notices || data.notices.length === 0) {
-            tbody.innerHTML = `<tr><td colspan="4" class="px-6 py-8 text-center text-muted-ink italic font-serif">No notices recovered on disk. Sync required.</td></tr>`;
+          if (!records || records.length === 0) {
+            tbody.innerHTML = `<tr><td colspan="4" class="px-6 py-8 text-center text-muted-ink italic font-serif">No CSV records found on disk for this PAN. Sync required.</td></tr>`;
             return;
           }
 
-          // Inject real notice rows
-          data.notices.forEach(notice => {
+          // Inject download history rows
+          records.forEach(record => {
             const row = document.createElement('tr');
-            row.className = 'hover:bg-indigo-50 transition-colors border-b border-ink';
+            row.className = 'hover:bg-indigo-500/10 transition-colors border-b border-border-ink';
             
-            const badgeClass = notice.status === 'SUBMITTED' ? 'status-verified' : 'status-mismatch';
-            
+            // Clean absolute path backslashes for JS safety
+            const safePath = record.filepath.replace(/\\/g, '\\\\');
+
             row.innerHTML = `
-              <td class="px-6 py-4 font-bold font-mono text-rust">${notice.din}</td>
-              <td class="px-6 py-4 serif-italic">${notice.proceeding}</td>
-              <td class="px-6 py-4 text-center font-mono">${notice.section}</td>
-              <td class="px-6 py-4 text-right"><span class="status-stamp ${badgeClass}">${notice.status}</span></td>
+              <td class="px-6 py-4 font-bold font-mono text-rust">${record.file_id}</td>
+              <td class="px-6 py-4 serif-italic">${record.timestamp}</td>
+              <td class="px-6 py-4 font-mono text-xs max-w-[320px] truncate" title="${record.filename}">${record.filename}</td>
+              <td class="px-6 py-4 text-right">
+                <button class="btn-rigid px-3 py-1 bg-ink text-parchment hover:bg-ink/80 text-[9px] font-bold" onclick="openFile('${safePath}')">Open File</button>
+              </td>
             `;
             tbody.appendChild(row);
           });
+        }
+
+        async function openFile(filepath) {
+          const responseJson = await window.pywebview.api.open_downloaded_file(filepath);
+          const result = JSON.parse(responseJson);
+          if (!result.success) {
+            alert("Failed to open file: " + (result.error || "Unknown error"));
+          }
+        }
+
+        // Theme support functions
+        function toggleTheme() {
+          const body = document.body;
+          const btn = document.getElementById('theme-toggle-btn');
+          const isDark = body.classList.contains('theme-dark');
+          
+          if (isDark) {
+            body.classList.remove('theme-dark');
+            if (btn) btn.innerHTML = '🌙 Dark Mode';
+            if (window.pywebview && window.pywebview.api && window.pywebview.api.save_theme_preference) {
+              window.pywebview.api.save_theme_preference('light');
+            }
+            printToConsole('🎨 UI Theme: Light Mode', 'info');
+          } else {
+            body.classList.add('theme-dark');
+            if (btn) btn.innerHTML = '☀ Light Mode';
+            if (window.pywebview && window.pywebview.api && window.pywebview.api.save_theme_preference) {
+              window.pywebview.api.save_theme_preference('dark');
+            }
+            printToConsole('🎨 UI Theme: Dark Mode (Infinite Obsidian)', 'info');
+          }
+        }
+
+        function applyThemeFromSettings(themeName) {
+          const body = document.body;
+          const btn = document.getElementById('theme-toggle-btn');
+          if (themeName === 'dark') {
+            body.classList.add('theme-dark');
+            if (btn) btn.innerHTML = '☀ Light Mode';
+          } else {
+            body.classList.remove('theme-dark');
+            if (btn) btn.innerHTML = '🌙 Dark Mode';
+          }
+        }
+
+        // Rotational motion-trail energy flow sequencer
+        function drawEnergyTrail(fromEl, toEl, color, callback) {
+          const svg = document.getElementById("energy-flow-svg");
+          if (!svg) {
+            if (callback) callback();
+            return;
+          }
+          
+          const fromRect = fromEl.getBoundingClientRect();
+          const toRect = toEl.getBoundingClientRect();
+          const overlayRect = svg.getBoundingClientRect();
+          
+          const x1 = fromRect.left + fromRect.width / 2 - overlayRect.left;
+          const y1 = fromRect.top + fromRect.height / 2 - overlayRect.top;
+          const x2 = toRect.left + toRect.width / 2 - overlayRect.left;
+          const y2 = toRect.top + toRect.height / 2 - overlayRect.top;
+          
+          const path = document.createElementNS("http://www.w3.org/2000/svg", "path");
+          
+          // Draw Bezier curve path
+          const dx = x2 - x1;
+          const dy = y2 - y1;
+          let d;
+          if (Math.abs(dx) > 20 && Math.abs(dy) > 20) {
+            const cx1 = x1 + dx * 0.4;
+            const cy1 = y1;
+            const cx2 = x1 + dx * 0.6;
+            const cy2 = y2;
+            d = `M ${x1} ${y1} C ${cx1} ${cy1}, ${cx2} ${cy2}, ${x2} ${y2}`;
+          } else {
+            d = `M ${x1} ${y1} L ${x2} ${y2}`;
+          }
+          
+          path.setAttribute("d", d);
+          path.setAttribute("fill", "none");
+          path.setAttribute("stroke", color);
+          path.setAttribute("stroke-width", "2.5");
+          path.setAttribute("stroke-linecap", "round");
+          path.setAttribute("class", "blur-glow");
+          path.style.opacity = "0.6";
+          
+          const length = path.getTotalLength();
+          path.style.strokeDasharray = length;
+          path.style.strokeDashoffset = length;
+          
+          svg.appendChild(path);
+          path.getBoundingClientRect(); // Force layout sync
+          
+          path.style.transition = "stroke-dashoffset 0.65s cubic-bezier(0.25, 1, 0.5, 1), opacity 0.65s";
+          path.style.strokeDashoffset = "0";
+          
+          // Create motion trail particle
+          const particle = document.createElement("div");
+          particle.className = "motion-trail";
+          const resolvedColor = color.startsWith('var(') ? getComputedStyle(document.documentElement).getPropertyValue(color.slice(4, -1)).trim() : color;
+          particle.style.setProperty('--trail-accent', resolvedColor || '#E05A47');
+          document.body.appendChild(particle);
+          
+          let start = null;
+          const duration = 650;
+          
+          function animStep(timestamp) {
+            if (!start) start = timestamp;
+            const elapsed = timestamp - start;
+            const progress = Math.min(elapsed / duration, 1);
+            
+            const currentLength = progress * length;
+            const pt = path.getPointAtLength(currentLength);
+            
+            const lookAhead = Math.min(currentLength + 3, length);
+            const lookBehind = Math.max(currentLength - 3, 0);
+            const pt1 = path.getPointAtLength(lookBehind);
+            const pt2 = path.getPointAtLength(lookAhead);
+            const angle = Math.atan2(pt2.y - pt1.y, pt2.x - pt1.x) * (180 / Math.PI);
+            
+            particle.style.left = `${pt.x + overlayRect.left}px`;
+            particle.style.top = `${pt.y + overlayRect.top}px`;
+            particle.style.transform = `translate(-50%, -50%) rotate(${angle}deg)`;
+            
+            if (progress < 1) {
+              requestAnimationFrame(animStep);
+            } else {
+              particle.remove();
+              path.style.opacity = "0";
+              setTimeout(() => path.remove(), 400);
+              if (callback) callback();
+            }
+          }
+          
+          requestAnimationFrame(animStep);
         }
 
         // Dom element reference variables
@@ -997,27 +1443,21 @@
             }
             const card = document.getElementById(`status-card-${pool}`);
             if (card) {
-              card.className = 'border border-ink/20 p-4 bg-white/50 rounded flex items-center justify-between transition-all';
+              card.className = 'border border-status-card-border p-4 bg-status-card rounded flex items-center justify-between transition-all';
+              card.classList.remove('file-strike-active', 'file-strike-success');
             }
           });
           
           document.getElementById('progress-summary-msg').innerText = `Authenticating client ${name} (${pan})...`;
-          document.getElementById('progress-summary-msg').className = 'mt-auto py-4 px-6 border border-dashed border-ink/30 italic text-center font-serif text-muted-ink bg-white/20 rounded transition-all';
+          document.getElementById('progress-summary-msg').className = 'mt-auto py-4 px-6 border border-dashed border-progress-summary-border italic text-center font-serif text-muted-ink bg-progress-summary rounded transition-all';
           
-          // Reset extraction progress bar
-          if (extBar) extBar.style.width = '0%';
-          if (extVal) extVal.innerText = '0%';
-          
-          // Also reset auth progress bar
-          if (authBar) authBar.style.width = '0%';
-          if (authVal) authVal.innerText = '0%';
-          if (authLabel) authLabel.innerText = "Securing login...";
+          // Reset progress animators
+          if (authAnimator) authAnimator.reset();
+          if (extAnimator) extAnimator.reset();
 
-          // Reset bubbles
-          const authBubble = document.getElementById('auth-bubble');
-          if (authBubble) authBubble.innerText = "Waking up scraping engines...";
-          const extBubble = document.getElementById('ext-bubble');
-          if (extBubble) extBubble.innerText = "Ready to pull notice archives...";
+          // Start crawling towards initial targets
+          if (authAnimator) authAnimator.updateTo(0, "Portal launched / loading");
+          if (extAnimator) extAnimator.updateTo(0, "Ready to pull notice archives...");
 
           // Update card status stamp to "Syncing"
           const statusEl = document.getElementById(`status-${pan}`);
@@ -1033,35 +1473,33 @@
         }
 
         function updateAuthProgressBar(percent, message) {
-          if (authBar) authBar.style.width = percent + '%';
-          if (authVal) authVal.innerText = percent + '%';
+          if (authAnimator) {
+            authAnimator.updateTo(percent, message);
+          } else {
+            if (authBar) authBar.style.width = percent + '%';
+            if (authVal) authVal.innerText = percent + '%';
+          }
+          
+          const authLabel = document.getElementById('global-status-text');
           if (authLabel) {
             authLabel.innerText = message;
           }
 
-          const bubble = document.getElementById('auth-bubble');
-          if (bubble) {
-            if (percent <= 25) bubble.innerText = "Login the portal...";
-            else if (percent <= 50) bubble.innerText = "Used ID and Continue Clicked...";
-            else if (percent <= 75) bubble.innerText = "Password Input and Login Clicked...";
-            else if (percent <= 100) bubble.innerText = "Portal loaded and Eproceedings Page has been opened!";
-          }
-
           if (percent === 100) {
             printToConsole("✅ Portal authentication validated successfully.", "success");
+            // Shoot energy trail from authBar to extBar
+            const authBarEl = document.getElementById('auth-bar');
+            const extBarEl = document.getElementById('ext-bar');
+            drawEnergyTrail(authBarEl, extBarEl, 'var(--rust)');
           }
         }
 
         function updateExtractionProgressBar(percent, message) {
-          if (extBar) extBar.style.width = percent + '%';
-          if (extVal) extVal.innerText = percent + '%';
-
-          const bubble = document.getElementById('ext-bubble');
-          if (bubble) {
-            if (percent <= 25) bubble.innerText = "AX File downloaded...";
-            else if (percent <= 50) bubble.innerText = "BX File downloaded...";
-            else if (percent <= 75) bubble.innerText = "AY File downloaded...";
-            else if (percent <= 100) bubble.innerText = "BY File downloaded and Logout completed!";
+          if (extAnimator) {
+            extAnimator.updateTo(percent, message);
+          } else {
+            if (extBar) extBar.style.width = percent + '%';
+            if (extVal) extVal.innerText = percent + '%';
           }
 
           if (percent === 100) {
@@ -1069,7 +1507,7 @@
             const summaryEl = document.getElementById('progress-summary-msg');
             if (summaryEl) {
               summaryEl.innerText = `Successfully downloaded and saved the Records for ${activeName}`;
-              summaryEl.className = 'mt-auto py-4 px-6 border border-emerald-300 font-bold text-center text-emerald-700 bg-emerald-50 rounded shadow-sm transition-all';
+              summaryEl.className = 'mt-auto py-4 px-6 border font-bold text-center rounded shadow-sm success-summary-box transition-all';
             }
           }
         }
@@ -1080,27 +1518,48 @@
             lbl.innerText = status;
             lbl.className = 'mono-ledger text-xs font-bold';
             if (type === 'success') {
-              lbl.classList.add('text-indigo-600');
-            } else if (type === 'warning') {
-              lbl.classList.add('text-rust');
-            } else if (type === 'error') {
+              lbl.classList.add('text-indigo-400');
+            } else {
               lbl.classList.add('text-rust');
             }
           }
           const card = document.getElementById(`status-card-${pool}`);
           if (card) {
+            // Apply spring animation
+            card.classList.remove('file-strike-active', 'file-strike-success');
+            void card.offsetWidth; // Trigger reflow
+            
             if (type === 'success') {
-              card.className = 'border border-indigo-300 p-4 bg-indigo-50/20 rounded flex items-center justify-between shadow-sm transition-all';
-            } else if (type === 'warning') {
-              card.className = 'border border-rust/30 p-4 bg-rust/5 rounded flex items-center justify-between transition-all';
-            } else if (type === 'error') {
-              card.className = 'border border-rust p-4 bg-rust/10 rounded flex items-center justify-between transition-all';
+              card.classList.add('file-strike-success');
+            } else {
+              card.classList.add('file-strike-active');
+            }
+
+            // Draw motion-blurred energy trail sequentially to the next card!
+            if (pool === 'AX') {
+              const fromEl = document.getElementById('status-card-AX');
+              const toEl = document.getElementById('status-card-BX');
+              drawEnergyTrail(fromEl, toEl, 'var(--rust)');
+            } else if (pool === 'BX') {
+              const fromEl = document.getElementById('status-card-BX');
+              const toEl = document.getElementById('status-card-AY');
+              drawEnergyTrail(fromEl, toEl, 'var(--rust)');
+            } else if (pool === 'AY') {
+              const fromEl = document.getElementById('status-card-AY');
+              const toEl = document.getElementById('status-card-BY');
+              drawEnergyTrail(fromEl, toEl, 'var(--rust)');
             }
           }
         }
 
         function onExtractionStarted(fileId) {
           printToConsole(`📥 Requesting package extraction download for target pool: ${fileId}...`, 'info');
+          // Start the sequence from extBar to AX card when extraction starts
+          if (fileId === 'AX') {
+            const extBarEl = document.getElementById('ext-bar');
+            const axCard = document.getElementById('status-card-AX');
+            drawEnergyTrail(extBarEl, axCard, 'var(--rust)');
+          }
         }
 
         function onFileDownloaded(poolType, filename, success) {

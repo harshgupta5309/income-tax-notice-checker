@@ -1182,6 +1182,14 @@
                   startBtn.classList.add('opacity-40', 'cursor-not-allowed');
                   document.getElementById('global-status-text').innerText = "Sync Active";
                   printToConsole("🔥 Automation worker threads dispatched cleanly.", "info");
+                  
+                  // Reset abort button UI state
+                  const abortBtn = document.querySelector('#abort-container button');
+                  if (abortBtn) {
+                    abortBtn.innerText = "Abort Scraper Pipeline";
+                    abortBtn.disabled = false;
+                    abortBtn.classList.remove('opacity-70');
+                  }
                   document.getElementById('abort-container').style.display = 'block';
                 } else {
                   printToConsole(`🚨 Core failure: ${response.error}`, 'error');
@@ -1648,7 +1656,14 @@
         }
 
         function abortPipeline() {
+          console.log("🛑 Abort request received. Signaling backend...");
           printToConsole("🛑 Abort request received. Signaling backend pipeline to terminate...", "warning");
+          const abortBtn = document.querySelector('#abort-container button');
+          if (abortBtn) {
+            abortBtn.innerText = "Aborting Scraper Pipeline...";
+            abortBtn.disabled = true;
+            abortBtn.classList.add('opacity-70');
+          }
           if (window.pywebview && window.pywebview.api && window.pywebview.api.abort_pipeline) {
             window.pywebview.api.abort_pipeline();
           }

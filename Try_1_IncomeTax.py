@@ -239,18 +239,25 @@ class StopPipelineException(Exception):
     """Custom exception raised when the user decides to stop the automation run entirely"""
     pass
 
+def is_abort_requested(api_ref=None):
+    if globals().get('ABORT_SIGNAL', False):
+        return True
+    if api_ref and getattr(api_ref, 'abort_requested', False):
+        return True
+    return False
+
 def robust_wait_for_selector(page, selector, state="visible", timeout_sec=20, pan="", api_ref=None):
     """Waits for a selector, and if it fails within timeout_sec, prompts the user via PyWebView API"""
     start_time = datetime.now()
     while True:
-        if globals().get('ABORT_SIGNAL', False):
+        if is_abort_requested(api_ref):
             raise StopPipelineException()
             
         try:
             page.wait_for_selector(selector, state=state, timeout=1000)
             return True
         except Exception as e:
-            if globals().get('ABORT_SIGNAL', False):
+            if is_abort_requested(api_ref):
                 raise StopPipelineException()
                 
             elapsed = (datetime.now() - start_time).total_seconds()
@@ -275,14 +282,14 @@ def robust_wait_for_locator(locator, state="visible", timeout_sec=20, pan="", ap
     """Waits for a Playwright locator, and if it fails, prompts the user"""
     start_time = datetime.now()
     while True:
-        if globals().get('ABORT_SIGNAL', False):
+        if is_abort_requested(api_ref):
             raise StopPipelineException()
             
         try:
             locator.wait_for(state=state, timeout=1000)
             return True
         except Exception as e:
-            if globals().get('ABORT_SIGNAL', False):
+            if is_abort_requested(api_ref):
                 raise StopPipelineException()
                 
             elapsed = (datetime.now() - start_time).total_seconds()
@@ -362,7 +369,7 @@ def run_multi_client_downloads(vault_manager=None, api_ref=None):
         try:
             for index, row in df_creds.iterrows():
                 # Check abort signal before starting a client
-                if globals().get('ABORT_SIGNAL', False):
+                if is_abort_requested(api_ref):
                     print("\n🛑 [ABORT] - Abort signal received. Terminating loop...")
                     break
                     
@@ -448,7 +455,7 @@ def run_multi_client_downloads(vault_manager=None, api_ref=None):
                         attempt = 0
                         login_success = False
                         while attempt < 10:
-                            if globals().get('ABORT_SIGNAL', False):
+                            if is_abort_requested(api_ref):
                                 raise StopPipelineException()
                             if "/dashboard" in page.url.lower():
                                 login_success = True
@@ -505,6 +512,8 @@ def run_multi_client_downloads(vault_manager=None, api_ref=None):
 
                     print(f"👤 CLIENT_INFO: {user_id} | {taxpayer_name}")
 
+                    if is_abort_requested(api_ref):
+                        raise StopPipelineException()
                     # AX Download
                     try:
                         download_and_rename(page, user_id, taxpayer_name, "AX")
@@ -514,6 +523,8 @@ def run_multi_client_downloads(vault_manager=None, api_ref=None):
                         logging.exception(f"AX download stage failed for {user_id}")
                     print("📥 [STAGE-EXTRACTION] - 25% - AX File downloaded")
                     
+                    if is_abort_requested(api_ref):
+                        raise StopPipelineException()
                     # BX Download
                     try:
                         page.get_by_text("For your Information", exact=False).click()
@@ -525,6 +536,8 @@ def run_multi_client_downloads(vault_manager=None, api_ref=None):
                         logging.exception(f"BX download stage failed for {user_id}")
                     print("📥 [STAGE-EXTRACTION] - 50% - BX File downloaded")
                     
+                    if is_abort_requested(api_ref):
+                        raise StopPipelineException()
                     # AY Download
                     try:
                         page.locator('span.mat-button-toggle-label-content:has-text("Of Other PAN/TAN")').click()
@@ -536,6 +549,8 @@ def run_multi_client_downloads(vault_manager=None, api_ref=None):
                         logging.exception(f"AY download stage failed for {user_id}")
                     print("📥 [STAGE-EXTRACTION] - 75% - AY File downloaded")
                     
+                    if is_abort_requested(api_ref):
+                        raise StopPipelineException()
                     # BY Download
                     try:
                         page.get_by_text("For your Information", exact=False).click()

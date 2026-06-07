@@ -50,6 +50,8 @@ class DesktopAPI:
         self._decision_event = threading.Event()
         self.user_decision = None
         self._log_window = None
+        self.log_history = []
+        self.abort_requested = False
         
         # Load saved settings immediately on initialization to sync Python backend state
         try:
@@ -97,8 +99,14 @@ class DesktopAPI:
 
     def abort_pipeline(self):
         """Sets the global abort flag to stop the backend automation run immediately"""
+        self.abort_requested = True
         tax_backend.ABORT_SIGNAL = True
+        print("🛑 Abort request received. Signaling backend pipeline to terminate...")
         return True
+
+    def get_log_history(self):
+        """Returns the accumulated log history as a JSON string for the log window"""
+        return json.dumps(self.log_history)
 
     def download_credentials_template(self):
         """Launches a topmost native file save dialog to download the template credentials spreadsheet"""
@@ -216,6 +224,14 @@ class DesktopAPI:
             container.appendChild(entry);
             window.scrollTo(0, document.body.scrollHeight);
         }
+
+        window.addEventListener('pywebviewready', async function() {
+            if (window.pywebview && window.pywebview.api && window.pywebview.api.get_log_history) {
+                const logsJson = await window.pywebview.api.get_log_history();
+                const logs = JSON.parse(logsJson);
+                logs.forEach(msg => printToLogWindow(msg));
+            }
+        });
     </script>
 </body>
 </html>
@@ -231,6 +247,7 @@ class DesktopAPI:
             url=LOG_HTML_PATH,
             width=700,
             height=500,
+            js_api=self,
             background_color='#0A0A0A'
         )
         self._log_window.events.closed += self._on_log_window_closed
@@ -478,6 +495,8 @@ class DesktopAPI:
             
             # Reset the abort signal before starting the pipeline
             tax_backend.ABORT_SIGNAL = False
+            self.abort_requested = False
+            self.log_history = []
             
             # Start backend scraper routine
             successful_pans = tax_backend.run_multi_client_downloads(api_ref=self)
@@ -636,6 +655,9 @@ class JSLogRedirector:
             
             # Safely append console string inside JS
             self.window.evaluate_js(f"printToConsole('{clean_str}', 'info')")
+            
+            # Append to history in api_ref
+            self.api_ref.log_history.append(clean_str)
             
             # Streaming to the child log window if it exists
             if self.api_ref._log_window:

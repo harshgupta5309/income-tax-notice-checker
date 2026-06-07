@@ -62,6 +62,14 @@
             container.appendChild(entry);
             window.scrollTo(0, document.body.scrollHeight);
         }
+
+        window.addEventListener('pywebviewready', async function() {
+            if (window.pywebview && window.pywebview.api && window.pywebview.api.get_log_history) {
+                const logsJson = await window.pywebview.api.get_log_history();
+                const logs = JSON.parse(logsJson);
+                logs.forEach(msg => printToLogWindow(msg));
+            }
+        });
     </script>
 </body>
 </html>

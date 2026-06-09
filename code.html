@@ -1155,6 +1155,8 @@
           const startBtn = document.getElementById('sync-trigger');
           if (startBtn) {
             startBtn.addEventListener('click', async () => {
+              // Hide completion panel immediately on start
+              document.getElementById('recon-card').classList.add('hidden');
               const credsFile = document.getElementById('text-creds-path').innerText;
               const targetFolder = document.getElementById('text-dest-path').innerText;
 
@@ -1200,7 +1202,7 @@
         }
 
         let localClients = [];
-        function renderClientCards(clients) {
+        async function renderClientCards(clients) {
           localClients = clients;
           const grid = document.querySelector('#view-litigation .grid');
           if (!grid) return;
@@ -1211,10 +1213,20 @@
             return;
           }
 
-          clients.forEach(client => {
+          for (const client of clients) {
             const card = document.createElement('div');
             card.className = 'card-editorial flex flex-col h-full bg-card-bg';
             card.id = `card-${client.pan}`;
+            
+            // Get last seen time asynchronously from Python backend
+            let lastSeen = "Pending Sync";
+            try {
+              if (window.pywebview && window.pywebview.api && window.pywebview.api.get_client_last_seen_time) {
+                lastSeen = await window.pywebview.api.get_client_last_seen_time(client.pan);
+              }
+            } catch (e) {
+              console.error(e);
+            }
             
             card.innerHTML = `
               <div class="flex justify-between items-start mb-12">
@@ -1228,13 +1240,43 @@
                 </div>
                 <div class="flex flex-col border-t border-ink pt-4">
                   <span class="mono-ledger uppercase text-muted-ink font-bold mb-1">Last Update</span>
-                  <span class="serif-italic text-lg" id="update-${client.pan}">Pending Sync</span>
+                  <span class="serif-italic text-lg" id="update-${client.pan}">${lastSeen}</span>
+                </div>
+                <div class="flex flex-col border-t border-ink pt-4">
+                  <span class="mono-ledger uppercase text-muted-ink font-bold mb-1">Last Loop</span>
+                  <span class="sans-bold text-xs" id="last-loop-${client.pan}">Pending</span>
                 </div>
               </div>
               <button class="btn-rigid mt-8 w-full py-4 text-[10px] tracking-[0.2em] hover:bg-ink hover:text-parchment hover:shadow-[4px_4px_0px_var(--border-color-custom)]" onclick="openDrawer('${client.name.replace(/'/g, "\\'")}', '${client.pan}')">Open Dossier</button>
             `;
             grid.appendChild(card);
-          });
+          }
+          
+          await updateLastLoopStatuses();
+        }
+
+        async function updateLastLoopStatuses() {
+          try {
+            if (window.pywebview && window.pywebview.api && window.pywebview.api.get_last_checked_pans) {
+              const checkedPansJson = await window.pywebview.api.get_last_checked_pans();
+              const checkedPans = JSON.parse(checkedPansJson);
+              
+              localClients.forEach(client => {
+                const badge = document.getElementById(`last-loop-${client.pan}`);
+                if (badge) {
+                  if (checkedPans.includes(client.pan)) {
+                    badge.innerText = "Checked";
+                    badge.className = "sans-bold text-xs text-emerald-500 font-bold";
+                  } else {
+                    badge.innerText = "Not Checked";
+                    badge.className = "sans-bold text-xs text-muted-ink";
+                  }
+                }
+              });
+            }
+          } catch (e) {
+            console.error("Error updating last loop statuses:", e);
+          }
         }
 
         async function openDrawer(clientName, pan) {
@@ -1627,14 +1669,18 @@
 
             // Update all client card statuses
             const statusStamps = document.querySelectorAll('#view-litigation .status-stamp');
-            statusStamps.forEach(stamp => {
+            for (const stamp of statusStamps) {
               const pan = stamp.id.replace('status-', '');
               const updateEl = document.getElementById(`update-${pan}`);
               
-              // Update the timestamp text
-              if (updateEl) {
-                const dateStr = new Date().toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' });
-                updateEl.innerText = dateStr;
+              // Query exact last seen timestamp from Python backend
+              try {
+                if (updateEl && window.pywebview && window.pywebview.api && window.pywebview.api.get_client_last_seen_time) {
+                  const lastSeen = await window.pywebview.api.get_client_last_seen_time(pan);
+                  updateEl.innerText = lastSeen;
+                }
+              } catch (e) {
+                console.error(e);
               }
 
               if (flaggedPans.includes(pan)) {
@@ -1644,7 +1690,10 @@
                 stamp.innerText = "Verified";
                 stamp.className = "status-stamp status-verified";
               }
-            });
+            }
+            
+            // Update Checked/Not Checked loop status badges
+            await updateLastLoopStatuses();
           } catch (err) {
             printToConsole(`⚠️ Status mapping warning: ${err}`, 'warning');
           }

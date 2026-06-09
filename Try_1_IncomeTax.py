@@ -974,6 +974,8 @@ if __name__ == "__main__":
             sys.exit(1)
             
         # 4. Main Automation Flow
+        timestamp = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
+        OUTPUT_REPORT = os.path.join(BASE_DIR, f"New_Notices_Flagged_Report_{timestamp}.xlsx")
         successful_pans = run_multi_client_downloads(vault_mgr)
         process_and_flag(successful_pans)
         

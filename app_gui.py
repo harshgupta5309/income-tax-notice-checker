@@ -55,6 +55,7 @@ class DesktopAPI:
         self._log_window = None
         self.log_history = []
         self.abort_requested = False
+        self.last_checked_pans = []
         
         # Load saved settings immediately on initialization to sync Python backend state
         try:
@@ -456,6 +457,40 @@ class DesktopAPI:
             pass
         return json.dumps([])
 
+    def get_last_checked_pans(self):
+        """Returns the list of PANs successfully processed in the last loop as a JSON string."""
+        return json.dumps(self.last_checked_pans)
+
+    def get_client_last_seen_time(self, pan):
+        """Returns the timestamp of the latest downloaded CSV file for this PAN, or 'Pending Sync'."""
+        import glob
+        base_dir = tax_backend.BASE_DIR
+        if not base_dir or not os.path.exists(base_dir):
+            return "Pending Sync"
+        pan_upper = pan.upper().strip()
+        files = []
+        files.extend(glob.glob(os.path.join(base_dir, f"*_{pan_upper}_*.csv")))
+        archive_dir = os.path.join(base_dir, "Archive")
+        if os.path.exists(archive_dir):
+            files.extend(glob.glob(os.path.join(archive_dir, f"*_{pan_upper}_*.csv")))
+        if not files:
+            return "Pending Sync"
+        
+        # Sort by modification time
+        files.sort(key=os.path.getmtime, reverse=True)
+        filename = os.path.basename(files[0])
+        # Try to parse timestamp from filename robustly
+        import re
+        ts_match = re.search(r'(\d{4})[ -_](\d{2})[ -_](\d{2})[ -_](\d{2})[ -_](\d{2})(?:[ -_](\d{2}))?', filename)
+        if ts_match:
+            year, month, day, hour, minute = ts_match.group(1), ts_match.group(2), ts_match.group(3), ts_match.group(4), ts_match.group(5)
+            second = ts_match.group(6) if ts_match.group(6) else "00"
+            return f"{day}/{month}/{year} {hour}:{minute}:{second}"
+        
+        # Fallback to file mtime
+        dt = datetime.fromtimestamp(os.path.getmtime(files[0]))
+        return dt.strftime("%d/%m/%Y %H:%M:%S")
+
     # --- AUTOMATION WORKER INTERFACE ---
     def start_notice_check(self, credentials_path, destination_path):
         """Spins up the Playwright scrapers inside a decoupled background daemon thread"""
@@ -469,7 +504,11 @@ class DesktopAPI:
             # Map paths dynamically to the backend module
             tax_backend.CREDENTIALS_FILE = credentials_path
             tax_backend.BASE_DIR = destination_path
-            tax_backend.OUTPUT_REPORT = os.path.join(destination_path, "New_Notices_Flagged_Report.xlsx")
+            
+            # Timestamp the output report file name to make it unique per run
+            timestamp = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
+            report_name = f"New_Notices_Flagged_Report_{timestamp}.xlsx"
+            tax_backend.OUTPUT_REPORT = os.path.join(destination_path, report_name)
 
             # Setup the invisible diagnostics log box container
             self._initialize_vault(destination_path)
@@ -500,9 +539,11 @@ class DesktopAPI:
             tax_backend.ABORT_SIGNAL = False
             self.abort_requested = False
             self.log_history = []
+            self.last_checked_pans = []
             
             # Start backend scraper routine
             successful_pans = tax_backend.run_multi_client_downloads(api_ref=self)
+            self.last_checked_pans = successful_pans
             tax_backend.process_and_flag(successful_pans)
             
             # Fire completion actions on UI

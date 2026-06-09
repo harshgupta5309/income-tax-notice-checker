@@ -18,7 +18,8 @@ os.makedirs(BASE_DIR, exist_ok=True)
 
 # Force Playwright's browser context to remain entirely inside a local subfolder
 # This prevents the app from needing admin rights to write to %LOCALAPPDATA%
-os.environ["PLAYWRIGHT_BROWSERS_PATH"] = os.path.join(APP_DIR, "ms-playwright")
+PORTABLE_BROWSER_DIR = os.path.join(APP_DIR, "ms-playwright")
+os.environ["PLAYWRIGHT_BROWSERS_PATH"] = PORTABLE_BROWSER_DIR
 
 import glob
 import shutil
@@ -364,8 +365,24 @@ def run_multi_client_downloads(vault_manager=None, api_ref=None):
     processed_pans = []
 
     with sync_playwright() as p:
-        browser = p.chromium.launch(headless=False, args=["--window-position=-2000,-2000", "--window-size=1920,1080"])
+        browser = p.chromium.launch(headless=True, args=["--start-maximized"])
         
+        # Create a single browser context and page reused across all client iterations
+        context = browser.new_context(viewport={'width': 1920, 'height': 1080})
+        context.set_default_timeout(30000)
+        context.set_default_navigation_timeout(30000)
+        page = context.new_page()
+        
+        # Apply stealth sync
+        Stealth().apply_stealth_sync(context)
+        Stealth().apply_stealth_sync(page)
+        
+        print("\nℹ️ [INFO]  - Launching Income Tax Portal...")
+        try:
+            page.goto("https://eportal.incometax.gov.in/iec/foservices/#/login?language-code=en", wait_until="networkidle", timeout=45000)
+        except Exception as e:
+            print(f"⚠️ [WARNING] - Navigation to portal timed out: {e}. Attempting recovery...")
+
         try:
             for index, row in df_creds.iterrows():
                 # Check abort signal before starting a client
@@ -381,12 +398,6 @@ def run_multi_client_downloads(vault_manager=None, api_ref=None):
                 print(f"{'=' * 50}")
                 print("🔑 [STAGE-AUTH] - 0% - Portal launched / loading")
 
-                # Create a fresh browser context and page for this client
-                context = browser.new_context(viewport={'width': 1920, 'height': 1080})
-                context.set_default_timeout(30000)
-                context.set_default_navigation_timeout(30000)
-                page = context.new_page()
-                
                 # Apply stealth sync to the fresh context and page
                 Stealth().apply_stealth_sync(context)
                 Stealth().apply_stealth_sync(page)
@@ -412,13 +423,8 @@ def run_multi_client_downloads(vault_manager=None, api_ref=None):
                     
                     # Stage 1: Login Form Injection
                     try:
-                        page.locator("#panAdhaarUserId").click(force=True)
-                        page.locator("#panAdhaarUserId").fill("")
-                        page.locator("#panAdhaarUserId").press_sequentially(user_id, delay=100)
-                        page.wait_for_timeout(1000)
-                        page.locator("#panAdhaarUserId").press("Tab")
-                        page.wait_for_timeout(500)
-                        page.locator('button.large-button-primary:has-text("Continue")').first.click(force=True)
+                        page.fill("#panAdhaarUserId", user_id)
+                        page.locator('button.large-button-primary:has-text("Continue")').first.click()
                         print("🔑 [STAGE-AUTH] - 25% - User ID Entered and Continue Clicked")
                     except Exception as e:
                         print(f"🚨 [CRITICAL ERROR] - Login form injection stage failed for {user_id}.")
@@ -429,19 +435,8 @@ def run_multi_client_downloads(vault_manager=None, api_ref=None):
                     # Stage 2: OTP/Password Navigation
                     try:
                         robust_wait_for_selector(page, "#passwordCheckBox-input", timeout_sec=20, pan=user_id, api_ref=api_ref)
-                        try:
-                            # Click input directly without strict synchronous check assertion
-                            page.locator("#passwordCheckBox-input").click(force=True, timeout=5000)
-                        except Exception:
-                            try:
-                                # Fallback to clicking label
-                                page.locator("label[for='passwordCheckBox-input']").click(timeout=5000)
-                            except Exception:
-                                # Standard check fallback
-                                page.check("#passwordCheckBox-input", force=True)
-                        page.locator("#loginPasswordField").click(force=True)
-                        page.locator("#loginPasswordField").fill("")
-                        page.locator("#loginPasswordField").press_sequentially(password, delay=100)
+                        page.check("#passwordCheckBox-input", force=True)
+                        page.fill("#loginPasswordField", password)
                         page.keyboard.press("Tab")
                         print("🔑 [STAGE-AUTH] - 50% - Password Entered and Login Clicked")
                     except (SkipClientException, StopPipelineException) as e:
@@ -563,10 +558,50 @@ def run_multi_client_downloads(vault_manager=None, api_ref=None):
                         capture_diagnostic_screenshot(page, user_id, "BY_DOWNLOAD", vault_manager)
                         logging.exception(f"BY download stage failed for {user_id}")
 
+                    # Logout sequence to reuse the same window cleanly
+                    print(f"Logging out {user_id}...")
+                    try:
+                        page.locator('button.profileMenubtn').wait_for(state="visible", timeout=10000)
+                        page.locator('button.profileMenubtn').click()
+                        page.wait_for_timeout(1000) 
+                        
+                        try:
+                            page.locator('role=menuitem[name="Log Out"]').click(timeout=5000)
+                        except:
+                            page.get_by_text("Log Out", exact=True).click(timeout=5000)
+                        
+                        page.wait_for_load_state("networkidle")
+                        
+                        try:
+                            login_again_btn = page.locator('button.registerButton:has-text("Log In Again")')
+                            login_again_btn.wait_for(state="visible", timeout=10000)
+                            login_again_btn.click()
+                            page.wait_for_load_state("networkidle")
+                        except Exception:
+                            print("Could not find 'Log In Again' button. Hard navigating back to login page...")
+                            page.goto("https://eportal.incometax.gov.in/iec/foservices/#/login?language-code=en", wait_until="networkidle")
+                    except Exception as logout_err:
+                        print(f"⚠️ Logout failed for {user_id}: {logout_err}. Navigating directly to login page...")
+                        try:
+                            page.goto("https://eportal.incometax.gov.in/iec/foservices/#/login?language-code=en", wait_until="networkidle")
+                        except Exception:
+                            pass
+
+                    # Clear cookies to prevent session leak between taxpayer cycles
+                    try:
+                        context.clear_cookies()
+                    except Exception:
+                        pass
+
                     processed_pans.append(user_id)
                     print(f"📥 [STAGE-EXTRACTION] - 100% - All files downloaded successfully for client: {user_id}")
 
                 except SkipClientException:
+                    print(f"User requested to skip client {user_id}. Clearing cookies and navigating back to login page...")
+                    try:
+                        context.clear_cookies()
+                    except Exception:
+                        pass
                     try:
                         page.goto("https://eportal.incometax.gov.in/iec/foservices/#/login?language-code=en", timeout=15000)
                     except Exception:

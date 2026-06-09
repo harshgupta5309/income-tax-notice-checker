@@ -27,3 +27,5 @@ Archive/
 # OS
 Thumbs.db
 .DS_Store
+settings.json
+

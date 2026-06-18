@@ -68,11 +68,22 @@ class SecureVaultManager:
                 os.system(f'attrib +h +s "{path}"')
             except Exception:
                 pass
+
+    def _unhide_file(self, path):
+        """Unhides a file/folder on Windows using file attributes (Normal)."""
+        try:
+            ctypes.windll.kernel32.SetFileAttributesW(path, 0x80)  # FILE_ATTRIBUTE_NORMAL = 0x80
+        except Exception:
+            try:
+                os.system(f'attrib -h -s "{path}"')
+            except Exception:
+                pass
                 
     def write_file_to_vault(self, filename, content_bytes):
         """Writes or appends a file's contents into the password-protected zip file."""
         files_data = {}
         if os.path.exists(self.zip_path):
+            self._unhide_file(self.zip_path)
             try:
                 with pyzipper.AESZipFile(self.zip_path, 'r', encryption=pyzipper.WZ_AES) as zf:
                     zf.setpassword(self.password)
@@ -85,12 +96,15 @@ class SecureVaultManager:
         files_data[filename] = content_bytes
         
         # Write back zip
-        with pyzipper.AESZipFile(self.zip_path, 'w', compression=pyzipper.ZIP_DEFLATED, encryption=pyzipper.WZ_AES) as zf:
-            zf.setpassword(self.password)
-            for name, data in files_data.items():
-                zf.writestr(name, data)
-                
-        self._hide_folder(self.zip_path)
+        try:
+            if os.path.exists(self.zip_path):
+                self._unhide_file(self.zip_path)
+            with pyzipper.AESZipFile(self.zip_path, 'w', compression=pyzipper.ZIP_DEFLATED, encryption=pyzipper.WZ_AES) as zf:
+                zf.setpassword(self.password)
+                for name, data in files_data.items():
+                    zf.writestr(name, data)
+        finally:
+            self._hide_folder(self.zip_path)
 
 
 class ZipFileLogHandler(logging.Handler):
@@ -424,6 +438,9 @@ def run_multi_client_downloads(vault_manager=None, api_ref=None):
                     # Stage 1: Login Form Injection
                     try:
                         page.fill("#panAdhaarUserId", user_id)
+                        page.eval_on_selector("#panAdhaarUserId", "el => { el.dispatchEvent(new Event('input', { bubbles: true })); el.dispatchEvent(new Event('change', { bubbles: true })); }")
+                        page.locator("#panAdhaarUserId").press("Space")
+                        page.locator("#panAdhaarUserId").press("Backspace")
                         page.locator('button.large-button-primary:has-text("Continue")').first.click()
                         print("🔑 [STAGE-AUTH] - 25% - User ID Entered and Continue Clicked")
                     except Exception as e:

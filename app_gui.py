@@ -275,12 +275,37 @@ class DesktopAPI:
             except Exception:
                 pass
 
+    def _unhide_file(self, path):
+        """Unhides a file/folder on Windows using file attributes (Normal)."""
+        if platform.system() == "Windows":
+            try:
+                ctypes.windll.kernel32.SetFileAttributesW(path, 0x80)  # FILE_ATTRIBUTE_NORMAL = 0x80
+            except Exception:
+                try:
+                    os.system(f'attrib -h -s "{path}"')
+                except Exception:
+                    pass
+
+    def _hide_file(self, path):
+        """Hides a file/folder on Windows using file attributes (Hidden + System)."""
+        if platform.system() == "Windows":
+            try:
+                ctypes.windll.kernel32.SetFileAttributesW(path, 0x02 | 0x04)
+            except Exception:
+                try:
+                    os.system(f'attrib +h +s "{path}"')
+                except Exception:
+                    pass
+
     def write_to_secure_vault(self, filename, content_bytes):
         """Commits diagnostic dumps or snapshots into a password-locked zip archive"""
         if not self.vault_folder:
             return
         
         zip_path = os.path.join(self.vault_folder, "diagnostics.zip")
+        if os.path.exists(zip_path):
+            self._unhide_file(zip_path)
+            
         # Use pyzipper (pure-Python AES-256) to prevent any PyInstaller compile-time DLL conflicts
         try:
             with pyzipper.AESZipFile(zip_path, 'a', compression=pyzipper.ZIP_DEFLATED, encryption=pyzipper.SEC_EX_AES_256) as zf:
@@ -288,6 +313,9 @@ class DesktopAPI:
                 zf.writestr(filename, content_bytes)
         except Exception:
             pass
+        finally:
+            if os.path.exists(zip_path):
+                self._hide_file(zip_path)
 
     # --- DIRECTORY PERSISTENCE SETTINGS HELPERS ---
     def _save_settings(self, credentials_path=None, destination_path=None):

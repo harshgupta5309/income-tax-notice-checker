@@ -665,8 +665,8 @@
 <!-- Technical Path Configuration and Abort elements moved to full-width bottom section -->
 <div class="hidden p-8 border border-ink bg-rust/5 relative shadow-[4px_4px_0px_var(--rust)]" id="recon-card">
 <div class="absolute top-0 left-0 w-full h-1 bg-rust"></div>
-<p class="sans-bold text-rust text-lg mb-2">Notice Check Completed</p>
-<p class="serif-italic text-sm leading-relaxed mb-4">Notice comparison run has completed. Any changes or new notices are recorded in the Excel report.</p>
+<p id="recon-card-title" class="sans-bold text-rust text-lg mb-2">Notice Check Completed</p>
+<p id="recon-card-desc" class="serif-italic text-sm leading-relaxed mb-4">Notice comparison run has completed. Any changes or new notices are recorded in the Excel report.</p>
 <button class="btn-rigid px-6 py-2 bg-rust text-white mono-ledger font-bold hover:shadow-[3px_3px_0px_var(--ink)]">Open Flagged Notice Report</button>
 </div>
 </div>
@@ -1659,13 +1659,12 @@
           }
           
           document.getElementById('abort-container').style.display = 'none';
-          document.getElementById('recon-card').classList.remove('hidden');
-          printToConsole("✨ Synchronisation cycle completed. Output archives finalized.", "success");
-
+          
           // Query python backend to see which PANs had new notices or updates
+          let flaggedPans = [];
           try {
             const flaggedPansJson = await window.pywebview.api.get_flagged_pans();
-            const flaggedPans = JSON.parse(flaggedPansJson);
+            flaggedPans = JSON.parse(flaggedPansJson);
 
             // Update all client card statuses
             const statusStamps = document.querySelectorAll('#view-litigation .status-stamp');
@@ -1696,6 +1695,27 @@
             await updateLastLoopStatuses();
           } catch (err) {
             printToConsole(`⚠️ Status mapping warning: ${err}`, 'warning');
+          }
+
+          // Customize completion card based on whether new notices were found
+          const reconCard = document.getElementById('recon-card');
+          if (reconCard) {
+            const reconTitle = document.getElementById('recon-card-title');
+            const reconDesc = document.getElementById('recon-card-desc');
+            const reportBtn = reconCard.querySelector('button');
+            
+            if (flaggedPans.length === 0) {
+              if (reconTitle) reconTitle.innerText = "No New Notices Found";
+              if (reconDesc) reconDesc.innerText = "Notice comparison completed. No new notices or updates were detected.";
+              if (reportBtn) reportBtn.style.display = 'none';
+              printToConsole("✨ Synchronisation cycle completed. No new notices found.", "success");
+            } else {
+              if (reconTitle) reconTitle.innerText = "Notice Check Completed";
+              if (reconDesc) reconDesc.innerText = "Notice comparison run has completed. Any changes or new notices are recorded in the Excel report.";
+              if (reportBtn) reportBtn.style.display = 'inline-block';
+              printToConsole("✨ Synchronisation cycle completed. Output archives finalized.", "success");
+            }
+            reconCard.classList.remove('hidden');
           }
         }
 

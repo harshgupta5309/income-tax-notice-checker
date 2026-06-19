@@ -39,6 +39,7 @@ from playwright_stealth import Stealth
 OUTPUT_REPORT = os.path.join(BASE_DIR, "New_Notices_Flagged_Report.xlsx")
 CREDENTIALS_FILE = os.path.join(APP_DIR, "Credentials.xlsx")
 ABORT_SIGNAL = False
+DOWNLOADED_FILES = {}
 
 
 
@@ -344,24 +345,30 @@ def download_and_rename(page, pan, name, file_id):
         
         download.save_as(save_path)
         print(f"✅ [SUCCESS] - Successfully saved: {filename}")
+        global DOWNLOADED_FILES
+        DOWNLOADED_FILES[(pan, file_id)] = save_path
         return True
     except Exception as e:
         print(f"⚠️ [WARNING] - Failed to download {file_id}: {e}")
-def get_latest_and_prev_files(pan, file_id):
-    """Finds the two most recent CSV files for comparison"""
-    search_pattern = os.path.join(BASE_DIR, f"*_{pan}_{file_id}_*.csv")
-    files = glob.glob(search_pattern)
+
+def get_prev_file(pan, file_id, new_file):
+    """Finds the most recent CSV file for comparison (excluding the newly downloaded file)"""
+    search_pattern_root = os.path.join(BASE_DIR, f"*_{pan}_{file_id}_*.csv")
+    search_pattern_archive = os.path.join(BASE_DIR, "Archive", f"*_{pan}_{file_id}_*.csv")
+    
+    files = glob.glob(search_pattern_root) + glob.glob(search_pattern_archive)
+    files = [f for f in files if os.path.abspath(f) != os.path.abspath(new_file)]
     files.sort(key=os.path.getmtime, reverse=True)
     
-    if len(files) >= 2:
-        return files[0], files[1] 
-    elif len(files) == 1:
-        return files[0], None
-    return None, None
+    if files:
+        return files[0]
+    return None
 
 # --- MAIN AUTOMATION LOGIC ---
 
 def run_multi_client_downloads(vault_manager=None, api_ref=None):
+    global DOWNLOADED_FILES
+    DOWNLOADED_FILES = {}
     if vault_manager is None:
         vault_manager = SecureVaultManager(BASE_DIR)
     if not os.path.exists(BASE_DIR):
@@ -741,9 +748,10 @@ def process_and_flag(pan_list):
     
     for pan in pan_list:
         for fid in ['AX', 'BX', 'AY', 'BY']:
-            new_file, old_file = get_latest_and_prev_files(pan, fid)
-            if not new_file: 
+            if (pan, fid) not in DOWNLOADED_FILES:
                 continue
+            new_file = DOWNLOADED_FILES[(pan, fid)]
+            old_file = get_prev_file(pan, fid, new_file)
 
             try:
                 # Load new file

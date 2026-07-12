@@ -890,6 +890,7 @@ def process_and_flag(pan_list):
                     mapped['Notice Section'] = extract_col_data(df, ['section'])
                     mapped['Date of Compliance'] = extract_col_data(df, ['compliance', 'due date'])
                     mapped['Date Response submitted(Last Response Submitted)'] = extract_col_data(df, ['response submitted'])
+                    mapped['Source_File'] = file_id
                     
                     # Clean all fields
                     for col in mapped.columns:
@@ -946,6 +947,7 @@ def process_and_flag(pan_list):
                     status = str(row.get('Proceeding Status', '')).strip()
                     response_submitted_date = str(row.get('Date Response submitted(Last Response Submitted)', '')).strip()
                     proceeding = str(row.get('Proceeding Name', '')).strip()
+                    source_file = str(row.get('Source_File', fid)).strip()
 
                     is_submitted = False
                     if response_submitted_date and response_submitted_date.lower() not in ['', 'nan', 'none', 'null']:
@@ -957,8 +959,15 @@ def process_and_flag(pan_list):
 
                     if key in tracker_map:
                         n = tracker_map[key]
+                        
+                        # Check if it moved from Action (AX/AY) to Information (BX/BY)
+                        prev_src = n.get('source_file', '')
+                        if prev_src in ['AX', 'AY'] and source_file in ['BX', 'BY']:
+                            n['moved_to_info'] = True
+                            n['prev_source'] = prev_src
+                            print(f"ℹ️ [INFO]  - Notice for {client_name} (Section {section}, DIN: {din}) moved from For Your Action to For Your Information (BX/BY).")
+                        
                         n['status'] = status
-                        n['response_submitted_date'] = response_submitted_date
                         n['compliance_date'] = compliance_date
                         n['limitation_date'] = limitation_date
                         n['proceeding_name'] = proceeding
@@ -966,9 +975,25 @@ def process_and_flag(pan_list):
                         n['section'] = section
                         n['sent_date'] = sent_date
                         n['ay'] = ay
+                        n['source_file'] = source_file
+                        
+                        # Keep list of response dates
+                        r_dates = n.get('response_submitted_dates', [])
+                        if not isinstance(r_dates, list):
+                            r_dates = [r_dates] if r_dates else []
+                        if response_submitted_date and response_submitted_date.lower() not in ['', 'nan', 'none', 'null']:
+                            if response_submitted_date not in r_dates:
+                                r_dates.append(response_submitted_date)
+                        n['response_submitted_dates'] = r_dates
+                        n['response_submitted_date'] = response_submitted_date
+                        
                         if is_submitted:
                             n['filed_status'] = 'Filed'
                     else:
+                        r_dates = []
+                        if response_submitted_date and response_submitted_date.lower() not in ['', 'nan', 'none', 'null']:
+                            r_dates.append(response_submitted_date)
+                            
                         tracker_map[key] = {
                             "din": din,
                             "pan": pan,
@@ -980,10 +1005,13 @@ def process_and_flag(pan_list):
                             "limitation_date": limitation_date,
                             "ay": ay,
                             "status": status,
-                            "filed_status": "Filed" if is_submitted else "Not Filed",
+                            "filed_status": "Filed" if is_submitted else "Outstanding",
                             "remarks": "",
                             "source": "Scraped",
-                            "response_submitted_date": response_submitted_date
+                            "source_file": source_file,
+                            "response_submitted_date": response_submitted_date,
+                            "response_submitted_dates": r_dates,
+                            "moved_to_info": False
                         }
 
                 if not df_old_mapped.empty:

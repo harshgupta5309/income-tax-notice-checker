@@ -242,6 +242,52 @@
             box-shadow: 2px 2px 0px var(--btn-rust-shadow);
             border-color: var(--rust) !important;
         }
+        .btn-indigo {
+            background: var(--indigo);
+            color: white;
+            box-shadow: 2px 2px 0px var(--border-color-custom);
+            border-color: var(--indigo) !important;
+        }
+
+        /* Classical High-Clarity Table */
+        .classical-table {
+            width: 100%;
+            border-collapse: collapse;
+            border: 1.5px solid var(--border-color-custom);
+            background: var(--panel-white);
+        }
+        .classical-table th {
+            font-family: var(--font-mono);
+            font-weight: 700;
+            text-transform: uppercase;
+            font-size: 9px;
+            letter-spacing: 0.08em;
+            background: var(--card-bg);
+            border-bottom: 2px solid var(--border-color-custom);
+            border-right: 1px solid var(--border-ink);
+            color: var(--ink);
+            padding: 12px 10px;
+        }
+        .classical-table td {
+            font-size: 11px;
+            border-bottom: 1px solid var(--border-ink);
+            border-right: 1px solid var(--border-ink);
+            padding: 12px 10px;
+            color: var(--ink);
+            vertical-align: middle;
+        }
+        .classical-table tr:hover {
+            background: rgba(28, 27, 25, 0.02) !important;
+        }
+        body.theme-dark .classical-table tr:hover {
+            background: rgba(255, 255, 255, 0.02) !important;
+        }
+        .classical-table tr:nth-child(even) {
+            background: rgba(28, 27, 25, 0.015);
+        }
+        body.theme-dark .classical-table tr:nth-child(even) {
+            background: rgba(255, 255, 255, 0.015);
+        }
 
         /* Statuses */
         .status-stamp {
@@ -533,7 +579,7 @@
       <p class="serif-italic text-sm text-muted-ink mt-2">Centralized ledger of flagged notices, manual entries, and verified portal filings.</p>
     </div>
     <div class="flex gap-3">
-      <button class="btn-rigid px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white font-mono text-[10px] flex items-center gap-2" onclick="openAddNoticeModal()">
+      <button class="btn-rigid btn-indigo px-4 py-2 text-white font-mono text-[10px] flex items-center gap-2" onclick="openAddNoticeModal()">
         <span>+ Add Notice Manually</span>
       </button>
       <div class="w-24 h-16 border border-ink flex flex-col items-center justify-center text-center p-2 bg-panel box-shadow-[2px_2px_0px_var(--border-color-custom)]">
@@ -547,7 +593,10 @@
   <div id="latest-flagged-section" class="space-y-4">
     <div class="flex items-center gap-2 border-b border-ink/10 pb-2">
       <span class="material-symbols-outlined text-rust text-lg">notification_important</span>
-      <h3 class="sans-bold text-xs uppercase tracking-wider text-rust">Latest Flagged Notices (Recent Sync)</h3>
+      <div class="flex flex-col">
+        <h3 class="sans-bold text-xs uppercase tracking-wider text-rust">Latest Flagged Notices (Recent Sync)</h3>
+        <p class="serif-italic text-[10px] text-muted-ink mt-0.5">These cards display newly identified or updated notices from the most recent sync run. They persist until the next synchronization cycle.</p>
+      </div>
     </div>
     <div id="latest-flagged-grid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
       <div class="col-span-3 text-center py-6 text-muted-ink italic text-xs bg-ink/5 border border-dashed border-ink/20 rounded">
@@ -562,24 +611,30 @@
       <!-- Search & Filters -->
       <div class="flex flex-wrap gap-3 items-center w-full md:w-auto">
         <div class="flex flex-col gap-1">
-          <span class="mono-ledger text-[8px] uppercase text-muted-ink">Search Query</span>
-          <input type="text" id="tracker-search-input" placeholder="Search PAN, Name, DIN..." class="px-3 py-1.5 bg-sidebar border border-ink/35 text-xs text-ink focus:outline-none focus:border-indigo" oninput="applyTrackerFilters()">
+          <span class="mono-ledger text-[8px] uppercase text-muted-ink font-bold">Search Query</span>
+          <input type="text" id="tracker-search-input" placeholder="Search PAN, Name, DIN..." class="px-3 py-1.5 bg-sidebar border border-ink/35 text-xs text-ink focus:outline-none focus:border-indigo font-mono" oninput="applyTrackerFilters()">
         </div>
         <div class="flex flex-col gap-1">
-          <span class="mono-ledger text-[8px] uppercase text-muted-ink">Status Filter</span>
-          <select id="tracker-status-filter" class="px-3 py-1.5 bg-sidebar border border-ink/35 text-xs text-ink focus:outline-none" onchange="applyTrackerFilters()">
+          <span class="mono-ledger text-[8px] uppercase text-muted-ink font-bold">Status Filter</span>
+          <select id="tracker-status-filter" class="px-3 py-1.5 bg-sidebar border border-ink/35 text-xs text-ink focus:outline-none font-mono" onchange="applyTrackerFilters()">
             <option value="all">All Statuses</option>
             <option value="outstanding">Outstanding (Not Satisfied)</option>
             <option value="satisfied">Satisfied (Portal Confirmed)</option>
             <option value="manual">Manually Added</option>
           </select>
         </div>
+        <div class="flex flex-col gap-1">
+          <span class="mono-ledger text-[8px] uppercase text-muted-ink font-bold">Assessment Year (AY)</span>
+          <select id="tracker-ay-filter" class="px-3 py-1.5 bg-sidebar border border-ink/35 text-xs text-ink focus:outline-none font-mono" onchange="applyTrackerFilters()">
+            <option value="all">All Years</option>
+          </select>
+        </div>
       </div>
-      <!-- Sorting -->
+      <!-- Sorting & Toggle -->
       <div class="flex flex-wrap gap-3 items-center w-full md:w-auto">
         <div class="flex flex-col gap-1">
-          <span class="mono-ledger text-[8px] uppercase text-muted-ink">Sort Notices</span>
-          <select id="tracker-sort-select" class="px-3 py-1.5 bg-sidebar border border-ink/35 text-xs text-ink focus:outline-none" onchange="applyTrackerFilters()">
+          <span class="mono-ledger text-[8px] uppercase text-muted-ink font-bold">Sort Notices</span>
+          <select id="tracker-sort-select" class="px-3 py-1.5 bg-sidebar border border-ink/35 text-xs text-ink focus:outline-none font-mono" onchange="applyTrackerFilters()">
             <option value="compliance-asc">Compliance Date (Earliest First) ⚠️</option>
             <option value="compliance-desc">Compliance Date (Latest First)</option>
             <option value="sent-desc">Notice Sent Date (Newest First)</option>
@@ -587,33 +642,46 @@
             <option value="status">Portal Status</option>
           </select>
         </div>
+        <div class="flex flex-col gap-1 self-end">
+          <button id="filter-back-btn" class="hidden btn-rigid px-3 py-[7px] bg-[var(--rust)] hover:bg-[var(--rust)]/90 text-white text-[10px] flex items-center gap-1 font-mono uppercase tracking-wider" onclick="toggleLedgerExpansion()">
+            <span>← Back</span>
+          </button>
+        </div>
       </div>
     </div>
 
     <!-- Table Container -->
-    <div class="overflow-x-auto border border-ink/20 rounded-md bg-sidebar/20">
-      <table class="w-full text-left border-collapse text-xs">
+    <div id="tracker-table-container" class="overflow-x-auto border border-ink/20 bg-sidebar/20 max-h-[380px] overflow-y-auto transition-all duration-300">
+      <table class="classical-table w-full text-left text-xs" id="tracker-table">
         <thead>
-          <tr class="bg-sidebar border-b border-ink/25 text-[10px] uppercase font-mono tracking-wider text-muted-ink">
+          <tr>
             <th class="p-3 border-r border-ink/10">Taxpayer Client</th>
             <th class="p-3 border-r border-ink/10">Notice Details</th>
             <th class="p-3 border-r border-ink/10">Sent / Compliance Date</th>
-            <th class="p-3 border-r border-ink/10">User Status</th>
-            <th class="p-3 border-r border-ink/10">Portal Status</th>
-            <th class="p-3 border-r border-ink/10">Satisfied?</th>
+            <th class="p-3 border-r border-ink/10">Status</th>
+            <th class="p-3 border-r border-ink/10">Proven by Scraping</th>
+            <th class="p-3 border-r border-ink/10">Page/Source</th>
             <th class="p-3 border-r border-ink/10">Remarks</th>
             <th class="p-3">Actions</th>
           </tr>
         </thead>
-        <tbody id="tracker-table-body" class="divide-y divide-ink/10 font-mono">
+        <tbody id="tracker-table-body" class="font-mono">
           <!-- Populated dynamically via JS -->
         </tbody>
       </table>
     </div>
+    
+    <!-- Ledger Expansion Toggle at Bottom -->
+    <div class="flex justify-center pt-2" id="ledger-expand-wrapper">
+      <button class="btn-rigid btn-indigo px-6 py-2 text-white text-[10px] flex items-center gap-2 font-mono uppercase tracking-wider" id="toggle-ledger-btn" onclick="toggleLedgerExpansion()">
+        <span>Expand Full Screen Ledger</span>
+        <span>↓</span>
+      </button>
+    </div>
   </div>
 
   <!-- Section 3: Taxpayer Dossiers (Bottom Section) -->
-  <div class="space-y-6 border-t border-ink/15 pt-10">
+  <div id="client-dossier-section" class="space-y-6 border-t border-ink/15 pt-10">
     <div class="flex justify-between items-center">
       <div>
         <h3 class="serif-title text-3xl">Taxpayer <span class="serif-italic accent-indigo">Dossiers</span></h3>
@@ -1350,12 +1418,41 @@
               counter.innerText = allTrackedNotices.length;
             }
             
+            // Dynamically populate AY filter dropdown
+            const ayFilter = document.getElementById('tracker-ay-filter');
+            if (ayFilter) {
+              const currentSelected = ayFilter.value;
+              const ays = [...new Set(allTrackedNotices.map(n => n.ay).filter(Boolean))].sort();
+              ayFilter.innerHTML = '<option value="all">All Years</option>';
+              ays.forEach(ay => {
+                const option = document.createElement('option');
+                option.value = ay;
+                option.innerText = ay;
+                if (ay === currentSelected) option.selected = true;
+                ayFilter.appendChild(option);
+              });
+            }
+            
             // Render sections
             renderLatestFlaggedNotices();
             applyTrackerFilters();
+            
+            // Check for concluded notices to trigger modal alert
+            checkConcludedNoticesModal();
           } catch (e) {
             console.error("Failed to load notice tracker:", e);
           }
+        }
+
+        function mapSourceFileToPage(source) {
+          if (!source) return "Manual Entry";
+          const s = source.toUpperCase();
+          if (s === "AX") return "For Your Action (Self)";
+          if (s === "AY") return "For Your Action (Others)";
+          if (s === "BX") return "For Your Information (Self)";
+          if (s === "BY") return "For Your Information (Others)";
+          if (s === "MANUAL") return "Manual Entry";
+          return source;
         }
 
         function renderLatestFlaggedNotices() {
@@ -1376,7 +1473,7 @@
           
           latest.forEach(n => {
             const card = document.createElement('div');
-            card.className = 'border border-rust/35 bg-rust/5 p-4 rounded-md flex flex-col space-y-3 relative hover:shadow-md transition-all';
+            card.className = 'border-[1.5px] border-ink bg-[var(--panel-white)] box-shadow-[3px_3px_0px_var(--border-color-custom)] p-4 rounded-none flex flex-col space-y-3 relative hover:translate-y-[-2px] hover:translate-x-[-2px] hover:box-shadow-[5px_5px_0px_var(--border-color-custom)] transition-all';
             
             const flagReason = n.flag_reason || "FLAGGED";
             const badgeClass = flagReason.startsWith("NEW") ? "bg-red-500/10 text-red-500 border-red-500/20" : "bg-amber-500/10 text-amber-500 border-amber-500/20";
@@ -1384,17 +1481,35 @@
             card.innerHTML = `
               <div class="flex justify-between items-start">
                 <div class="flex flex-col">
-                  <span class="mono-ledger text-[8px] font-bold text-rust uppercase">LATEST FLAGGED NOTICE</span>
-                  <span class="sans-bold text-sm text-ink truncate max-w-[180px]">${n.client_name}</span>
+                  <span class="mono-ledger text-[8px] font-bold text-rust uppercase tracking-wider">LATEST FLAGGED NOTICE</span>
+                  <span class="serif-title text-base font-bold text-ink truncate max-w-[200px]" title="${n.client_name}">${n.client_name}</span>
                   <span class="mono-ledger text-[9px] text-muted-ink">${n.pan}</span>
                 </div>
                 <span class="px-1.5 py-0.5 text-[8px] font-mono border rounded uppercase font-bold ${badgeClass}">${flagReason}</span>
               </div>
-              <div class="space-y-1 text-xs border-t border-ink/10 pt-2 font-mono">
-                <div class="flex justify-between"><span class="text-muted-ink">DIN:</span><span class="font-bold text-ink">${n.din || 'N/A'}</span></div>
-                <div class="flex justify-between"><span class="text-muted-ink">Section:</span><span class="text-ink">${n.section}</span></div>
-                <div class="flex justify-between"><span class="text-muted-ink">Proceeding:</span><span class="text-ink truncate max-w-[150px]">${n.proceeding_name}</span></div>
-                <div class="flex justify-between"><span class="text-muted-ink">Compliance Date:</span><span class="font-bold text-rust">${n.compliance_date}</span></div>
+              <div class="space-y-2 text-xs border-t border-ink/10 pt-3 font-mono">
+                <div class="flex flex-col">
+                  <span class="text-[9px] text-muted-ink uppercase tracking-wider font-bold">Notice DIN</span>
+                  <span class="font-bold text-ink text-[10px] break-all select-all bg-ink/5 p-1 rounded-sm border border-ink/10 block font-mono mt-0.5" title="Click to select all">${n.din || 'N/A'}</span>
+                </div>
+                <div class="grid grid-cols-2 gap-2">
+                  <div>
+                    <span class="text-[8px] text-muted-ink uppercase tracking-wider block font-bold">Section</span>
+                    <span class="text-ink text-[11px] font-bold mt-0.5 block">${n.section}</span>
+                  </div>
+                  <div>
+                    <span class="text-[8px] text-muted-ink uppercase tracking-wider block font-bold">Source Page</span>
+                    <span class="px-1.5 py-0.5 text-[8px] font-mono border border-indigo text-indigo bg-indigo/5 font-bold rounded uppercase mt-0.5 inline-block">${mapSourceFileToPage(n.source_file)}</span>
+                  </div>
+                </div>
+                <div class="flex flex-col">
+                  <span class="text-[8px] text-muted-ink uppercase tracking-wider font-bold">Proceeding</span>
+                  <span class="text-ink text-[10px] truncate max-w-[280px] mt-0.5 block" title="${n.proceeding_name}">${n.proceeding_name}</span>
+                </div>
+                <div class="flex justify-between items-center border-t border-ink/5 pt-2 mt-1">
+                  <span class="text-[8px] text-muted-ink uppercase tracking-wider font-bold">Compliance Date</span>
+                  <span class="font-bold text-rust text-[11px]">${n.compliance_date}</span>
+                </div>
               </div>
             `;
             grid.appendChild(card);
@@ -1404,6 +1519,7 @@
         function applyTrackerFilters() {
           const searchQuery = document.getElementById('tracker-search-input').value.toLowerCase().trim();
           const statusFilter = document.getElementById('tracker-status-filter').value;
+          const ayFilterVal = document.getElementById('tracker-ay-filter').value;
           const sortVal = document.getElementById('tracker-sort-select').value;
           
           let filtered = [...allTrackedNotices];
@@ -1439,7 +1555,12 @@
             filtered = filtered.filter(n => n.source === 'Manual');
           }
           
-          // 3. Sorting (Compliance Date earlier, etc.)
+          // 3. Assessment Year filter
+          if (ayFilterVal !== 'all') {
+            filtered = filtered.filter(n => n.ay === ayFilterVal);
+          }
+          
+          // 4. Sorting (Compliance Date earlier, etc.)
           filtered.sort((a, b) => {
             if (sortVal === 'compliance-asc') {
               return new Date(a.compliance_date) - new Date(b.compliance_date);
@@ -1471,22 +1592,57 @@
           notices.forEach(n => {
             const key = n.din || `manual_${n.pan}_${n.section}_${n.sent_date}`;
             
-            const statusLower = (n.status || "").toLowerCase();
-            const responseDate = (n.response_submitted_date || "").toLowerCase();
-            const isSatisfiedOnPortal = responseDate && responseDate !== '' && responseDate !== 'nan' && responseDate !== 'none' && responseDate !== 'null';
-            const hasConcludedStatus = statusLower.includes('submitted') || statusLower.includes('concluded') || statusLower.includes('closed') || statusLower.includes('satisfied');
+            // Map filed_status to the three dropdown states (with Outstanding default)
+            let currentStatus = n.filed_status || 'Outstanding';
+            if (currentStatus === 'Not Filed') {
+              currentStatus = 'Outstanding';
+            }
             
-            const isSatisfied = isSatisfiedOnPortal || hasConcludedStatus;
-            
-            const satisfiedBadge = isSatisfied 
-              ? `<span class="px-2 py-0.5 rounded text-[9px] font-bold bg-emerald-500/10 text-emerald-500 border border-emerald-500/20 flex items-center gap-1 w-max">✓ Satisfied</span>` 
-              : `<span class="px-2 py-0.5 rounded text-[9px] font-bold bg-amber-500/10 text-amber-500 border border-amber-500/20 flex items-center gap-1 w-max">✗ Outstanding</span>`;
+            // Colors for user status dropdown: Outstanding (red), Filed (green), No Response Required (grey/muted)
+            let selectClass = 'border-rust text-rust bg-rust/5';
+            if (currentStatus === 'Filed') {
+              selectClass = 'border-emerald text-emerald bg-emerald/5';
+            } else if (currentStatus === 'No Response Required' || currentStatus === 'Not Required') {
+              selectClass = 'border-ink/30 text-muted-ink bg-ink/5';
+            }
             
             const userStatusSelect = `
-              <select class="bg-sidebar border border-ink/35 text-[11px] px-1 py-0.5 rounded focus:outline-none" onchange="updateNoticeUserStatus('${key}', this.value)">
-                <option value="Not Filed" ${n.filed_status === 'Not Filed' ? 'selected' : ''}>Not Filed</option>
-                <option value="Filed" ${n.filed_status === 'Filed' ? 'selected' : ''}>Filed</option>
+              <select class="border font-mono text-[10px] px-2 py-1 font-bold rounded focus:outline-none ${selectClass}" onchange="updateNoticeUserStatus('${key}', this.value)">
+                <option value="Outstanding" ${currentStatus === 'Outstanding' ? 'selected' : ''}>Outstanding</option>
+                <option value="Filed" ${currentStatus === 'Filed' ? 'selected' : ''}>Filed</option>
+                <option value="No Response Required" ${currentStatus === 'No Response Required' ? 'selected' : ''}>No Response Required</option>
               </select>
+            `;
+            
+            // Proven by Scraping Column (Portal status text + all submission dates)
+            const statusLower = (n.status || "").toLowerCase();
+            let datesHtml = '';
+            const dates = n.response_submitted_dates || (n.response_submitted_date ? [n.response_submitted_date] : []);
+            if (dates.length > 0) {
+              dates.forEach(d => {
+                datesHtml += `<div class="text-[9px] text-indigo-500 font-bold border-t border-ink/5 mt-1 pt-1">Filing Date: ${d}</div>`;
+              });
+            }
+            
+            const isVerified = dates.length > 0 || ['concluded', 'closed', 'satisfied'].some(s => statusLower.includes(s));
+            const verifiedBadge = isVerified 
+              ? `<span class="px-2 py-0.5 rounded text-[9px] font-bold bg-emerald-500/10 text-emerald-500 border border-emerald-500/20 flex items-center gap-1 w-max">✓ Verified</span>` 
+              : `<span class="px-2 py-0.5 rounded text-[9px] font-bold bg-amber-500/10 text-amber-500 border border-amber-500/20 flex items-center gap-1 w-max">✗ Unverified</span>`;
+            
+            const portalProvenHtml = `
+              <div class="space-y-1">
+                <div class="flex items-center gap-1.5 font-bold">
+                  <span>${n.status || 'PENDING'}</span>
+                  ${verifiedBadge}
+                </div>
+                ${datesHtml}
+              </div>
+            `;
+            
+            const pageSourceBadge = `
+              <span class="px-1.5 py-0.5 text-[8px] font-mono border border-indigo text-indigo bg-indigo/5 font-bold rounded uppercase inline-block">
+                ${mapSourceFileToPage(n.source_file || n.source)}
+              </span>
             `;
             
             const tr = document.createElement('tr');
@@ -1502,16 +1658,13 @@
                 <div class="text-[10px] text-muted-ink truncate max-w-[160px]" title="${n.proceeding_name}">${n.proceeding_name}</div>
                 <div class="text-[9px] text-indigo-500 font-mono">DIN: ${n.din || 'N/A'}</div>
               </td>
-              <td class="p-3 border-r border-ink/10">
+              <td class="p-3 border-r border-ink/10 font-mono">
                 <div>Sent: <span class="text-ink">${n.sent_date}</span></div>
                 <div class="font-bold text-rust">Due: ${n.compliance_date}</div>
               </td>
-              <td class="p-3 border-r border-ink/10">${userStatusSelect}</td>
-              <td class="p-3 border-r border-ink/10 text-center font-bold text-ink">
-                <span>${n.status || 'PENDING'}</span>
-                ${n.response_submitted_date ? `<div class="text-[8px] text-muted-ink">Resp: ${n.response_submitted_date}</div>` : ''}
-              </td>
-              <td class="p-3 border-r border-ink/10 py-5 flex justify-center items-center">${satisfiedBadge}</td>
+              <td class="p-3 border-r border-ink/10 text-center">${userStatusSelect}</td>
+              <td class="p-3 border-r border-ink/10 text-left font-mono">${portalProvenHtml}</td>
+              <td class="p-3 border-r border-ink/10 text-center">${pageSourceBadge}</td>
               <td class="p-3 border-r border-ink/10">
                 <input type="text" value="${n.remarks || ''}" placeholder="Add remarks..." class="w-full bg-transparent border-b border-ink/10 focus:border-indigo px-1 py-0.5 text-ink focus:outline-none" onblur="updateNoticeRemarks('${key}', this.value)">
               </td>
@@ -1531,8 +1684,8 @@
           if (notice) {
             notice.filed_status = value;
             await window.pywebview.api.save_tracked_notice(JSON.stringify(notice));
-            printToConsole(`Saved User status for notice key: ${key} to ${value}`, 'info');
-            loadNoticeTracker(); // reload
+            printToConsole(`💾 Status updated to '${value}' for Notice ${notice.section} (${notice.client_name}).`, 'success');
+            applyTrackerFilters();
           }
         }
 
@@ -1541,8 +1694,74 @@
           if (notice && notice.remarks !== value) {
             notice.remarks = value;
             await window.pywebview.api.save_tracked_notice(JSON.stringify(notice));
-            printToConsole(`Remarks autosaved for notice key: ${key}`, 'info');
-            loadNoticeTracker(); // reload
+            printToConsole(`💾 Remarks autosaved for Notice ${notice.section} (${notice.client_name}).`, 'success');
+          }
+        }
+
+        let isLedgerExpanded = false;
+        function toggleLedgerExpansion() {
+          isLedgerExpanded = !isLedgerExpanded;
+          const container = document.getElementById('tracker-table-container');
+          const dossierSection = document.getElementById('client-dossier-section');
+          const toggleBtn = document.getElementById('toggle-ledger-btn');
+          const filterBackBtn = document.getElementById('filter-back-btn');
+          
+          if (isLedgerExpanded) {
+            dossierSection.classList.add('hidden');
+            container.classList.remove('max-h-[380px]');
+            container.classList.add('max-h-[1200px]');
+            filterBackBtn.classList.remove('hidden');
+            toggleBtn.innerHTML = '<span>Collapse Ledger View</span><span>↑</span>';
+          } else {
+            dossierSection.classList.remove('hidden');
+            container.classList.add('max-h-[380px]');
+            container.classList.remove('max-h-[1200px]');
+            filterBackBtn.classList.add('hidden');
+            toggleBtn.innerHTML = '<span>Expand Full Screen Ledger</span><span>↓</span>';
+          }
+        }
+
+        let concludedNoticesToAck = [];
+        function checkConcludedNoticesModal() {
+          concludedNoticesToAck = allTrackedNotices.filter(n => n.moved_to_info === true);
+          if (concludedNoticesToAck.length > 0) {
+            const listContainer = document.getElementById('concluded-notices-list');
+            listContainer.innerHTML = '';
+            
+            concludedNoticesToAck.forEach(n => {
+              const item = document.createElement('div');
+              item.className = 'p-2 border-b border-ink/10 flex flex-col gap-0.5 bg-ink/5 rounded';
+              item.innerHTML = `
+                <div class="flex justify-between font-bold text-ink">
+                  <span>${n.client_name} (${n.pan})</span>
+                  <span class="text-rust">${n.section}</span>
+                </div>
+                <div class="text-[10px] text-muted-ink break-all">DIN: ${n.din || 'N/A'}</div>
+                <div class="text-[9px] text-indigo-500 font-bold mt-1">Moved to For Your Information (BX/BY)</div>
+              `;
+              listContainer.appendChild(item);
+            });
+            
+            const modal = document.getElementById('concluded-notice-modal');
+            modal.classList.remove('hidden');
+            modal.classList.add('flex');
+          }
+        }
+
+        async function acknowledgeConcludedNotices() {
+          const modal = document.getElementById('concluded-notice-modal');
+          modal.classList.add('hidden');
+          modal.classList.remove('flex');
+          
+          if (concludedNoticesToAck.length > 0 && window.pywebview && window.pywebview.api && window.pywebview.api.save_tracked_notice) {
+            printToConsole(`⚙️ Acknowledging and updating ${concludedNoticesToAck.length} concluded proceedings...`, 'info');
+            for (const n of concludedNoticesToAck) {
+              n.moved_to_info = false;
+              n.filed_status = 'Filed';
+              await window.pywebview.api.save_tracked_notice(JSON.stringify(n));
+            }
+            concludedNoticesToAck = [];
+            await loadNoticeTracker();
           }
         }
 
@@ -1604,11 +1823,14 @@
             limitation_date: '',
             ay: ay,
             status: 'PENDING',
-            filed_status: 'Not Filed',
+            filed_status: 'Outstanding',
             remarks: remarks,
             source: 'Manual',
+            source_file: 'Manual',
             response_submitted_date: '',
-            recently_flagged: false
+            response_submitted_dates: [],
+            recently_flagged: false,
+            moved_to_info: false
           };
           
           try {
@@ -2371,6 +2593,27 @@
             <button type="submit" class="btn-rigid px-4 py-2 bg-indigo-600 text-white hover:bg-indigo-700">Save Notice</button>
           </div>
         </form>
+      </div>
+    </div>
+
+    <!-- MODAL: Concluded / Moved Proceedings Prompt -->
+    <div class="fixed inset-0 bg-black/60 backdrop-blur-sm z-[1000] hidden items-center justify-center p-8 transition-opacity duration-300" id="concluded-notice-modal">
+      <div class="bg-[var(--parchment)] border-[2px] border-ink p-8 max-w-lg w-full relative box-shadow-[6px_6px_0px_var(--border-color-custom)] transition-transform duration-300 transform scale-95 flex flex-col space-y-6">
+        <div class="flex justify-between items-center border-b border-ink/20 pb-4">
+          <div class="flex items-center gap-2">
+            <span class="material-symbols-outlined text-indigo text-2xl font-bold">info</span>
+            <h3 class="serif-title text-2xl">Concluded Proceedings</h3>
+          </div>
+        </div>
+        <p class="serif-italic text-sm text-muted-ink">
+          The following e-Proceedings have been resolved/closed and moved to the <strong>For Your Information</strong> (BX/BY) section on the portal:
+        </p>
+        <div class="max-h-60 overflow-y-auto border border-ink/15 p-4 bg-sidebar/20 space-y-3 font-mono text-xs custom-scroll" id="concluded-notices-list">
+          <!-- Filled dynamically -->
+        </div>
+        <div class="flex justify-end pt-2">
+          <button class="btn-rigid btn-indigo px-6 py-2 text-[10px] text-white" onclick="acknowledgeConcludedNotices()">Acknowledge & Dismiss</button>
+        </div>
       </div>
     </div>
 </body></html>

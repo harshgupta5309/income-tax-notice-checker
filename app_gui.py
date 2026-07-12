@@ -569,6 +569,12 @@ class DesktopAPI:
             self.log_history = []
             self.last_checked_pans = []
             
+            # Check and install browsers if needed
+            if not tax_backend.check_or_install_browser():
+                print("🚨 [CRITICAL ERROR] - Playwright browser check/install failed.")
+                self._window.evaluate_js("onNativeAutomationError('Playwright browser check/install failed.')")
+                return
+            
             # Start backend scraper routine
             successful_pans = tax_backend.run_multi_client_downloads(api_ref=self)
             self.last_checked_pans = successful_pans
@@ -877,7 +883,7 @@ def main():
     )
     api.set_window(window)
     # Start webview engine
-    webview.start(debug=True)
+    webview.start(debug=False)
 
 if __name__ == "__main__":
     main()

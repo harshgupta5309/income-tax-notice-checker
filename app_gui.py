@@ -877,7 +877,7 @@ def main():
     )
     api.set_window(window)
     # Start webview engine
-    webview.start(debug=False)
+    webview.start(debug=True)
 
 if __name__ == "__main__":
     main()

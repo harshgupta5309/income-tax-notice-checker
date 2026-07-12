@@ -1080,58 +1080,63 @@
 
           // Listen for the secure pywebview handshaking window initialization
           window.addEventListener('pywebviewready', async () => {
-            printToConsole("🔌 Secure pipeline handshake completed successfully! Litigation OS ready.", "success");
-            bindNativeInterface();
-
-            // Auto-load saved settings
-            let hasLoadedSavedCreds = false;
             try {
-              const settingsJson = await window.pywebview.api.load_saved_settings();
-              const settings = JSON.parse(settingsJson);
-              if (settings) {
-                // Apply saved theme
-                if (settings.theme) {
-                  applyThemeFromSettings(settings.theme);
-                }
-                if (settings.credentials_path) {
-                  document.getElementById('text-creds-path').innerText = settings.credentials_path;
-                  printToConsole(`📁 Loaded saved credentials sheet: ${settings.credentials_path}`, 'success');
-                  hasLoadedSavedCreds = true;
-                  // Fetch and render clients dynamically
-                  const clientsJson = await window.pywebview.api.get_clients_from_registry(settings.credentials_path);
-                  const clients = JSON.parse(clientsJson);
-                  if (clients && clients.length > 0) {
-                    renderClientCards(clients);
-                    updateLoadedClientsCount(clients.length);
-                  }
-                }
-                if (settings.destination_path) {
-                  document.getElementById('text-dest-path').innerText = settings.destination_path;
-                  printToConsole(`🎯 Loaded saved destination folder: ${settings.destination_path}`, 'success');
-                }
-              }
-            } catch (e) {
-              printToConsole(`⚠️ Load settings failed: ${e}`, 'info');
-            }
+              printToConsole("🔌 Secure pipeline handshake completed successfully! Litigation OS ready.", "success");
+              bindNativeInterface();
 
-            if (!hasLoadedSavedCreds) {
-              // Auto-load default credentials if present
+              // Auto-load saved settings
+              let hasLoadedSavedCreds = false;
               try {
-                const defaultCredsJson = await window.pywebview.api.check_default_credentials();
-                const defaultCreds = JSON.parse(defaultCredsJson);
-                if (defaultCreds && defaultCreds.path) {
-                  document.getElementById('text-creds-path').innerText = defaultCreds.path;
-                  printToConsole(`📁 Auto-loaded credentials sheet: ${defaultCreds.path}`, 'success');
-                  if (defaultCreds.clients && defaultCreds.clients.length > 0) {
-                    renderClientCards(defaultCreds.clients);
-                    updateLoadedClientsCount(defaultCreds.clients.length);
+                const settingsJson = await window.pywebview.api.load_saved_settings();
+                const settings = JSON.parse(settingsJson);
+                if (settings) {
+                  // Apply saved theme
+                  if (settings.theme) {
+                    applyThemeFromSettings(settings.theme);
+                  }
+                  if (settings.credentials_path) {
+                    document.getElementById('text-creds-path').innerText = settings.credentials_path;
+                    printToConsole(`📁 Loaded saved credentials sheet: ${settings.credentials_path}`, 'success');
+                    hasLoadedSavedCreds = true;
+                    // Fetch and render clients dynamically
+                    const clientsJson = await window.pywebview.api.get_clients_from_registry(settings.credentials_path);
+                    const clients = JSON.parse(clientsJson);
+                    if (clients && clients.length > 0) {
+                      renderClientCards(clients);
+                      updateLoadedClientsCount(clients.length);
+                    }
+                  }
+                  if (settings.destination_path) {
+                    document.getElementById('text-dest-path').innerText = settings.destination_path;
+                    printToConsole(`🎯 Loaded saved destination folder: ${settings.destination_path}`, 'success');
                   }
                 }
               } catch (e) {
-                printToConsole(`⚠️ Auto-load credentials bypassed: ${e}`, 'info');
+                printToConsole(`⚠️ Load settings failed: ${e}`, 'info');
               }
+
+              if (!hasLoadedSavedCreds) {
+                // Auto-load default credentials if present
+                try {
+                  const defaultCredsJson = await window.pywebview.api.check_default_credentials();
+                  const defaultCreds = JSON.parse(defaultCredsJson);
+                  if (defaultCreds && defaultCreds.path) {
+                    document.getElementById('text-creds-path').innerText = defaultCreds.path;
+                    printToConsole(`📁 Auto-loaded credentials sheet: ${defaultCreds.path}`, 'success');
+                    if (defaultCreds.clients && defaultCreds.clients.length > 0) {
+                      renderClientCards(defaultCreds.clients);
+                      updateLoadedClientsCount(defaultCreds.clients.length);
+                    }
+                  }
+                } catch (e) {
+                  printToConsole(`⚠️ Auto-load credentials bypassed: ${e}`, 'info');
+                }
+              }
+              await loadNoticeTracker();
+            } catch (err) {
+              console.error("Critical error during pywebviewready:", err);
+              printToConsole(`🚨 Startup Initialization Failed: ${err.message}`, 'error');
             }
-            await loadNoticeTracker();
           });
         });
 
@@ -1325,16 +1330,25 @@
           }
           try {
             const noticesJson = await window.pywebview.api.get_tracked_notices();
-            allTrackedNotices = JSON.parse(noticesJson);
+            try {
+              allTrackedNotices = JSON.parse(noticesJson);
+            } catch (jsonErr) {
+              console.error("Malformed JSON in tracker:", jsonErr);
+              allTrackedNotices = [];
+            }
             
-            // Handle possible error returned
-            if (allTrackedNotices.error) {
-              console.error("Error loading notices:", allTrackedNotices.error);
+            if (!allTrackedNotices || allTrackedNotices.error || !Array.isArray(allTrackedNotices)) {
+              if (allTrackedNotices && allTrackedNotices.error) {
+                console.error("Error loading notices:", allTrackedNotices.error);
+              }
               allTrackedNotices = [];
             }
             
             // Update UI count
-            document.getElementById('total-notices-count').innerText = allTrackedNotices.length;
+            const counter = document.getElementById('total-notices-count');
+            if (counter) {
+              counter.innerText = allTrackedNotices.length;
+            }
             
             // Render sections
             renderLatestFlaggedNotices();

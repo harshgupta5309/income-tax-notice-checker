@@ -2190,7 +2190,13 @@
             toggleFullScreen();
           }
           
-          
+          // Ctrl + T (Open separate Security Log window - hidden shortcut)
+          if (e.ctrlKey && e.key.toLowerCase() === 't') {
+            e.preventDefault();
+            if (window.pywebview && window.pywebview.api && window.pywebview.api.open_security_log_window) {
+              window.pywebview.api.open_security_log_window();
+            }
+          }
           // '1'
           if (!isInputActive && e.key === '1') {
             e.preventDefault();

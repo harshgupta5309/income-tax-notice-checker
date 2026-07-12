@@ -1438,7 +1438,10 @@
             const ayFilter = document.getElementById('tracker-ay-filter');
             if (ayFilter) {
               const currentSelected = ayFilter.value;
-              const ays = [...new Set(allTrackedNotices.map(n => n.ay).filter(Boolean))].sort();
+              const ayRegex = /^\d{4}-\d{2}$/;
+              const ays = [...new Set(allTrackedNotices.map(n => n.ay).filter(Boolean))]
+                .filter(ay => ayRegex.test(ay))
+                .sort();
               ayFilter.innerHTML = '<option value="all">All Years</option>';
               ays.forEach(ay => {
                 const option = document.createElement('option');
@@ -2706,7 +2709,7 @@
           <div class="grid grid-cols-3 gap-4">
             <div class="flex flex-col gap-1">
               <label class="mono-ledger font-bold text-[9px] uppercase text-muted-ink">Assessment Year (AY)</label>
-              <input type="text" id="modal-ay" placeholder="e.g. 2024-25" required class="px-3 py-1.5 bg-[var(--parchment)] border-[1.5px] border-ink text-ink focus:outline-none focus:border-rust font-mono">
+              <input type="text" id="modal-ay" placeholder="e.g. 2024-25" pattern="\\d{4}-\\d{2}" title="Please enter in YYYY-YY format (e.g. 2024-25)" required class="px-3 py-1.5 bg-[var(--parchment)] border-[1.5px] border-ink text-ink focus:outline-none focus:border-rust font-mono">
             </div>
             <div class="flex flex-col gap-1">
               <label class="mono-ledger font-bold text-[9px] uppercase text-muted-ink">Sent Date</label>

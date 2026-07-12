@@ -22,6 +22,7 @@ PORTABLE_BROWSER_DIR = os.path.join(APP_DIR, "ms-playwright")
 os.environ["PLAYWRIGHT_BROWSERS_PATH"] = PORTABLE_BROWSER_DIR
 
 import glob
+import json
 import shutil
 import logging
 import pyzipper
@@ -809,6 +810,32 @@ def process_and_flag(pan_list):
 
     print("ℹ️ [INFO]  - Starting strict template mapping (high-assurance)...")
 
+    # Load notice tracker database
+    tracker_path = os.path.join(BASE_DIR, "notice_tracker.json")
+    tracker_data = []
+    if os.path.exists(tracker_path):
+        try:
+            with open(tracker_path, "r", encoding="utf-8") as f:
+                tracker_data = json.load(f)
+        except Exception as e:
+            print(f"⚠️ Error loading tracker file: {e}")
+
+    # Build map of existing tracker notices (use din as key if present, else manual fallback key)
+    tracker_map = {}
+    for n in tracker_data:
+        k = n.get('din') or f"manual_{n.get('pan')}_{n.get('section')}_{n.get('sent_date')}"
+        tracker_map[k] = n
+
+    # Load PAN taxpayer names mapping from credentials file
+    try:
+        df_creds = pd.read_excel(CREDENTIALS_FILE)
+        df_creds.columns = df_creds.columns.str.strip()
+        pan_name_map = {str(row['Login_ID']).strip(): str(row['Name']).strip() for _, row in df_creds.iterrows() if pd.notna(row.get('Name'))}
+    except Exception:
+        pan_name_map = {}
+
+    all_flagged_keys = set()
+    flagged_reason_map = {}
     all_new_notices = []
     
     for pan in pan_list:
@@ -906,6 +933,59 @@ def process_and_flag(pan_list):
                     return f"FALLBACK_{proc}_{ay}_{sent}_{sect}"
 
                 df_new_mapped['_comp_key'] = df_new_mapped.apply(make_comparison_key, axis=1)
+                
+                # Sync new mapped rows to notice tracker database
+                for _, row in df_new_mapped.iterrows():
+                    key = row['_comp_key']
+                    din = str(row.get('Notice DIN', '')).strip()
+                    section = str(row.get('Notice Section', '')).strip()
+                    sent_date = str(row.get('Notice Sent Date', '')).strip()
+                    compliance_date = str(row.get('Date of Compliance', '')).strip()
+                    limitation_date = str(row.get('Proceeding Limitation Date', '')).strip()
+                    ay = str(row.get('AY', '')).strip()
+                    status = str(row.get('Proceeding Status', '')).strip()
+                    response_submitted_date = str(row.get('Date Response submitted(Last Response Submitted)', '')).strip()
+                    proceeding = str(row.get('Proceeding Name', '')).strip()
+
+                    is_submitted = False
+                    if response_submitted_date and response_submitted_date.lower() not in ['', 'nan', 'none', 'null']:
+                        is_submitted = True
+                    if any(x in status.lower() for x in ['submitted', 'concluded', 'closed', 'satisfied']):
+                        is_submitted = True
+
+                    client_name = pan_name_map.get(pan, "Taxpayer")
+
+                    if key in tracker_map:
+                        n = tracker_map[key]
+                        n['status'] = status
+                        n['response_submitted_date'] = response_submitted_date
+                        n['compliance_date'] = compliance_date
+                        n['limitation_date'] = limitation_date
+                        n['proceeding_name'] = proceeding
+                        n['client_name'] = client_name
+                        n['section'] = section
+                        n['sent_date'] = sent_date
+                        n['ay'] = ay
+                        if is_submitted:
+                            n['filed_status'] = 'Filed'
+                    else:
+                        tracker_map[key] = {
+                            "din": din,
+                            "pan": pan,
+                            "client_name": client_name,
+                            "proceeding_name": proceeding,
+                            "section": section,
+                            "sent_date": sent_date,
+                            "compliance_date": compliance_date,
+                            "limitation_date": limitation_date,
+                            "ay": ay,
+                            "status": status,
+                            "filed_status": "Filed" if is_submitted else "Not Filed",
+                            "remarks": "",
+                            "source": "Scraped",
+                            "response_submitted_date": response_submitted_date
+                        }
+
                 if not df_old_mapped.empty:
                     df_old_mapped['_comp_key'] = df_old_mapped.apply(make_comparison_key, axis=1)
                     old_rows = {row['_comp_key']: row for _, row in df_old_mapped.iterrows()}
@@ -922,6 +1002,8 @@ def process_and_flag(pan_list):
                         row_dict = new_row.to_dict()
                         row_dict['Flag Reason'] = "NEW NOTICE"
                         flagged_rows.append(row_dict)
+                        all_flagged_keys.add(key)
+                        flagged_reason_map[key] = "NEW NOTICE"
                     else:
                         old_row = old_rows[key]
                         updates = []
@@ -943,6 +1025,8 @@ def process_and_flag(pan_list):
                             row_dict = new_row.to_dict()
                             row_dict['Flag Reason'] = "UPDATED: " + ", ".join(updates)
                             flagged_rows.append(row_dict)
+                            all_flagged_keys.add(key)
+                            flagged_reason_map[key] = "UPDATED: " + ", ".join(updates)
 
                 if flagged_rows:
                     df_flagged = pd.DataFrame(flagged_rows)
@@ -1034,6 +1118,23 @@ def process_and_flag(pan_list):
         print(f"\n✅ [SUCCESS] - Master Report Created & Formatted: {OUTPUT_REPORT}")
     else:
         print("\n✅ [SUCCESS] - Comparison Complete. NO NEW NOTICES FOUND.")
+
+    # Update recently_flagged status in notice_tracker.json
+    for key, n in tracker_map.items():
+        if key in all_flagged_keys:
+            n['recently_flagged'] = True
+            n['flag_reason'] = flagged_reason_map.get(key, "FLAGGED")
+        else:
+            if n.get('source') == 'Scraped' and n.get('pan') in pan_list:
+                n['recently_flagged'] = False
+                n['flag_reason'] = ""
+
+    try:
+        with open(tracker_path, "w", encoding="utf-8") as f:
+            json.dump(list(tracker_map.values()), f, indent=4)
+        print(f"✅ Reconciled notice tracker database written: {tracker_path}")
+    except Exception as e:
+        print(f"⚠️ Error writing notice tracker file: {e}")
 
 
 # --- ENTRY POINT ---

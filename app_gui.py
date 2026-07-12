@@ -588,6 +588,73 @@ class DesktopAPI:
                 log_content = "\n".join(redirector.log_buffer) + "\n"
                 self.write_to_secure_vault("run_execution.log", log_content.encode('utf-8'))
 
+    def get_tracked_notices(self):
+        """Loads and returns all notices from notice_tracker.json in BASE_DIR as a JSON string"""
+        import json
+        tracker_path = os.path.join(tax_backend.BASE_DIR, "notice_tracker.json")
+        if not os.path.exists(tracker_path):
+            return json.dumps([])
+        try:
+            with open(tracker_path, "r", encoding="utf-8") as f:
+                data = json.load(f)
+            return json.dumps(data)
+        except Exception as e:
+            return json.dumps({"error": str(e)})
+
+    def save_tracked_notice(self, notice_json):
+        """Saves or updates a notice in notice_tracker.json"""
+        import json
+        try:
+            notice = json.loads(notice_json)
+            tracker_path = os.path.join(tax_backend.BASE_DIR, "notice_tracker.json")
+            data = []
+            if os.path.exists(tracker_path):
+                with open(tracker_path, "r", encoding="utf-8") as f:
+                    data = json.load(f)
+            
+            # Find notice by DIN or fallback manual key
+            key_field = notice.get('din') or f"manual_{notice.get('pan')}_{notice.get('section')}_{notice.get('sent_date')}"
+            
+            updated = False
+            for idx, item in enumerate(data):
+                item_key = item.get('din') or f"manual_{item.get('pan')}_{item.get('section')}_{item.get('sent_date')}"
+                if item_key == key_field:
+                    data[idx] = notice
+                    updated = True
+                    break
+            
+            if not updated:
+                data.append(notice)
+                
+            with open(tracker_path, "w", encoding="utf-8") as f:
+                json.dump(data, f, indent=4)
+            return json.dumps({"success": True})
+        except Exception as e:
+            return json.dumps({"success": False, "error": str(e)})
+
+    def delete_tracked_notice(self, key_to_delete):
+        """Deletes a notice from notice_tracker.json"""
+        import json
+        try:
+            tracker_path = os.path.join(tax_backend.BASE_DIR, "notice_tracker.json")
+            if not os.path.exists(tracker_path):
+                return json.dumps({"success": False, "error": "No tracker file found."})
+                
+            with open(tracker_path, "r", encoding="utf-8") as f:
+                data = json.load(f)
+                
+            new_data = []
+            for item in data:
+                item_key = item.get('din') or f"manual_{item.get('pan')}_{item.get('section')}_{item.get('sent_date')}"
+                if item_key != key_to_delete:
+                    new_data.append(item)
+                    
+            with open(tracker_path, "w", encoding="utf-8") as f:
+                json.dump(new_data, f, indent=4)
+            return json.dumps({"success": True})
+        except Exception as e:
+            return json.dumps({"success": False, "error": str(e)})
+
     def get_client_notices(self, pan):
         """Reads local CSV files to feed notice listings dynamically to the slide-out drawers"""
         import glob

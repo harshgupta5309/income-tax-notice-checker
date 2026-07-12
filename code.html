@@ -253,7 +253,7 @@
         .classical-table {
             width: 100%;
             border-collapse: collapse;
-            border: 1.5px solid var(--border-color-custom);
+            border: 2px solid var(--border-color-custom);
             background: var(--panel-white);
         }
         .classical-table th {
@@ -263,15 +263,15 @@
             font-size: 9px;
             letter-spacing: 0.08em;
             background: var(--card-bg);
-            border-bottom: 2px solid var(--border-color-custom);
-            border-right: 1px solid var(--border-ink);
+            border-bottom: 2.5px solid var(--border-color-custom);
+            border-right: 1.5px solid var(--border-color-custom);
             color: var(--ink);
             padding: 12px 10px;
         }
         .classical-table td {
             font-size: 11px;
-            border-bottom: 1px solid var(--border-ink);
-            border-right: 1px solid var(--border-ink);
+            border-bottom: 1.5px solid var(--border-color-custom);
+            border-right: 1.5px solid var(--border-color-custom);
             padding: 12px 10px;
             color: var(--ink);
             vertical-align: middle;
@@ -531,36 +531,51 @@
 <div class="content-structure overflow-hidden"><div class="absolute top-0 left-0 w-8 h-8 border-t border-l border-ink/20 pointer-events-none z-10"></div><div class="absolute top-0 right-0 w-8 h-8 border-t border-r border-ink/20 pointer-events-none z-10"></div><div class="absolute bottom-0 left-0 w-8 h-8 border-b border-l border-ink/20 pointer-events-none z-10"></div><div class="absolute bottom-0 right-0 w-8 h-8 border-b border-r border-ink/20 pointer-events-none z-10"></div>
 <!-- Header -->
 <header class="vector-border-b px-12 py-6 flex items-center justify-between bg-header">
-<div class="flex items-center gap-12">
-<div class="flex flex-col">
-<div class="flex items-baseline gap-2">
-  <h1 class="sans-bold text-2xl leading-none">Litigation OS</h1>
-  <span class="px-1.5 py-0.5 text-[8px] tracking-widest font-mono uppercase bg-rust/10 text-rust border border-rust/20 rounded">BETA</span>
-  <span class="text-[9px] font-mono text-muted-ink">by Harsh Gupta</span>
-</div>
-<span class="serif-italic text-sm text-rust">VOL. 04 • ISSUE N° 12</span>
-</div>
-<div class="hidden md:flex flex-col border-l border-ink pl-12" id="status-mount">
-<span class="mono-ledger text-[9px] uppercase font-bold text-muted-ink">System Readiness</span>
-<span class="mono-ledger font-bold text-ink uppercase" id="global-status-text">Engine Idle</span>
-<div class="mini-progress">
-<div class="mini-progress-fill"></div>
-</div>
-</div>
-</div>
-<div class="flex items-center gap-4">
-<nav class="flex gap-2">
-<button class="tab-pill tab-inactive" id="tab-op" onclick="switchTab('operational')">Operational Monitor <span class="opacity-50 text-[8px] font-mono ml-1">1</span></button>
-<button class="tab-pill tab-active" id="tab-lit" onclick="switchTab('litigation')">Litigation Suite <span class="opacity-50 text-[8px] font-mono ml-1">2</span></button>
-<button class="tab-pill tab-inactive" id="tab-help" onclick="openHelpModal()">Help <span class="opacity-50 text-[8px] font-mono ml-1">F1</span></button>
-</nav>
-<button class="theme-toggle-btn" id="theme-toggle-btn" onclick="toggleTheme()">🌙 Dark Mode</button>
-<button class="theme-toggle-btn" id="fullscreen-btn" onclick="toggleFullScreen()">🖥️ Full Screen <span class="opacity-50 text-[8px] font-mono ml-1">Ctrl+F</span></button>
-<button class="btn-rigid btn-rust px-4 py-[6px] text-[10px] flex items-center gap-2" id="sync-trigger">
-<span class="">Sync Notices <span class="opacity-50 text-[8px] font-mono ml-1">Ctrl+Enter</span></span>
-<span class="text-xs">→</span>
-</button>
-</div>
+  <div class="flex items-center gap-12">
+    <!-- Branding Area -->
+    <div class="flex flex-col space-y-1.5">
+      <div class="flex items-center gap-3">
+        <h1 class="sans-bold text-3xl leading-none tracking-tight">Litigation OS</h1>
+        <span class="px-2 py-0.5 text-[10px] tracking-widest font-mono uppercase bg-rust/10 text-rust border border-rust/20 font-bold">BETA</span>
+      </div>
+      <div class="flex items-center gap-4">
+        <span class="serif-italic text-xs text-muted-ink">System Designed by <strong class="font-bold text-ink uppercase tracking-wide">Harsh Gupta</strong></span>
+        <span class="text-ink/30">•</span>
+        <span class="serif-italic text-xs text-rust font-bold">VOL. 04 • ISSUE N° 12</span>
+      </div>
+    </div>
+
+    <!-- System Status Monitor -->
+    <div class="hidden md:flex flex-col border-l border-ink pl-12" id="status-mount">
+      <span class="mono-ledger text-[8px] uppercase font-bold text-muted-ink">System Readiness</span>
+      <div class="flex items-center gap-2 mt-1">
+        <div id="status-pulse-dot" class="w-2 h-2 rounded-full bg-ink/20 transition-all duration-300"></div>
+        <span class="mono-ledger font-bold text-ink uppercase text-[10px] tracking-wide" id="global-status-text">Engine Idle</span>
+      </div>
+      <div class="w-36 h-[3px] bg-ink/10 mt-2 overflow-hidden relative">
+        <div class="h-full bg-[var(--emerald)] transition-all duration-300 w-0" id="mini-progress-fill-element"></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="flex items-center gap-6">
+    <nav class="flex gap-2">
+      <button class="tab-pill tab-inactive font-mono" id="tab-op" onclick="switchTab('operational')">Operational Monitor <span class="opacity-50 text-[8px] font-mono ml-1">1</span></button>
+      <button class="tab-pill tab-active font-mono" id="tab-lit" onclick="switchTab('litigation')">Litigation Suite <span class="opacity-50 text-[8px] font-mono ml-1">2</span></button>
+      <button class="tab-pill tab-inactive font-mono" id="tab-help" onclick="openHelpModal()">Help <span class="opacity-50 text-[8px] font-mono ml-1">F1</span></button>
+    </nav>
+    
+    <!-- Vertical Stacked Theme Controls -->
+    <div class="flex flex-col gap-1">
+      <button class="theme-toggle-btn text-[9px] py-1 px-3 w-[110px] text-left font-mono" id="theme-toggle-btn" onclick="toggleTheme()">🌙 Dark Mode</button>
+      <button class="theme-toggle-btn text-[9px] py-1 px-3 w-[110px] text-left font-mono" id="fullscreen-btn" onclick="toggleFullScreen()">🖥️ Full Screen <span class="opacity-50 text-[7px] ml-0.5">Ctrl+F</span></button>
+    </div>
+    
+    <button class="btn-rigid btn-rust px-5 py-[11px] text-[10px] flex items-center gap-2" id="sync-trigger">
+      <span class="font-bold">Sync Notices <span class="opacity-50 text-[8px] font-mono ml-1">Ctrl+Enter</span></span>
+      <span class="text-xs">→</span>
+    </button>
+  </div>
 </header>
 <!-- Main Workspace Body -->
 <main class="overflow-y-auto p-12 custom-scroll relative" id="workspace"><div class="absolute inset-0 flex items-center justify-center pointer-events-none opacity-[0.04] z-0 overflow-hidden"><svg class="text-ink" fill="none" height="800" stroke="currentColor" viewbox="0 0 100 100" width="600"><path d="M20 90 L80 90 M30 90 L30 30 M70 90 L70 30 M25 30 L75 30 M50 10 L50 30 M20 20 L80 20" stroke-width="0.5"></path><circle cx="50" cy="15" r="5" stroke-width="0.5"></circle><path d="M10 95 L90 95" stroke-width="1"></path></svg></div>
@@ -585,6 +600,62 @@
       <div class="w-24 h-16 border border-ink flex flex-col items-center justify-center text-center p-2 bg-panel box-shadow-[2px_2px_0px_var(--border-color-custom)]">
         <span class="mono-ledger text-[7px] font-bold border-b border-ink w-full mb-1 pb-0.5">TOTAL_NOTICES</span>
         <span class="sans-bold text-lg" id="total-notices-count">0</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- EDITORIAL MANIFESTO / ABOUT SECTION -->
+  <div class="border-[2px] border-ink bg-panel p-6 box-shadow-[4px_4px_0px_var(--border-color-custom)] transition-all duration-300 relative rounded-none text-ink" id="about-manifesto-section">
+    <div class="flex justify-between items-center border-b border-ink/20 pb-3">
+      <div class="flex items-center gap-3">
+        <span class="mono-ledger text-[9px] uppercase font-bold text-rust">EDITORIAL STATEMENT</span>
+        <h3 class="serif-title text-base font-bold">Harsh Gupta // CA Aspirant & System Builder</h3>
+      </div>
+      <button class="font-mono text-[9px] uppercase tracking-wider underline cursor-pointer text-ink/75 hover:text-rust" id="toggle-manifesto-btn" onclick="toggleManifesto()">
+        [ Collapse Manifesto - ]
+      </button>
+    </div>
+    
+    <!-- Expanded Manifesto Content -->
+    <div id="manifesto-content" class="grid grid-cols-1 lg:grid-cols-3 gap-8 pt-4 text-xs leading-relaxed font-sans text-ink">
+      <!-- Column 1 -->
+      <div class="space-y-4">
+        <p class="serif-italic text-sm font-semibold">
+          "I am a Chartered Accountant aspirant and the Income Tax head at my firm. I don't build software because I want to be a tech guru—I build it because the traditional tools of our trade are fundamentally broken, and lives/livelihoods are on the line."
+        </p>
+        <p>
+          My journey into system design started in the trenches of real tax practice. As the head of Income Tax at a busy firm, I lived the daily nightmare of notice tracking. I watched as critical notices slipped through the cracks simply because the system relies on manual checking.
+        </p>
+      </div>
+      
+      <!-- Column 2 -->
+      <div class="space-y-3">
+        <h4 class="font-mono text-[10px] font-bold text-rust uppercase border-b border-ink/10 pb-1">The Reality of the Trenches</h4>
+        <ul class="space-y-2 list-disc pl-4 font-mono text-[10px] text-muted-ink">
+          <li><strong>The Communication Black Hole:</strong> We have clients who don't have active email addresses, or who constantly lose their phone numbers. Getting them to track their own compliance is impossible.</li>
+          <li><strong>The "Too Old for This" Demographic:</strong> Many of our clients are elderly, traditional business owners. They are quite literally too old for this—they don't understand the complex online tax portals, and honestly, neither should they have to.</li>
+          <li><strong>The Manual Interval Trap:</strong> Checking portals manually at random intervals is a disaster waiting to happen. Missing a statutory deadline under Sec 143(2) or an assessment deadline isn't just an inconvenience; it’s a financial catastrophe for the client and a reputational nightmare for the firm.</li>
+        </ul>
+      </div>
+      
+      <!-- Column 3 -->
+      <div class="space-y-3 flex flex-col justify-between">
+        <div>
+          <h4 class="font-mono text-[10px] font-bold text-rust uppercase border-b border-ink/10 pb-1">Why I Designed Litigation OS</h4>
+          <p class="mt-1">
+            I realized we couldn't rely on chaotic Excel sheets, physical registers, or sticky notes anymore. I needed a digital cockpit that assumed worst-case scenarios:
+          </p>
+          <ul class="mt-2 space-y-1 list-none pl-0 font-mono text-[9px] text-muted-ink">
+            <li>• <strong>Notice-First Tracking:</strong> Stop grouping by client folders. Tell me which notice is going to blow up first, regardless of who it belongs to.</li>
+            <li>• <strong>Double-Verification Safety:</strong> Demand absolute scraped proof of portal response status.</li>
+            <li>• <strong>No-Nonsense Visibility:</strong> A clean interface built for eyes that have been staring at tax compliance screens for 14 hours straight.</li>
+          </ul>
+        </div>
+        
+        <div class="border-l-[3px] border-rust pl-3 py-1.5 mt-4 italic bg-rust/5 font-serif text-[11px] text-ink">
+          "We aren't just filing forms; we are defending our clients' peace of mind. If the system doesn't make that defense foolproof, it isn't doing its job."
+          <span class="block text-right text-[9px] font-mono not-italic mt-1 text-muted-ink">— Harsh Gupta</span>
+        </div>
       </div>
     </div>
   </div>
@@ -1292,7 +1363,7 @@
                   // Transition UI to locked crawling states
                   startBtn.disabled = true;
                   startBtn.classList.add('opacity-40', 'cursor-not-allowed');
-                  document.getElementById('global-status-text').innerText = "Sync Active";
+                  setEngineRunning(true, "Sync Active");
                   printToConsole("🔥 Automation worker threads dispatched cleanly.", "info");
                   
                   // Reset abort button UI state
@@ -1444,8 +1515,33 @@
           }
         }
 
-        function mapSourceFileToPage(source) {
-          if (!source) return "Manual Entry";
+        function setEngineRunning(isRunning, message = "Engine Idle", isError = false) {
+          const statusText = document.getElementById('global-status-text');
+          const dot = document.getElementById('status-pulse-dot');
+          const fill = document.getElementById('mini-progress-fill-element');
+          
+          if (statusText) statusText.innerText = message;
+          
+          if (dot) {
+            if (isRunning) {
+              dot.className = "w-2 h-2 rounded-full bg-[var(--emerald)] animate-pulse";
+            } else if (isError) {
+              dot.className = "w-2 h-2 rounded-full bg-[var(--rust)]";
+            } else {
+              dot.className = "w-2 h-2 rounded-full bg-ink/20";
+            }
+          }
+          
+          if (fill && !isRunning) {
+            fill.style.width = '0%';
+          }
+        }
+
+        function mapSourceFileToPage(source, parentSource = '') {
+          if (!source) {
+            if (parentSource === 'Scraped') return "Scraped Portal Notice";
+            return "Manual Entry";
+          }
           const s = source.toUpperCase();
           if (s === "AX") return "For Your Action (Self)";
           if (s === "AY") return "For Your Action (Others)";
@@ -1499,7 +1595,7 @@
                   </div>
                   <div>
                     <span class="text-[8px] text-muted-ink uppercase tracking-wider block font-bold">Source Page</span>
-                    <span class="px-1.5 py-0.5 text-[8px] font-mono border border-indigo text-indigo bg-indigo/5 font-bold rounded uppercase mt-0.5 inline-block">${mapSourceFileToPage(n.source_file)}</span>
+                    <span class="px-1.5 py-0.5 text-[8px] font-mono border border-indigo text-indigo bg-indigo/5 font-bold rounded uppercase mt-0.5 inline-block">${mapSourceFileToPage(n.source_file, n.source)}</span>
                   </div>
                 </div>
                 <div class="flex flex-col">
@@ -1641,7 +1737,7 @@
             
             const pageSourceBadge = `
               <span class="px-1.5 py-0.5 text-[8px] font-mono border border-indigo text-indigo bg-indigo/5 font-bold rounded uppercase inline-block">
-                ${mapSourceFileToPage(n.source_file || n.source)}
+                ${mapSourceFileToPage(n.source_file, n.source)}
               </span>
             `;
             
@@ -1718,6 +1814,26 @@
             container.classList.remove('max-h-[1200px]');
             filterBackBtn.classList.add('hidden');
             toggleBtn.innerHTML = '<span>Expand Full Screen Ledger</span><span>↓</span>';
+          }
+        }
+
+        let isManifestoExpanded = true;
+        function toggleManifesto() {
+          isManifestoExpanded = !isManifestoExpanded;
+          const content = document.getElementById('manifesto-content');
+          const btn = document.getElementById('toggle-manifesto-btn');
+          const wrapper = document.getElementById('about-manifesto-section');
+          
+          if (isManifestoExpanded) {
+            content.classList.remove('hidden');
+            btn.innerText = '[ Collapse Manifesto - ]';
+            wrapper.classList.remove('py-3');
+            wrapper.classList.add('p-6');
+          } else {
+            content.classList.add('hidden');
+            btn.innerText = '[ Read Harsh Gupta\'s Manifesto + ]';
+            wrapper.classList.remove('p-6');
+            wrapper.classList.add('py-3', 'px-6');
           }
         }
 
@@ -2141,9 +2257,11 @@
             if (authVal) authVal.innerText = percent + '%';
           }
           
-          const authLabel = document.getElementById('global-status-text');
-          if (authLabel) {
-            authLabel.innerText = message;
+          setEngineRunning(true, message);
+          
+          const fill = document.getElementById('mini-progress-fill-element');
+          if (fill) {
+            fill.style.width = (percent * 0.4) + '%';
           }
 
           if (percent === 100) {
@@ -2161,6 +2279,13 @@
           } else {
             if (extBar) extBar.style.width = percent + '%';
             if (extVal) extVal.innerText = percent + '%';
+          }
+
+          setEngineRunning(true, message);
+          
+          const fill = document.getElementById('mini-progress-fill-element');
+          if (fill) {
+            fill.style.width = (40 + percent * 0.6) + '%';
           }
 
           if (percent === 100) {
@@ -2233,15 +2358,13 @@
 
         async function onNativeAutomationComplete() {
           const btn = document.getElementById('sync-trigger');
-          const statusText = document.getElementById('global-status-text');
           
           if (btn) {
             btn.classList.remove('opacity-40', 'pointer-events-none', 'cursor-not-allowed');
             btn.disabled = false;
           }
-          if (statusText) {
-            statusText.innerText = "Engine Idle";
-          }
+          
+          setEngineRunning(false, "Engine Idle");
           
           document.getElementById('abort-container').style.display = 'none';
           
@@ -2308,6 +2431,7 @@
 
         function onNativeAutomationError(errorText) {
           onNativeAutomationComplete();
+          setEngineRunning(false, "Engine Failure", true);
           printToConsole(`🚨 PIPELINE AUTOMATION RUNTIME FAILURE: ${errorText}`, 'error');
         }
 
@@ -2529,11 +2653,11 @@
 
     <!-- Add Manual Notice Modal -->
     <div class="fixed inset-0 bg-black/60 backdrop-blur-sm z-[999] hidden items-center justify-center p-8 transition-opacity duration-300" id="add-notice-modal">
-      <div class="bg-sidebar border border-ink/40 w-full max-w-xl p-8 flex flex-col space-y-4 relative shadow-2xl rounded-md">
+      <div class="bg-[var(--parchment)] border-[2px] border-ink w-full max-w-xl p-8 flex flex-col space-y-4 relative box-shadow-[6px_6px_0px_var(--border-color-custom)] rounded-none text-ink">
         <div class="flex justify-between items-start border-b border-ink/20 pb-3">
           <div class="flex flex-col">
             <span class="mono-ledger font-bold text-rust uppercase text-[9px] tracking-widest">Notice Ledger Entry</span>
-            <h2 class="serif-title text-2xl">Add Manual Notice</h2>
+            <h2 class="serif-title text-2xl font-bold">Add Manual Notice</h2>
           </div>
           <button class="text-ink text-xl font-light hover:rotate-90 transition-transform" onclick="closeAddNoticeModal()">✕</button>
         </div>
@@ -2542,55 +2666,55 @@
           <div class="grid grid-cols-2 gap-4">
             <div class="flex flex-col gap-1">
               <label class="mono-ledger font-bold text-[9px] uppercase text-muted-ink">Client (PAN)</label>
-              <select id="modal-pan-select" required class="px-3 py-1.5 bg-sidebar border border-ink/35 text-ink focus:outline-none" onchange="syncTaxpayerNameFromSelection()">
+              <select id="modal-pan-select" required class="px-3 py-1.5 bg-[var(--parchment)] border-[1.5px] border-ink text-ink focus:outline-none focus:border-rust font-mono" onchange="syncTaxpayerNameFromSelection()">
                 <!-- Populated from localClients list -->
               </select>
             </div>
             <div class="flex flex-col gap-1">
               <label class="mono-ledger font-bold text-[9px] uppercase text-muted-ink">Client Name</label>
-              <input type="text" id="modal-client-name" required class="px-3 py-1.5 bg-sidebar border border-ink/35 text-ink focus:outline-none">
+              <input type="text" id="modal-client-name" required class="px-3 py-1.5 bg-[var(--parchment)] border-[1.5px] border-ink text-ink focus:outline-none focus:border-rust font-mono">
             </div>
           </div>
           
           <div class="grid grid-cols-2 gap-4">
             <div class="flex flex-col gap-1">
               <label class="mono-ledger font-bold text-[9px] uppercase text-muted-ink">Notice DIN / ID</label>
-              <input type="text" id="modal-din" placeholder="e.g. DIN1234567" class="px-3 py-1.5 bg-sidebar border border-ink/35 text-ink focus:outline-none">
+              <input type="text" id="modal-din" placeholder="e.g. DIN1234567" class="px-3 py-1.5 bg-[var(--parchment)] border-[1.5px] border-ink text-ink focus:outline-none focus:border-rust font-mono">
             </div>
             <div class="flex flex-col gap-1">
               <label class="mono-ledger font-bold text-[9px] uppercase text-muted-ink">Section</label>
-              <input type="text" id="modal-section" placeholder="e.g. Sec 143(2)" required class="px-3 py-1.5 bg-sidebar border border-ink/35 text-ink focus:outline-none">
+              <input type="text" id="modal-section" placeholder="e.g. Sec 143(2)" required class="px-3 py-1.5 bg-[var(--parchment)] border-[1.5px] border-ink text-ink focus:outline-none focus:border-rust font-mono">
             </div>
           </div>
 
           <div class="flex flex-col gap-1">
             <label class="mono-ledger font-bold text-[9px] uppercase text-muted-ink">Proceeding Name</label>
-            <input type="text" id="modal-proceeding-name" placeholder="e.g. Scrutiny Assessment" required class="px-3 py-1.5 bg-sidebar border border-ink/35 text-ink focus:outline-none">
+            <input type="text" id="modal-proceeding-name" placeholder="e.g. Scrutiny Assessment" required class="px-3 py-1.5 bg-[var(--parchment)] border-[1.5px] border-ink text-ink focus:outline-none focus:border-rust font-mono">
           </div>
 
           <div class="grid grid-cols-3 gap-4">
             <div class="flex flex-col gap-1">
               <label class="mono-ledger font-bold text-[9px] uppercase text-muted-ink">Assessment Year (AY)</label>
-              <input type="text" id="modal-ay" placeholder="e.g. 2024-25" required class="px-3 py-1.5 bg-sidebar border border-ink/35 text-ink focus:outline-none">
+              <input type="text" id="modal-ay" placeholder="e.g. 2024-25" required class="px-3 py-1.5 bg-[var(--parchment)] border-[1.5px] border-ink text-ink focus:outline-none focus:border-rust font-mono">
             </div>
             <div class="flex flex-col gap-1">
               <label class="mono-ledger font-bold text-[9px] uppercase text-muted-ink">Sent Date</label>
-              <input type="date" id="modal-sent-date" required class="px-3 py-1.5 bg-sidebar border border-ink/35 text-ink focus:outline-none">
+              <input type="date" id="modal-sent-date" required class="px-3 py-1.5 bg-[var(--parchment)] border-[1.5px] border-ink text-ink focus:outline-none focus:border-rust font-mono">
             </div>
             <div class="flex flex-col gap-1">
               <label class="mono-ledger font-bold text-[9px] uppercase text-muted-ink">Compliance Date</label>
-              <input type="date" id="modal-compliance-date" required class="px-3 py-1.5 bg-sidebar border border-ink/35 text-ink focus:outline-none">
+              <input type="date" id="modal-compliance-date" required class="px-3 py-1.5 bg-[var(--parchment)] border-[1.5px] border-ink text-ink focus:outline-none focus:border-rust font-mono">
             </div>
           </div>
 
           <div class="flex flex-col gap-1">
             <label class="mono-ledger font-bold text-[9px] uppercase text-muted-ink">Remarks</label>
-            <textarea id="modal-remarks" rows="2" class="px-3 py-1.5 bg-sidebar border border-ink/35 text-ink focus:outline-none resize-none"></textarea>
+            <textarea id="modal-remarks" rows="2" class="px-3 py-1.5 bg-[var(--parchment)] border-[1.5px] border-ink text-ink focus:outline-none focus:border-rust font-mono resize-none"></textarea>
           </div>
 
           <div class="flex gap-2 justify-end border-t border-ink/10 pt-4">
-            <button type="button" class="btn-rigid px-4 py-2 bg-sidebar text-ink border border-ink/20" onclick="closeAddNoticeModal()">Cancel</button>
-            <button type="submit" class="btn-rigid px-4 py-2 bg-indigo-600 text-white hover:bg-indigo-700">Save Notice</button>
+            <button type="button" class="btn-rigid px-4 py-2 bg-sidebar text-ink border border-ink/20 font-mono text-[10px]" onclick="closeAddNoticeModal()">Cancel</button>
+            <button type="submit" class="btn-rigid btn-indigo px-4 py-2 text-white font-mono text-[10px]">Save Notice</button>
           </div>
         </form>
       </div>

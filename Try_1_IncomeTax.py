@@ -255,6 +255,10 @@ class StopPipelineException(Exception):
     """Custom exception raised when the user decides to stop the automation run entirely"""
     pass
 
+class RetryClientException(Exception):
+    """Custom exception raised when the user decides to retry the current client login/extraction"""
+    pass
+
 def is_abort_requested(api_ref=None):
     if globals().get('ABORT_SIGNAL', False):
         return True
@@ -280,17 +284,21 @@ def robust_wait_for_selector(page, selector, state="visible", timeout_sec=20, pa
             if elapsed >= timeout_sec:
                 if api_ref:
                     print(f"⏳ Selector '{selector}' not loaded within {timeout_sec} seconds. Prompting user...")
-                    decision = api_ref.prompt_user_server_delay(pan, selector)
+                    error_msg = f"Site Error: E-Portal failed to load selector '{selector}' within {timeout_sec}s. (Portal is slow/unresponsive)"
+                    decision = api_ref.prompt_user_server_delay(pan, selector, error_msg)
                     if decision == 'wait':
                         print("User requested to WAIT. Retrying wait for 30 seconds...")
                         timeout_sec = 30
                         start_time = datetime.now()
                         continue
+                    elif decision == 'retry':
+                        print("User requested to RETRY client login/scraping.")
+                        raise RetryClientException()
                     elif decision == 'skip':
                         print("User requested to SKIP this client.")
                         raise SkipClientException()
-                    elif decision == 'stop':
-                        print("User requested to STOP the automation pipeline.")
+                    elif decision == 'stop' or decision == 'abort':
+                        print("User requested to ABORT the scraping pipeline.")
                         raise StopPipelineException()
                 raise e
 
@@ -312,17 +320,21 @@ def robust_wait_for_locator(locator, state="visible", timeout_sec=20, pan="", ap
             if elapsed >= timeout_sec:
                 if api_ref:
                     print(f"⏳ Locator not loaded within {timeout_sec} seconds. Prompting user...")
-                    decision = api_ref.prompt_user_server_delay(pan, "Element Load")
+                    error_msg = f"Site Error: E-Portal failed to load active element within {timeout_sec}s. (Portal is slow/unresponsive)"
+                    decision = api_ref.prompt_user_server_delay(pan, "Element Load", error_msg)
                     if decision == 'wait':
                         print("User requested to WAIT. Retrying wait for 30 seconds...")
                         timeout_sec = 30
                         start_time = datetime.now()
                         continue
+                    elif decision == 'retry':
+                        print("User requested to RETRY client login/scraping.")
+                        raise RetryClientException()
                     elif decision == 'skip':
                         print("User requested to SKIP this client.")
                         raise SkipClientException()
-                    elif decision == 'stop':
-                        print("User requested to STOP the automation pipeline.")
+                    elif decision == 'stop' or decision == 'abort':
+                        print("User requested to ABORT the scraping pipeline.")
                         raise StopPipelineException()
                 raise e
 
@@ -405,12 +417,14 @@ def run_multi_client_downloads(vault_manager=None, api_ref=None):
             print(f"⚠️ [WARNING] - Navigation to portal timed out: {e}. Attempting recovery...")
 
         try:
-            for index, row in df_creds.iterrows():
+            client_index = 0
+            while client_index < len(df_creds):
                 # Check abort signal before starting a client
                 if is_abort_requested(api_ref):
                     print("\n🛑 [ABORT] - Abort signal received. Terminating loop...")
                     break
                     
+                row = df_creds.iloc[client_index]
                 user_id = str(row['Login_ID']).strip()
                 password = str(row['Password']).strip()
                 
@@ -435,11 +449,19 @@ def run_multi_client_downloads(vault_manager=None, api_ref=None):
                     try:
                         robust_wait_for_selector(page, "#panAdhaarUserId", state="visible", timeout_sec=20, pan=user_id, api_ref=api_ref)
                         print("✅ [SUCCESS] - Portal loaded! Injecting credentials...")
-                    except (SkipClientException, StopPipelineException) as e:
+                    except (SkipClientException, StopPipelineException, RetryClientException) as e:
                         raise e
-                    except Exception:
-                        print(f"🚨 [CRITICAL ERROR] - Portal seems completely down or stuck. Skipping {user_id}.")
-                        logging.error(f"Portal down/stuck when scanning login screen for {user_id}")
+                    except Exception as e:
+                        print(f"🚨 [CRITICAL ERROR] - Portal seems completely down or stuck. {e}")
+                        error_msg = f"Site Error: Portal failed to respond/render login input. ({str(e)})"
+                        if api_ref:
+                            decision = api_ref.prompt_user_server_delay(user_id, "Login Page", error_msg)
+                            if decision == 'retry':
+                                raise RetryClientException()
+                            elif decision == 'abort' or decision == 'stop':
+                                raise StopPipelineException()
+                        logging.error(f"Portal down/stuck when scanning login screen for {user_id}: {e}")
+                        client_index += 1
                         continue
                     
                     # Stage 1: Login Form Injection
@@ -454,6 +476,14 @@ def run_multi_client_downloads(vault_manager=None, api_ref=None):
                         print(f"🚨 [CRITICAL ERROR] - Login form injection stage failed for {user_id}.")
                         capture_diagnostic_screenshot(page, user_id, "LOGIN_INJECT", vault_manager)
                         logging.exception(f"Login ID injection failed for {user_id}")
+                        error_msg = f"Site Error: Login page was unresponsive during User ID entry. ({str(e)})"
+                        if api_ref:
+                            decision = api_ref.prompt_user_server_delay(user_id, "Login Form", error_msg)
+                            if decision == 'retry':
+                                raise RetryClientException()
+                            elif decision == 'abort' or decision == 'stop':
+                                raise StopPipelineException()
+                        client_index += 1
                         continue
 
                     # Stage 2: OTP/Password Navigation
@@ -463,12 +493,13 @@ def run_multi_client_downloads(vault_manager=None, api_ref=None):
                         page.fill("#loginPasswordField", password)
                         page.keyboard.press("Tab")
                         print("🔑 [STAGE-AUTH] - 50% - Password Entered and Login Clicked")
-                    except (SkipClientException, StopPipelineException) as e:
+                    except (SkipClientException, StopPipelineException, RetryClientException) as e:
                         raise e
                     except Exception as e:
                         print(f"🚨 [CRITICAL ERROR] - Password navigation stage failed for {user_id}.")
                         capture_diagnostic_screenshot(page, user_id, "PASSWORD_NAV", vault_manager)
                         logging.exception(f"Password screen navigation failed for {user_id}")
+                        client_index += 1
                         continue
 
                     # Stage 3: Login Authentication
@@ -497,12 +528,20 @@ def run_multi_client_downloads(vault_manager=None, api_ref=None):
                         if not login_success:
                             raise Exception("Dashboard not loaded after 10 attempts.")
                         print("🔑 [STAGE-AUTH] - 75% - Logged in to Income Tax Portal dashboard")
-                    except (SkipClientException, StopPipelineException) as e:
+                    except (SkipClientException, StopPipelineException, RetryClientException) as e:
                         raise e
                     except Exception as e:
                         print(f"🚨 [CRITICAL ERROR] - Login authentication stage failed for {user_id}.")
                         capture_diagnostic_screenshot(page, user_id, "LOGIN_AUTH", vault_manager)
                         logging.exception(f"Login authentication failed for {user_id}")
+                        error_msg = f"Site Error: Dashboard page failed to load after login. ({str(e)})"
+                        if api_ref:
+                            decision = api_ref.prompt_user_server_delay(user_id, "Dashboard Load", error_msg)
+                            if decision == 'retry':
+                                raise RetryClientException()
+                            elif decision == 'abort' or decision == 'stop':
+                                raise StopPipelineException()
+                        client_index += 1
                         continue
 
                     # Stage 4: Navigating to e-Proceedings
@@ -520,12 +559,13 @@ def run_multi_client_downloads(vault_manager=None, api_ref=None):
                             
                         page.wait_for_load_state("networkidle")
                         print("🔑 [STAGE-AUTH] - 100% - Portal loaded and Eproceedings Page has been opened")
-                    except (SkipClientException, StopPipelineException) as e:
+                    except (SkipClientException, StopPipelineException, RetryClientException) as e:
                         raise e
                     except Exception as e:
                         print(f"🚨 [CRITICAL ERROR] - Navigating to e-Proceedings stage failed for {user_id}.")
                         capture_diagnostic_screenshot(page, user_id, "EPROC_NAV", vault_manager)
                         logging.exception(f"e-Proceedings navigation failed for {user_id}")
+                        client_index += 1
                         continue
 
                     # Directly read name from sheet as requested to bypass slow name-scraping checks
@@ -619,6 +659,19 @@ def run_multi_client_downloads(vault_manager=None, api_ref=None):
 
                     processed_pans.append(user_id)
                     print(f"📥 [STAGE-EXTRACTION] - 100% - All files downloaded successfully for client: {user_id}")
+                    client_index += 1
+
+                except RetryClientException:
+                    print(f"🔄 User requested RETRY. Re-initializing session and retrying client {user_id}...")
+                    try:
+                        context.clear_cookies()
+                    except Exception:
+                        pass
+                    try:
+                        page.goto("https://eportal.incometax.gov.in/iec/foservices/#/login?language-code=en", wait_until="networkidle", timeout=30000)
+                    except Exception:
+                        pass
+                    continue
 
                 except SkipClientException:
                     print(f"User requested to skip client {user_id}. Clearing cookies and navigating back to login page...")
@@ -630,6 +683,7 @@ def run_multi_client_downloads(vault_manager=None, api_ref=None):
                         page.goto("https://eportal.incometax.gov.in/iec/foservices/#/login?language-code=en", timeout=15000)
                     except Exception:
                         pass
+                    client_index += 1
                     continue
 
         except StopPipelineException:
@@ -738,6 +792,17 @@ def extract_col_data(df, keywords):
     return pd.Series([""] * len(df), dtype=str)
 
 def process_and_flag(pan_list):
+    global OUTPUT_REPORT
+    try:
+        creds_base = os.path.splitext(os.path.basename(CREDENTIALS_FILE))[0]
+    except Exception:
+        creds_base = "Credentials"
+        
+    timestamp = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
+    notice_checker_dir = os.path.join(BASE_DIR, "Notice Checker")
+    os.makedirs(notice_checker_dir, exist_ok=True)
+    OUTPUT_REPORT = os.path.join(notice_checker_dir, f"{creds_base}_Flagged_Report_{timestamp}.xlsx")
+
     if not pan_list:
         print("⚠️ [WARNING] - No valid PANs processed. Skipping comparison.")
         return
@@ -925,8 +990,19 @@ def process_and_flag(pan_list):
     if all_new_notices:
         final_report = pd.concat(all_new_notices, ignore_index=True)
         
+        # Load passwords from credentials file to map to PANs
+        try:
+            df_creds = pd.read_excel(CREDENTIALS_FILE)
+            df_creds.columns = df_creds.columns.str.strip()
+            pan_password_map = {str(row['Login_ID']).strip(): str(row['Password']).strip() for _, row in df_creds.iterrows() if pd.notna(row.get('Login_ID'))}
+        except Exception as e:
+            print(f"⚠️ Warning: Could not read passwords from credentials file for Excel mapping: {e}")
+            pan_password_map = {}
+            
+        final_report['Password'] = final_report['PAN'].map(pan_password_map).fillna("")
+        
         master_order = [
-            'Proceeding Name', 'PAN', 'AY', 'TY', 'Proceeding Limitation Date', 
+            'Proceeding Name', 'PAN', 'Password', 'AY', 'TY', 'Proceeding Limitation Date', 
             'Proceeding Status', 'Proceeding concluded date', 'Notice DIN', 
             'Notice Sent Date', 'Notice Section', 'Date of Compliance', 
             'Date Response submitted(Last Response Submitted)', 'Flag Reason'
@@ -945,8 +1021,8 @@ def process_and_flag(pan_list):
         
         for col_num, value in enumerate(final_report.columns.values):
             worksheet.write(0, col_num, value, header_format)
-            if value in ['PAN', 'AY', 'TY']: 
-                worksheet.set_column(col_num, col_num, 12)
+            if value in ['PAN', 'Password', 'AY', 'TY']: 
+                worksheet.set_column(col_num, col_num, 15)
             elif value in ['Proceeding Name', 'Notice DIN', 'Flag Reason']: 
                 worksheet.set_column(col_num, col_num, 30)
             else: 

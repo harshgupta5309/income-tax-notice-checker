@@ -73,19 +73,19 @@ class DesktopAPI:
     def set_window(self, window):
         self._window = window
 
-    def prompt_user_server_delay(self, pan, selector):
+    def prompt_user_server_delay(self, pan, selector, error_msg=""):
         """Called by the background thread to display the delay prompt in the UI and await decision."""
         self._decision_event = threading.Event()
         self.user_decision = None
         
         # Fire evaluation on UI to show the dialog/prompt below client name
-        js_cmd = f"showServerDelayPrompt('{escape_arg(pan)}', '{escape_arg(selector)}')"
+        js_cmd = f"showServerDelayPrompt('{escape_arg(pan)}', '{escape_arg(selector)}', '{escape_arg(error_msg)}')"
         self._window.evaluate_js(js_cmd)
         
         # Block until self._decision_event is set
         self._decision_event.wait()
         
-        # Return the choice: 'wait', 'skip', or 'stop'
+        # Return the choice: 'wait', 'skip', 'retry', or 'abort'
         return self.user_decision
 
     def submit_user_decision(self, decision):

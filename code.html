@@ -445,11 +445,11 @@
         /* Theme toggle button styling */
         .theme-toggle-btn {
             font-family: var(--font-mono);
-            font-size: 9px;
+            font-size: 10px;
             font-weight: 700;
             text-transform: uppercase;
             letter-spacing: 0.08em;
-            padding: 6px 12px;
+            padding: 6px 14px;
             border: 1px solid var(--border-color-custom);
             background: transparent;
             color: var(--muted-ink);
@@ -502,7 +502,7 @@
 </div>
 </div>
 </div>
-<div class="flex items-center gap-8">
+<div class="flex items-center gap-4">
 <nav class="flex gap-2">
 <button class="tab-pill tab-inactive" id="tab-op" onclick="switchTab('operational')">Operational Monitor <span class="opacity-50 text-[8px] font-mono ml-1">1</span></button>
 <button class="tab-pill tab-active" id="tab-lit" onclick="switchTab('litigation')">Litigation Suite <span class="opacity-50 text-[8px] font-mono ml-1">2</span></button>
@@ -510,7 +510,7 @@
 </nav>
 <button class="theme-toggle-btn" id="theme-toggle-btn" onclick="toggleTheme()">🌙 Dark Mode</button>
 <button class="theme-toggle-btn" id="fullscreen-btn" onclick="toggleFullScreen()">🖥️ Full Screen <span class="opacity-50 text-[8px] font-mono ml-1">Ctrl+F</span></button>
-<button class="btn-rigid btn-rust px-8 py-3 text-[10px] flex items-center gap-4" id="sync-trigger">
+<button class="btn-rigid btn-rust px-4 py-[6px] text-[10px] flex items-center gap-2" id="sync-trigger">
 <span class="">Sync Notices <span class="opacity-50 text-[8px] font-mono ml-1">Ctrl+Enter</span></span>
 <span class="text-xs">→</span>
 </button>
@@ -693,15 +693,15 @@
       <div id="server-delay-prompt-container" class="hidden border border-amber-500/35 bg-amber-500/5 p-4 rounded mt-1 flex flex-col space-y-3">
         <div class="flex items-center gap-2 text-amber-600 dark:text-amber-400">
           <span class="material-symbols-outlined text-sm animate-pulse">warning</span>
-          <span class="mono-ledger text-xs font-bold uppercase">Portal takes too long to load</span>
+          <span class="mono-ledger text-xs font-bold uppercase">Portal Site Loading Error</span>
         </div>
         <p class="text-xs text-ink/75 serif-italic">
-          The server is response-fluctuating. Wait another 30s, skip this client, or stop the automation?
+          The Income Tax E-Portal failed to load or respond properly. This is an external site latency or network issue, not an application bug.
         </p>
+        <div id="server-delay-error-desc" class="text-[10px] font-mono text-red-600 dark:text-red-400 bg-red-500/5 p-2 rounded border border-red-500/10 break-all"></div>
         <div class="flex gap-2 justify-end">
-          <button class="btn-rigid px-3 py-1 bg-amber-600 text-white text-[9px] font-bold mono-ledger hover:bg-amber-700" onclick="submitDelayDecision('wait')">Wait (30s)</button>
-          <button class="btn-rigid px-3 py-1 bg-rust text-white text-[9px] font-bold mono-ledger hover:shadow-sm" onclick="submitDelayDecision('skip')">Skip Client</button>
-          <button class="btn-rigid px-3 py-1 bg-ink text-parchment text-[9px] font-bold mono-ledger hover:bg-ink/80" onclick="submitDelayDecision('stop')">Stop Pipeline</button>
+          <button class="btn-rigid px-3 py-1.5 bg-rust text-white text-[9px] font-bold mono-ledger hover:shadow-sm" onclick="submitDelayDecision('retry')">Retry</button>
+          <button class="btn-rigid px-3 py-1.5 bg-ink text-parchment text-[9px] font-bold mono-ledger hover:bg-ink/80" onclick="submitDelayDecision('abort')">Abort the Scraping</button>
         </div>
       </div>
     </div>
@@ -1786,10 +1786,12 @@
           modal.classList.remove('flex');
         }
 
-        function showServerDelayPrompt(pan, selector) {
+        function showServerDelayPrompt(pan, selector, errorMsg) {
           const container = document.getElementById('server-delay-prompt-container');
           container.classList.remove('hidden');
-          printToConsole(`⚠️ Warning: Server is taking too long to load '${selector}' for ${pan}. Waiting for user decision...`, 'warning');
+          const errorDetails = errorMsg || `Could not find element '${selector}' on the page (Site is slow/unresponsive).`;
+          document.getElementById('server-delay-error-desc').textContent = errorDetails;
+          printToConsole(`⚠️ Site issue: ${errorDetails} for ${pan}. Waiting for user decision...`, 'warning');
         }
 
         function submitDelayDecision(decision) {
@@ -1836,14 +1838,7 @@
             e.preventDefault();
             toggleFullScreen();
           }
-
-          // Ctrl + T (Open separate Security Log window)
-          if (e.ctrlKey && e.key.toLowerCase() === 't') {
-            e.preventDefault();
-            if (window.pywebview && window.pywebview.api && window.pywebview.api.open_security_log_window) {
-              window.pywebview.api.open_security_log_window();
-            }
-          }
+          
           
           // '1'
           if (!isInputActive && e.key === '1') {
@@ -1909,10 +1904,6 @@
               <div class="flex justify-between border-b border-ink/5 pb-1">
                 <span class="text-muted-ink">Toggle Fullscreen</span>
                 <span class="font-bold text-indigo-500">Ctrl + F</span>
-              </div>
-              <div class="flex justify-between border-b border-ink/5 pb-1">
-                <span class="text-muted-ink">Open Security Window</span>
-                <span class="font-bold text-rust">Ctrl + T</span>
               </div>
               <div class="flex justify-between border-b border-ink/5 pb-1">
                 <span class="text-muted-ink">Operational Monitor</span>

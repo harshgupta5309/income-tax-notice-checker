@@ -977,6 +977,11 @@ def process_and_flag(pan_list):
                         n['ay'] = ay
                         n['source_file'] = source_file
                         
+                        if 'added_to_tracker' not in n:
+                            n['added_to_tracker'] = True
+                        if 'allotted_to' not in n:
+                            n['allotted_to'] = ""
+                        
                         # Keep list of response dates
                         r_dates = n.get('response_submitted_dates', [])
                         if not isinstance(r_dates, list):
@@ -1011,7 +1016,9 @@ def process_and_flag(pan_list):
                             "source_file": source_file,
                             "response_submitted_date": response_submitted_date,
                             "response_submitted_dates": r_dates,
-                            "moved_to_info": False
+                            "moved_to_info": False,
+                            "added_to_tracker": False,
+                            "allotted_to": ""
                         }
 
                 if not df_old_mapped.empty:

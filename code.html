@@ -562,6 +562,7 @@
     <nav class="flex gap-2">
       <button class="tab-pill tab-inactive font-mono" id="tab-op" onclick="switchTab('operational')">Operational Monitor <span class="opacity-50 text-[8px] font-mono ml-1">1</span></button>
       <button class="tab-pill tab-active font-mono" id="tab-lit" onclick="switchTab('litigation')">Litigation Suite <span class="opacity-50 text-[8px] font-mono ml-1">2</span></button>
+      <button class="tab-pill tab-inactive font-mono" id="tab-dossier" onclick="switchTab('dossier')">Client Dossiers <span class="opacity-50 text-[8px] font-mono ml-1">3</span></button>
       <button class="tab-pill tab-inactive font-mono" id="tab-about" onclick="openAboutModal()">About <span class="opacity-50 text-[8px] font-mono ml-1">F2</span></button>
       <button class="tab-pill tab-inactive font-mono" id="tab-help" onclick="openHelpModal()">Help <span class="opacity-50 text-[8px] font-mono ml-1">F1</span></button>
     </nav>
@@ -622,7 +623,7 @@
   </div>
 
   <!-- Section 2: Notice Tracking Table (Middle Section) -->
-  <div class="space-y-6">
+  <div class="space-y-6" id="tracker-table-section">
     <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 bg-sidebar/40 p-4 border border-ink/15 rounded-md">
       <!-- Search & Filters -->
       <div class="flex flex-wrap gap-3 items-center w-full md:w-auto">
@@ -696,12 +697,52 @@
     </div>
   </div>
 
-  <!-- Section 3: Taxpayer Dossiers (Bottom Section) -->
-  <div id="client-dossier-section" class="space-y-6 border-t border-ink/15 pt-10">
-    <div class="flex justify-between items-center">
+  <!-- SPLIT VIEW SLIDING DETAIL PANEL -->
+  <div class="absolute inset-y-0 right-0 w-full md:w-[60%] xl:w-[45%] bg-[var(--parchment)] shadow-[-10px_0px_30px_-5px_rgba(0,0,0,0.2)] border-l-2 border-ink z-[100] transform transition-transform duration-500 ease-in-out translate-x-full flex flex-col" id="detail-panel">
+    <!-- Toolbar -->
+    <div class="h-14 flex items-center justify-between px-6 border-b border-ink bg-sidebar/50">
+      <div class="flex items-center gap-4">
+        <button class="flex items-center gap-1 font-mono text-[10px] uppercase text-ink hover:text-rust font-bold transition-colors" onclick="closeSplitView()">
+          <span class="material-symbols-outlined text-[18px]">chevron_left</span> Back to Ledger
+        </button>
+        <div class="h-4 w-[1px] bg-ink/20"></div>
+        <span class="font-mono text-[10px] text-muted-ink font-bold" id="panel-doc-id">NOTICE_DETAILS</span>
+      </div>
+      <div class="flex items-center gap-2">
+        <button class="flex items-center gap-1 px-2.5 py-1 border border-indigo text-indigo bg-indigo/5 font-mono text-[9px] font-bold uppercase hover:bg-indigo hover:text-white transition-all" onclick="triggerPanelUpload()">
+          <span class="material-symbols-outlined text-[16px]">upload_file</span> Upload Scan
+        </button>
+      </div>
+    </div>
+    
+    <!-- Detail Tabs Navigation Inside Panel -->
+    <div class="flex border-b border-ink/10 bg-sidebar/30">
+      <button class="flex-1 py-3 text-center font-mono text-[10px] font-bold uppercase tracking-wider border-r border-ink/10 hover:bg-ink/5 transition-all text-indigo border-b-2 border-indigo" id="panel-tab-details" onclick="switchPanelTab('details')">
+        Details
+      </button>
+      <button class="flex-1 py-3 text-center font-mono text-[10px] font-bold uppercase tracking-wider border-r border-ink/10 hover:bg-ink/5 transition-all text-muted-ink" id="panel-tab-notes" onclick="switchPanelTab('notes')">
+        Notes / Remarks
+      </button>
+      <button class="flex-1 py-3 text-center font-mono text-[10px] font-bold uppercase tracking-wider hover:bg-ink/5 transition-all text-muted-ink" id="panel-tab-download" onclick="switchPanelTab('download')">
+        Attachments
+      </button>
+    </div>
+    
+    <!-- Scrollable Panel Content -->
+    <div class="flex-grow overflow-y-auto p-8 custom-scroll bg-[var(--parchment)]" id="panel-content-area">
+      <!-- Dynamic Content Rendered Here -->
+    </div>
+  </div>
+
+</div>
+
+<!-- VIEW: Client Dossier -->
+<div class="hidden max-w-7xl mx-auto space-y-12" id="view-dossier">
+  <div id="client-dossier-section" class="space-y-6 pt-2">
+    <div class="flex justify-between items-center border-b border-ink pb-6 relative">
       <div>
-        <h3 class="serif-title text-3xl">Taxpayer <span class="serif-italic accent-indigo">Dossiers</span></h3>
-        <p class="serif-italic text-sm text-muted-ink mt-1">Individual client records, synchronizations, and raw portal downloads.</p>
+        <h2 class="serif-title text-5xl">Taxpayer <span class="serif-italic accent-indigo">Dossiers</span></h2>
+        <p class="serif-italic text-sm text-muted-ink mt-2">Individual client records, synchronizations, and raw portal downloads.</p>
       </div>
       <div class="w-24 h-16 border border-ink flex flex-col items-center justify-center text-center p-2 bg-panel box-shadow-[2px_2px_0px_var(--border-color-custom)]">
         <span class="mono-ledger text-[7px] font-bold border-b border-ink w-full mb-1 pb-0.5">RECORDS_V4</span>
@@ -1090,24 +1131,34 @@
         function switchTab(view) {
             const opView = document.getElementById('view-operational');
             const litView = document.getElementById('view-litigation');
+            const dossierView = document.getElementById('view-dossier');
             const opTab = document.getElementById('tab-op');
             const litTab = document.getElementById('tab-lit');
+            const dossierTab = document.getElementById('tab-dossier');
 
-            if (view === 'operational') {
-                opView.classList.remove('hidden');
-                litView.classList.add('hidden');
-                opTab.classList.add('tab-active');
-                opTab.classList.remove('tab-inactive');
-                litTab.classList.remove('tab-active');
-                litTab.classList.add('tab-inactive');
-            } else {
-                opView.classList.add('hidden');
-                litView.classList.remove('hidden');
-                litTab.classList.add('tab-active');
-                litTab.classList.remove('tab-inactive');
-                opTab.classList.remove('tab-active');
-                opTab.classList.add('tab-inactive');
-            }
+            const views = [
+              { key: 'operational', el: opView, tab: opTab },
+              { key: 'litigation', el: litView, tab: litTab },
+              { key: 'dossier', el: dossierView, tab: dossierTab }
+            ];
+
+            views.forEach(v => {
+              if (v.el) {
+                if (v.key === view) {
+                  v.el.classList.remove('hidden');
+                  if (v.tab) {
+                    v.tab.classList.add('tab-active');
+                    v.tab.classList.remove('tab-inactive');
+                  }
+                } else {
+                  v.el.classList.add('hidden');
+                  if (v.tab) {
+                    v.tab.classList.remove('tab-active');
+                    v.tab.classList.add('tab-inactive');
+                  }
+                }
+              }
+            });
         }
 
         function closeDrawer() {
@@ -1428,10 +1479,26 @@
               allTrackedNotices = [];
             }
             
-            // Update UI count
+            // Migrate missing properties on loaded data
+            allTrackedNotices.forEach(n => {
+              if (n.added_to_tracker === undefined) {
+                if (n.source === 'Manual') {
+                  n.added_to_tracker = true;
+                } else if (n.recently_flagged) {
+                  n.added_to_tracker = false;
+                } else {
+                  n.added_to_tracker = true;
+                }
+              }
+              if (n.allotted_to === undefined) {
+                n.allotted_to = "";
+              }
+            });
+            
+            // Update UI count (only actively tracked notices)
             const counter = document.getElementById('total-notices-count');
             if (counter) {
-              counter.innerText = allTrackedNotices.length;
+              counter.innerText = allTrackedNotices.filter(n => n.added_to_tracker === true).length;
             }
             
             // Dynamically populate AY filter dropdown
@@ -1504,60 +1571,182 @@
           if (!grid) return;
           grid.innerHTML = '';
           
-          const latest = allTrackedNotices.filter(n => n.recently_flagged === true);
+          // Pending reviews are those where added_to_tracker is false
+          const pending = allTrackedNotices.filter(n => n.added_to_tracker === false);
           
-          if (latest.length === 0) {
+          if (pending.length === 0) {
+            // Render the beautiful "No Records Found" Empty State
             grid.innerHTML = `
-              <div class="col-span-3 text-center py-6 text-muted-ink italic text-xs bg-ink/5 border border-dashed border-ink/20 rounded">
-                No notices flagged in the latest run. Run a sync to check for updates.
+              <div class="col-span-3 text-center py-10 px-4 bg-sidebar/20 border border-dashed border-ink/20 rounded relative flex flex-col items-center justify-center space-y-4">
+                <div class="w-20 h-20 bg-sidebar border border-outline-variant flex items-center justify-center relative crosshair">
+                  <div class="absolute inset-0 border border-outline/10 m-2"></div>
+                  <span class="material-symbols-outlined text-muted-ink !text-4xl" style="font-variation-settings: 'wght' 100;">account_balance</span>
+                </div>
+                <div>
+                  <h4 class="font-headline-sm text-sm font-bold text-ink">No New Scraped Notices</h4>
+                  <p class="serif-italic text-[10px] text-muted-ink max-w-sm mx-auto mt-1">
+                    The staging queue is currently unpopulated. All identified portal notices have been reviewed and either logged to the main tracker or dismissed.
+                  </p>
+                </div>
               </div>
             `;
             return;
           }
           
-          latest.forEach(n => {
+          // Group by client pan
+          const groups = {};
+          pending.forEach(n => {
+            if (!groups[n.pan]) {
+              groups[n.pan] = {
+                client_name: n.client_name,
+                pan: n.pan,
+                notices: []
+              };
+            }
+            groups[n.pan].notices.push(n);
+          });
+          
+          // Render a card for each group
+          Object.values(groups).forEach(g => {
             const card = document.createElement('div');
-            card.className = 'border-[1.5px] border-ink bg-[var(--panel-white)] box-shadow-[3px_3px_0px_var(--border-color-custom)] p-4 rounded-none flex flex-col space-y-3 relative hover:translate-y-[-2px] hover:translate-x-[-2px] hover:box-shadow-[5px_5px_0px_var(--border-color-custom)] transition-all';
-            
-            const flagReason = n.flag_reason || "FLAGGED";
-            const badgeClass = flagReason.startsWith("NEW") ? "bg-red-500/10 text-red-500 border-red-500/20" : "bg-amber-500/10 text-amber-500 border-amber-500/20";
+            card.className = 'border-[1.5px] border-ink bg-[var(--panel-white)] box-shadow-[3px_3px_0px_var(--border-color-custom)] p-5 rounded-none flex flex-col justify-between space-y-4 relative hover:translate-y-[-2px] hover:translate-x-[-2px] hover:box-shadow-[5px_5px_0px_var(--border-color-custom)] transition-all';
             
             card.innerHTML = `
-              <div class="flex justify-between items-start">
+              <div class="flex justify-between items-start border-b border-ink/10 pb-3">
                 <div class="flex flex-col">
-                  <span class="mono-ledger text-[8px] font-bold text-rust uppercase tracking-wider">LATEST FLAGGED NOTICE</span>
-                  <span class="serif-title text-base font-bold text-ink truncate max-w-[200px]" title="${n.client_name}">${n.client_name}</span>
-                  <span class="mono-ledger text-[9px] text-muted-ink">${n.pan}</span>
+                  <span class="mono-ledger text-[8px] font-bold text-rust uppercase tracking-wider">UNASSIGNED PORTAL FINDINGS</span>
+                  <span class="serif-title text-base font-bold text-ink truncate max-w-[200px]" title="${g.client_name}">${g.client_name}</span>
+                  <span class="mono-ledger text-[9px] text-muted-ink">${g.pan}</span>
                 </div>
-                <span class="px-1.5 py-0.5 text-[8px] font-mono border rounded uppercase font-bold ${badgeClass}">${flagReason}</span>
+                <span class="px-2 py-0.5 text-[8px] font-mono border rounded border-red-500/20 bg-red-500/10 text-red-500 font-bold uppercase tracking-wider">${g.notices.length} Pending</span>
               </div>
-              <div class="space-y-2 text-xs border-t border-ink/10 pt-3 font-mono">
-                <div class="flex flex-col">
-                  <span class="text-[9px] text-muted-ink uppercase tracking-wider font-bold">Notice DIN</span>
-                  <span class="font-bold text-ink text-[10px] break-all select-all bg-ink/5 p-1 rounded-sm border border-ink/10 block font-mono mt-0.5" title="Click to select all">${n.din || 'N/A'}</span>
+              <div class="space-y-2 text-xs font-mono">
+                <p class="serif-italic text-[10px] text-muted-ink">New activity or resolved entries detected on the compliance portal. Review required before adding to the active ledger.</p>
+                <div class="bg-sidebar p-2.5 border border-ink/10 text-[9px] text-ink space-y-1.5 rounded-sm">
+                  ${g.notices.slice(0, 2).map(n => `
+                    <div class="flex justify-between items-center gap-2">
+                      <span class="font-bold text-rust">${n.section}</span>
+                      <span class="text-muted-ink truncate max-w-[120px]">${n.din || 'No DIN'}</span>
+                    </div>
+                  `).join('')}
+                  ${g.notices.length > 2 ? `<div class="text-right text-indigo font-bold text-[8px]">+ ${g.notices.length - 2} more...</div>` : ''}
                 </div>
-                <div class="grid grid-cols-2 gap-2">
-                  <div>
-                    <span class="text-[8px] text-muted-ink uppercase tracking-wider block font-bold">Section</span>
-                    <span class="text-ink text-[11px] font-bold mt-0.5 block">${n.section}</span>
-                  </div>
-                  <div>
-                    <span class="text-[8px] text-muted-ink uppercase tracking-wider block font-bold">Source Page</span>
-                    <span class="px-1.5 py-0.5 text-[8px] font-mono border border-indigo text-indigo bg-indigo/5 font-bold rounded uppercase mt-0.5 inline-block">${mapSourceFileToPage(n.source_file, n.source)}</span>
-                  </div>
-                </div>
-                <div class="flex flex-col">
-                  <span class="text-[8px] text-muted-ink uppercase tracking-wider font-bold">Proceeding</span>
-                  <span class="text-ink text-[10px] truncate max-w-[280px] mt-0.5 block" title="${n.proceeding_name}">${n.proceeding_name}</span>
-                </div>
-                <div class="flex justify-between items-center border-t border-ink/5 pt-2 mt-1">
-                  <span class="text-[8px] text-muted-ink uppercase tracking-wider font-bold">Compliance Date</span>
-                  <span class="font-bold text-rust text-[11px]">${n.compliance_date}</span>
-                </div>
+              </div>
+              <div class="pt-2">
+                <button class="btn-rigid btn-indigo w-full py-2.5 text-[10px] uppercase font-bold flex items-center justify-center gap-1.5" onclick="openReviewModal('${g.pan}')">
+                  <span class="material-symbols-outlined text-sm">assignment_turned_in</span>
+                  <span>Review & Stage</span>
+                </button>
               </div>
             `;
             grid.appendChild(card);
           });
+        }
+
+        let activeReviewPan = null;
+
+        function openReviewModal(pan) {
+          activeReviewPan = pan;
+          const client = localClients.find(c => c.pan === pan);
+          const clientName = client ? client.name : "Client";
+          
+          document.getElementById('review-modal-title').innerText = `Review Notices: ${clientName}`;
+          
+          const tbody = document.getElementById('review-modal-table-body');
+          if (!tbody) return;
+          tbody.innerHTML = '';
+          
+          const pending = allTrackedNotices.filter(n => n.pan === pan && n.added_to_tracker === false);
+          
+          pending.forEach((n, idx) => {
+            const key = n.din || `manual_${n.pan}_${n.section}_${n.sent_date}`;
+            const tr = document.createElement('tr');
+            tr.className = 'hover:bg-ink/5';
+            tr.innerHTML = `
+              <td class="p-3 text-center">
+                <input type="checkbox" value="${key}" checked class="review-row-checkbox rounded text-indigo focus:ring-0 cursor-pointer" onchange="updateReviewSelectionCount()">
+              </td>
+              <td class="p-3">
+                <div class="font-bold text-ink">${n.section}</div>
+                <div class="text-[10px] text-muted-ink">${n.proceeding_name}</div>
+                <div class="text-[9px] text-indigo font-mono">DIN: ${n.din || 'N/A'} (AY ${n.ay})</div>
+              </td>
+              <td class="p-3 font-bold text-rust">
+                ${n.compliance_date}
+              </td>
+              <td class="p-3">
+                <input type="text" placeholder="Assign to..." value="${n.allotted_to || ''}" class="review-row-allotted w-full bg-[var(--parchment)] border border-ink/20 focus:border-indigo px-2 py-1 text-[10px] font-mono focus:outline-none rounded-sm">
+              </td>
+            `;
+            tbody.appendChild(tr);
+          });
+          
+          document.getElementById('review-select-all').checked = true;
+          updateReviewSelectionCount();
+          
+          // Show modal
+          const modal = document.getElementById('review-notices-modal');
+          modal.classList.remove('hidden');
+          modal.classList.add('flex');
+          
+          // Blur main view
+          const viewLit = document.getElementById('view-litigation');
+          if (viewLit) viewLit.classList.add('blur-sm');
+        }
+
+        function closeReviewModal() {
+          const modal = document.getElementById('review-notices-modal');
+          modal.classList.add('hidden');
+          modal.classList.remove('flex');
+          
+          const viewLit = document.getElementById('view-litigation');
+          if (viewLit) viewLit.classList.remove('blur-sm');
+          
+          activeReviewPan = null;
+        }
+
+        function toggleSelectAllReview(checked) {
+          const checkboxes = document.querySelectorAll('.review-row-checkbox');
+          checkboxes.forEach(cb => cb.checked = checked);
+          updateReviewSelectionCount();
+        }
+
+        function updateReviewSelectionCount() {
+          const checked = document.querySelectorAll('.review-row-checkbox:checked').length;
+          const statusText = document.getElementById('review-selection-status');
+          if (statusText) {
+            statusText.innerText = `${checked} notices selected`;
+          }
+        }
+
+        async function submitReviewAction(action) {
+          const rows = document.querySelectorAll('#review-modal-table-body tr');
+          let count = 0;
+          
+          for (const row of rows) {
+            const cb = row.querySelector('.review-row-checkbox');
+            const key = cb.value;
+            const allottedVal = row.querySelector('.review-row-allotted').value.trim();
+            
+            if (cb.checked) {
+              const notice = allTrackedNotices.find(n => (n.din || `manual_${n.pan}_${n.section}_${n.sent_date}`) === key);
+              if (notice) {
+                if (action === 'accept') {
+                  notice.added_to_tracker = true;
+                } else if (action === 'dismiss') {
+                  notice.added_to_tracker = 'dismissed';
+                }
+                notice.allotted_to = allottedVal;
+                
+                await window.pywebview.api.save_tracked_notice(JSON.stringify(notice));
+                count++;
+              }
+            }
+          }
+          
+          printToConsole(`💾 ${count} notices successfully updated (${action === 'accept' ? 'imported to tracker' : 'dismissed'}).`, 'success');
+          closeReviewModal();
+          loadNoticeTracker();
         }
 
         function applyTrackerFilters() {
@@ -1566,7 +1755,7 @@
           const ayFilterVal = document.getElementById('tracker-ay-filter').value;
           const sortVal = document.getElementById('tracker-sort-select').value;
           
-          let filtered = [...allTrackedNotices];
+          let filtered = allTrackedNotices.filter(n => n.added_to_tracker === true);
           
           // 1. Search filter
           if (searchQuery) {
@@ -1713,10 +1902,22 @@
                 <input type="text" value="${n.remarks || ''}" placeholder="Add remarks..." class="w-full bg-transparent border-b border-ink/10 focus:border-indigo px-1 py-0.5 text-ink focus:outline-none" onblur="updateNoticeRemarks('${key}', this.value)">
               </td>
               <td class="p-3 text-center">
-                ${n.source === 'Manual' 
-                  ? `<button class="text-red-500 hover:text-red-700 font-bold" onclick="deleteManualNotice('${key}')">✕</button>` 
-                  : `<span class="text-[9px] text-muted-ink uppercase">Scraped</span>`
-                }
+                <div class="flex items-center justify-center gap-1.5">
+                  <button class="p-1 border border-ink hover:bg-ink hover:text-white transition-all rounded" onclick="openSplitView('${key}', 'details')" title="View Details">
+                    <span class="material-symbols-outlined text-xs">visibility</span>
+                  </button>
+                  <button class="p-1 border border-ink hover:bg-ink hover:text-white transition-all rounded" onclick="openSplitView('${key}', 'notes')" title="Edit Notes">
+                    <span class="material-symbols-outlined text-xs">edit_note</span>
+                  </button>
+                  <button class="p-1 border border-ink hover:bg-indigo hover:text-white transition-all rounded" onclick="openSplitView('${key}', 'download')" title="Upload/Download Document">
+                    <span class="material-symbols-outlined text-xs">download</span>
+                  </button>
+                  ${n.source === 'Manual' ? `
+                    <button class="p-1 border border-red-500 text-red-500 hover:bg-red-500 hover:text-white transition-all rounded" onclick="deleteManualNotice('${key}')" title="Delete Notice">
+                      <span class="material-symbols-outlined text-xs">delete</span>
+                    </button>
+                  ` : ''}
+                </div>
               </td>
             `;
             tbody.appendChild(tr);
@@ -1856,6 +2057,7 @@
           const sent_date = document.getElementById('modal-sent-date').value;
           const compliance_date = document.getElementById('modal-compliance-date').value;
           const remarks = document.getElementById('modal-remarks').value.trim();
+          const allotted_to = document.getElementById('modal-allotted-to').value.trim();
           
           const newNotice = {
             din: din,
@@ -1870,6 +2072,8 @@
             status: 'PENDING',
             filed_status: 'Outstanding',
             remarks: remarks,
+            allotted_to: allotted_to,
+            added_to_tracker: true,
             source: 'Manual',
             source_file: 'Manual',
             response_submitted_date: '',
@@ -2457,9 +2661,11 @@
 
         window.addEventListener('keydown', (e) => {
           if (e.key === 'Escape') {
+            closeSplitView();
             closeDrawer();
             closeHelpModal();
             closeAboutModal();
+            closeReviewModal();
           }
           
           const targetTag = e.target.tagName.toLowerCase();
@@ -2511,6 +2717,12 @@
             switchTab('litigation');
           }
           
+          // '3'
+          if (!isInputActive && e.key === '3') {
+            e.preventDefault();
+            switchTab('dossier');
+          }
+          
           // F1
           if (e.key === 'F1') {
             e.preventDefault();
@@ -2528,6 +2740,308 @@
             }
           }
         });
+
+        // --- SPLIT VIEW DETAILS PANEL FUNCTIONS ---
+        let activePanelNoticeKey = null;
+        let activePanelTab = 'details';
+
+        function openSplitView(key, tabName = 'details') {
+          const notice = allTrackedNotices.find(n => (n.din || `manual_${n.pan}_${n.section}_${n.sent_date}`) === key);
+          if (!notice) return;
+          
+          activePanelNoticeKey = key;
+          activePanelTab = tabName;
+          
+          // Slide in panel
+          const panel = document.getElementById('detail-panel');
+          if (panel) {
+            panel.classList.remove('translate-x-full');
+            panel.classList.add('translate-x-0');
+          }
+          
+          // Blur main ledger
+          const ledger = document.getElementById('tracker-table-section');
+          if (ledger) {
+            ledger.classList.add('opacity-40', 'grayscale', 'pointer-events-none');
+          }
+          
+          switchPanelTab(tabName);
+        }
+
+        function closeSplitView() {
+          const panel = document.getElementById('detail-panel');
+          if (panel) {
+            panel.classList.remove('translate-x-0');
+            panel.classList.add('translate-x-full');
+          }
+          
+          const ledger = document.getElementById('tracker-table-section');
+          if (ledger) {
+            ledger.classList.remove('opacity-40', 'grayscale', 'pointer-events-none');
+          }
+          
+          activePanelNoticeKey = null;
+        }
+
+        function switchPanelTab(tabName) {
+          activePanelTab = tabName;
+          
+          const btnDetails = document.getElementById('panel-tab-details');
+          const btnNotes = document.getElementById('panel-tab-notes');
+          const btnDownload = document.getElementById('panel-tab-download');
+          
+          const tabs = [
+            { key: 'details', el: btnDetails },
+            { key: 'notes', el: btnNotes },
+            { key: 'download', el: btnDownload }
+          ];
+          
+          tabs.forEach(t => {
+            if (t.el) {
+              if (t.key === tabName) {
+                t.el.className = "flex-1 py-3 text-center font-mono text-[10px] font-bold uppercase tracking-wider border-r border-ink/10 bg-ink/5 text-indigo border-b-2 border-indigo";
+              } else {
+                t.el.className = "flex-1 py-3 text-center font-mono text-[10px] font-bold uppercase tracking-wider border-r border-ink/10 hover:bg-ink/5 transition-all text-muted-ink";
+              }
+            }
+          });
+          
+          const notice = allTrackedNotices.find(n => (n.din || `manual_${n.pan}_${n.section}_${n.sent_date}`) === activePanelNoticeKey);
+          if (notice) {
+            renderDetailPanelContent(notice, tabName);
+          }
+        }
+
+        function renderDetailPanelContent(notice, tab) {
+          const contentArea = document.getElementById('panel-content-area');
+          if (!contentArea) return;
+          
+          const docId = document.getElementById('panel-doc-id');
+          if (docId) {
+            docId.innerText = notice.din ? `DIN: ${notice.din}` : `MANUAL_ENTRY_${notice.pan}`;
+          }
+          
+          if (tab === 'details') {
+            contentArea.innerHTML = `
+              <div class="max-w-[720px] mx-auto bg-[var(--panel-white)] p-10 border border-ink/20 shadow-xl relative text-ink">
+                <!-- Retro Corner Accent -->
+                <span class="absolute top-2 right-3 text-ink/30 font-mono text-sm">+</span>
+                <span class="absolute bottom-2 left-3 text-ink/30 font-mono text-sm">+</span>
+                
+                <!-- Notice Document Header -->
+                <div class="flex justify-between border-b-2 border-ink pb-6 mb-8">
+                  <div>
+                    <div class="font-mono text-[9px] text-rust font-bold uppercase tracking-[0.2em] mb-1">Official Compliance Dispatch</div>
+                    <div class="flex items-center gap-1.5 mb-2">
+                      <span class="px-1.5 py-0.5 bg-indigo/10 text-indigo font-mono text-[8px] uppercase border border-indigo/20">${notice.source === 'Manual' ? 'Manual Ledger Record' : 'Scraped Portal Notice'}</span>
+                      ${notice.filed_status === 'Filed' ? '<span class="px-1.5 py-0.5 bg-emerald/10 text-emerald font-mono text-[8px] uppercase border border-emerald/20">Filed</span>' : '<span class="px-1.5 py-0.5 bg-red-500/10 text-rust font-mono text-[8px] uppercase border border-red-500/20">Outstanding</span>'}
+                    </div>
+                    <h2 class="serif-title text-3xl leading-tight uppercase font-black tracking-tight">${notice.client_name}</h2>
+                    <p class="font-mono text-[10px] text-muted-ink mt-0.5">PAN Index: ${notice.pan}</p>
+                  </div>
+                  <div class="text-right flex flex-col items-end">
+                    <div class="font-mono text-[9px] uppercase">Sent: ${notice.sent_date}</div>
+                    <div class="font-mono text-[9px] uppercase font-bold text-rust mt-0.5">Due: ${notice.compliance_date}</div>
+                    <div class="mt-4 px-2.5 py-1 bg-ink text-parchment font-mono text-[9px] uppercase">AY ${notice.ay}</div>
+                  </div>
+                </div>
+                
+                <!-- Notice Document Details Table -->
+                <div class="space-y-6 text-xs font-mono">
+                  <div class="grid grid-cols-2 gap-4 border-b border-ink/10 pb-4">
+                    <div>
+                      <span class="text-[9px] text-muted-ink uppercase block font-bold">Legal Section</span>
+                      <span class="text-ink text-sm font-bold mt-1 block">${notice.section}</span>
+                    </div>
+                    <div>
+                      <span class="text-[9px] text-muted-ink uppercase block font-bold">Assessment Year (AY)</span>
+                      <span class="text-ink text-sm font-bold mt-1 block">${notice.ay}</span>
+                    </div>
+                  </div>
+                  
+                  <div class="border-b border-ink/10 pb-4">
+                    <span class="text-[9px] text-muted-ink uppercase block font-bold">Proceeding Name</span>
+                    <span class="text-ink text-xs mt-1 block">${notice.proceeding_name || 'N/A'}</span>
+                  </div>
+                  
+                  <div class="grid grid-cols-2 gap-4 border-b border-ink/10 pb-4">
+                    <div>
+                      <span class="text-[9px] text-muted-ink uppercase block font-bold">Portal Status</span>
+                      <span class="text-ink font-bold mt-1 block">${notice.status || 'PENDING'}</span>
+                    </div>
+                    <div>
+                      <span class="text-[9px] text-muted-ink uppercase block font-bold">Compliance Status</span>
+                      <span class="text-ink font-bold mt-1 block">${notice.filed_status || 'Outstanding'}</span>
+                    </div>
+                  </div>
+                  
+                  <!-- Allotted To Assignment Section -->
+                  <div class="pt-2">
+                    <span class="text-[9px] text-muted-ink uppercase block font-bold mb-1.5">Allotted / Assigned To</span>
+                    <div class="flex gap-2">
+                      <input type="text" id="panel-allotted-input" placeholder="Enter associate name..." value="${notice.allotted_to || ''}" class="flex-grow bg-[var(--parchment)] border border-ink/30 px-3 py-2 text-xs font-mono focus:border-indigo focus:outline-none rounded-none">
+                      <button class="btn-rigid btn-indigo px-4 py-2 text-[10px] uppercase font-bold" onclick="savePanelAllotment()">Save</button>
+                    </div>
+                  </div>
+                </div>
+                
+                <!-- Retro Signatures & Seals -->
+                <div class="mt-12 pt-8 border-t border-ink/10 flex justify-between items-center">
+                  <div class="flex items-center gap-3">
+                    <div class="w-12 h-12 grayscale opacity-70 border border-ink p-0.5">
+                      <img class="w-full h-full object-contain" src="https://lh3.googleusercontent.com/aida-public/AB6AXuDMENmJmPJKQeNaau7PdOZz7nPz-gLCZflcq_EU1BrlIibDa_Z1wwOHplXMNqqPCCaz85WL3TpskMTkTE8id5T2Eyq1xa2VXbra2vyqKB4JcykpiQcQtQAYdsJEJy0fZVlOPhTMUe89K-pLZWcXRXv_WquwHs9XcG5xtwOADfQ93IW8eYh9gVW8iX-JQj1ESZOw2UQJaysOMnOBU4uXmPfg20YiEWaQ8wfjzL7W1WAohKtLYkWeLRirxsv83oD9ECLOWHSsponq"/>
+                    </div>
+                    <div class="text-[10px] italic serif-italic text-muted-ink">Verified via Compliance Node</div>
+                  </div>
+                  <div class="text-right">
+                    <span class="px-2 py-0.5 border border-emerald/30 text-emerald bg-emerald/5 text-[9px] font-bold uppercase rounded-sm">Hash Authenticated</span>
+                  </div>
+                </div>
+              </div>
+            `;
+          } else if (tab === 'notes') {
+            contentArea.innerHTML = `
+              <div class="max-w-[720px] mx-auto space-y-6 text-ink">
+                <div class="bg-[var(--panel-white)] p-6 border border-ink/20 shadow-md">
+                  <h4 class="font-mono text-xs uppercase font-bold border-b border-ink/15 pb-2 mb-4 text-rust">Scrutiny Log & Client Correspondence</h4>
+                  
+                  <div class="space-y-4">
+                    <div class="flex flex-col gap-1.5">
+                      <label class="font-mono text-[9px] uppercase text-muted-ink font-bold">Remarks & Client Notes</label>
+                      <textarea id="panel-remarks-textarea" placeholder="Add details of what has been sent to client, next compliance actions, or key observations..." rows="8" class="w-full p-4 border border-ink/30 bg-[var(--parchment)] focus:border-indigo focus:ring-0 text-xs font-mono resize-none rounded-none">${notice.remarks || ''}</textarea>
+                    </div>
+                    <div class="flex justify-end pt-2">
+                      <button class="btn-rigid btn-indigo px-6 py-2.5 text-[10px] uppercase font-bold flex items-center gap-1" onclick="savePanelNotes()">
+                        <span class="material-symbols-outlined text-sm">save</span>
+                        <span>Save Ledger Notes</span>
+                      </button>
+                    </div>
+                  </div>
+                </div>
+                
+                <div class="bg-sidebar p-5 border border-ink/10 space-y-3 font-mono text-[10px] rounded-none">
+                  <div class="font-bold text-muted-ink uppercase">Scraper Diagnostics</div>
+                  <div class="space-y-1 text-ink/80 text-[9px]">
+                    <div>DIN Reference: ${notice.din || 'N/A'}</div>
+                    <div>Import Source: ${mapSourceFileToPage(notice.source_file, notice.source)}</div>
+                    <div>Compliance Due: ${notice.compliance_date}</div>
+                  </div>
+                </div>
+              </div>
+            `;
+          } else if (tab === 'download') {
+            const hasFile = notice.attachment_name;
+            contentArea.innerHTML = `
+              <div class="max-w-[720px] mx-auto space-y-6 text-ink">
+                <div class="bg-[var(--panel-white)] p-8 border border-ink/20 shadow-md flex flex-col items-center justify-center text-center">
+                  <h4 class="font-mono text-xs uppercase font-bold border-b border-ink/15 pb-2 mb-6 w-full text-rust">Ingested Document Scan</h4>
+                  
+                  ${hasFile ? `
+                    <div class="w-full flex items-center justify-between bg-sidebar p-4 border border-ink/20 mb-6 font-mono text-xs text-left">
+                      <div class="flex items-center gap-3">
+                        <span class="material-symbols-outlined text-indigo !text-3xl">description</span>
+                        <div class="flex flex-col">
+                          <span class="font-bold text-ink truncate max-w-sm">${notice.attachment_name}</span>
+                          <span class="text-[9px] text-muted-ink uppercase font-bold mt-0.5">Scanned Attachment</span>
+                        </div>
+                      </div>
+                      <button class="text-red-500 hover:text-red-700 font-bold p-2 text-sm" onclick="clearPanelAttachment()" title="Remove file">✕</button>
+                    </div>
+                  ` : `
+                    <div class="w-full border-2 border-dashed border-ink/20 p-8 flex flex-col items-center justify-center bg-sidebar/30 transition-colors hover:border-indigo cursor-pointer group mb-6" onclick="triggerPanelUpload()">
+                      <span class="material-symbols-outlined text-muted-ink group-hover:text-indigo !text-4xl mb-2">upload_file</span>
+                      <p class="font-mono text-[10px] uppercase font-bold text-ink">Upload Digitized Notice Scan</p>
+                      <p class="font-mono text-[8px] text-muted-ink mt-1">Accepts PDF, TIFF, PNG formats (Max 12MB)</p>
+                      <input type="file" id="panel-file-input" class="hidden" accept=".pdf,.tiff,.png,.jpg" onchange="handlePanelUpload(this.files)">
+                    </div>
+                  `}
+                  
+                  <div class="w-full flex gap-3">
+                    <button class="flex-grow py-3 border border-ink font-mono text-[10px] font-bold uppercase hover:bg-ink hover:text-white transition-all hard-shadow" onclick="triggerFutureDownloadAlert()">
+                      <span class="material-symbols-outlined text-xs mr-1">download</span>
+                      Download Notice File
+                    </button>
+                  </div>
+                </div>
+                
+                <div class="bg-sidebar/50 p-4 border border-ink/10 font-mono text-[9px] text-muted-ink italic">
+                  Note: The portal Scraper PDF downloader is scheduled for future development. Use the upload scan block above to associate manual copies for reference.
+                </div>
+              </div>
+            `;
+          }
+        }
+
+        async function savePanelAllotment() {
+          const input = document.getElementById('panel-allotted-input');
+          if (!input) return;
+          
+          const notice = allTrackedNotices.find(n => (n.din || `manual_${n.pan}_${n.section}_${n.sent_date}`) === activePanelNoticeKey);
+          if (notice) {
+            notice.allotted_to = input.value.trim();
+            await window.pywebview.api.save_tracked_notice(JSON.stringify(notice));
+            printToConsole(`💾 Assignment updated: ${notice.allotted_to || 'Unassigned'} for ${notice.client_name}.`, 'success');
+            loadNoticeTracker(); // Refresh
+            renderDetailPanelContent(notice, activePanelTab);
+          }
+        }
+
+        async function savePanelNotes() {
+          const textarea = document.getElementById('panel-remarks-textarea');
+          if (!textarea) return;
+          
+          const notice = allTrackedNotices.find(n => (n.din || `manual_${n.pan}_${n.section}_${n.sent_date}`) === activePanelNoticeKey);
+          if (notice) {
+            notice.remarks = textarea.value.trim();
+            await window.pywebview.api.save_tracked_notice(JSON.stringify(notice));
+            printToConsole(`💾 Remarks updated in database for ${notice.client_name}.`, 'success');
+            loadNoticeTracker(); // Refresh
+            renderDetailPanelContent(notice, activePanelTab);
+          }
+        }
+
+        function triggerPanelUpload() {
+          const fileInput = document.getElementById('panel-file-input');
+          if (fileInput) {
+            fileInput.click();
+          } else {
+            // If in other tab, switch and click
+            switchPanelTab('download');
+            setTimeout(() => {
+              const fi = document.getElementById('panel-file-input');
+              if (fi) fi.click();
+            }, 100);
+          }
+        }
+
+        async function handlePanelUpload(files) {
+          if (!files || files.length === 0) return;
+          const file = files[0];
+          
+          const notice = allTrackedNotices.find(n => (n.din || `manual_${n.pan}_${n.section}_${n.sent_date}`) === activePanelNoticeKey);
+          if (notice) {
+            notice.attachment_name = file.name;
+            await window.pywebview.api.save_tracked_notice(JSON.stringify(notice));
+            printToConsole(`📎 File scan attached: ${file.name} uploaded successfully for reference.`, 'success');
+            loadNoticeTracker();
+            renderDetailPanelContent(notice, activePanelTab);
+          }
+        }
+
+        async function clearPanelAttachment() {
+          const notice = allTrackedNotices.find(n => (n.din || `manual_${n.pan}_${n.section}_${n.sent_date}`) === activePanelNoticeKey);
+          if (notice) {
+            notice.attachment_name = "";
+            await window.pywebview.api.save_tracked_notice(JSON.stringify(notice));
+            printToConsole(`🗑️ Attachment scan cleared from notice.`, 'info');
+            loadNoticeTracker();
+            renderDetailPanelContent(notice, activePanelTab);
+          }
+        }
+
+        function triggerFutureDownloadAlert() {
+          alert("Notice PDF scraper downloader task is scheduled for future implementation. The PDF will be downloaded directly from the Income Tax portal in the next release.");
+        }
     </script>
     
     <!-- About Modal Dialog -->
@@ -2665,6 +3179,47 @@
       </div>
     </div>
 
+    <!-- Review/Staging notices checklist modal -->
+    <div class="fixed inset-0 bg-black/60 backdrop-blur-sm z-[999] hidden items-center justify-center p-8 transition-opacity duration-300" id="review-notices-modal">
+      <div class="bg-[var(--parchment)] border-[2px] border-ink w-full max-w-3xl p-8 flex flex-col space-y-6 relative box-shadow-[6px_6px_0px_var(--border-color-custom)] rounded-none text-ink">
+        <div class="flex justify-between items-start border-b border-ink/20 pb-3">
+          <div class="flex flex-col">
+            <span class="mono-ledger font-bold text-rust uppercase text-[9px] tracking-widest">Notice Staging Area</span>
+            <h2 class="serif-title text-2xl font-bold" id="review-modal-title">Review Newly Found Notices</h2>
+            <p class="serif-italic text-[10px] text-muted-ink mt-1">Select the notices you want to import into your litigation tracker. Unselected notices can be dismissed so they do not clutter the staging view.</p>
+          </div>
+          <button class="text-ink text-xl font-light hover:rotate-90 transition-transform" onclick="closeReviewModal()">✕</button>
+        </div>
+        
+        <div class="max-h-[350px] overflow-y-auto border border-ink/25 rounded-sm bg-sidebar/20 custom-scroll">
+          <table class="w-full text-left text-xs border-collapse">
+            <thead>
+              <tr class="bg-ink text-parchment font-mono text-[9px] uppercase">
+                <th class="p-3 w-10 text-center"><input type="checkbox" id="review-select-all" class="rounded text-indigo focus:ring-0 cursor-pointer" onclick="toggleSelectAllReview(this.checked)"></th>
+                <th class="p-3">Notice details</th>
+                <th class="p-3">Compliance Date</th>
+                <th class="p-3">Allotment / Admin</th>
+              </tr>
+            </thead>
+            <tbody id="review-modal-table-body" class="font-mono text-[11px] divide-y divide-ink/10">
+              <!-- Populated dynamically -->
+            </tbody>
+          </table>
+        </div>
+
+        <div class="flex justify-between items-center border-t border-ink/10 pt-4">
+          <div class="text-[9px] font-mono text-muted-ink uppercase font-bold" id="review-selection-status">
+            0 notices selected
+          </div>
+          <div class="flex gap-2.5">
+            <button type="button" class="btn-rigid px-4 py-2 bg-sidebar text-ink border border-ink/20 font-mono text-[10px]" onclick="closeReviewModal()">Cancel</button>
+            <button type="button" class="btn-rigid px-4 py-2 bg-rose-600 text-white font-mono text-[10px] border-rose-700 hover:shadow-[3px_3px_0px_var(--ink)]" onclick="submitReviewAction('dismiss')">Dismiss Selected</button>
+            <button type="button" class="btn-rigid btn-indigo px-5 py-2 text-white font-mono text-[10px]" onclick="submitReviewAction('accept')">Send to Tracker</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
     <!-- Add Manual Notice Modal -->
     <div class="fixed inset-0 bg-black/60 backdrop-blur-sm z-[999] hidden items-center justify-center p-8 transition-opacity duration-300" id="add-notice-modal">
       <div class="bg-[var(--parchment)] border-[2px] border-ink w-full max-w-xl p-8 flex flex-col space-y-4 relative box-shadow-[6px_6px_0px_var(--border-color-custom)] rounded-none text-ink">
@@ -2721,9 +3276,15 @@
             </div>
           </div>
 
-          <div class="flex flex-col gap-1">
-            <label class="mono-ledger font-bold text-[9px] uppercase text-muted-ink">Remarks</label>
-            <textarea id="modal-remarks" rows="2" class="px-3 py-1.5 bg-[var(--parchment)] border-[1.5px] border-ink text-ink focus:outline-none focus:border-rust font-mono resize-none"></textarea>
+          <div class="grid grid-cols-2 gap-4">
+            <div class="flex flex-col gap-1">
+              <label class="mono-ledger font-bold text-[9px] uppercase text-muted-ink">Remarks</label>
+              <textarea id="modal-remarks" rows="2" class="px-3 py-1.5 bg-[var(--parchment)] border-[1.5px] border-ink text-ink focus:outline-none focus:border-rust font-mono resize-none"></textarea>
+            </div>
+            <div class="flex flex-col gap-1">
+              <label class="mono-ledger font-bold text-[9px] uppercase text-muted-ink">Allotted To</label>
+              <input type="text" id="modal-allotted-to" placeholder="e.g. Associate Name" class="px-3 py-1.5 bg-[var(--parchment)] border-[1.5px] border-ink text-ink focus:outline-none focus:border-rust font-mono">
+            </div>
           </div>
 
           <div class="flex gap-2 justify-end border-t border-ink/10 pt-4">

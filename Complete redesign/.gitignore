@@ -29,19 +29,3 @@ Thumbs.db
 .DS_Store
 settings.json
 
-# Test & Temp Artifacts
-**/ms-playwright/
-ms-playwright/
-screenshot_*.png
-*Backup*.py
-Income_tax_folder/
-.agents/
-skills/
-
-# Design References & Mockups
-Litigation Dashboard/
-Manual Entry of the Notice Pane/
-No Record found for the KPI Cards/
-Split view Icons/
-Updated Litigation Dashboard/
-

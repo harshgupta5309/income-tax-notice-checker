@@ -1,0 +1,460 @@
+<!DOCTYPE html>
+
+<html class="light" lang="en" style=""><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Notice Tracker - Litigation OS</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display&amp;family=Inter:wght@400;700;900&amp;family=JetBrains+Mono:wght@400;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    "colors": {
+                        "surface-container-lowest": "#ffffff",
+                        "tertiary-fixed": "#54fdc4",
+                        "secondary": "#ab341e",
+                        "outline": "#7a776f",
+                        "on-surface-variant": "#494740",
+                        "tertiary": "#000000",
+                        "surface-bright": "#fcf9f3",
+                        "error-container": "#ffdad6",
+                        "inverse-primary": "#cac6c2",
+                        "on-secondary-container": "#690c00",
+                        "on-secondary-fixed": "#3e0400",
+                        "on-error": "#ffffff",
+                        "secondary-fixed": "#ffdad3",
+                        "primary": "#000000",
+                        "on-primary": "#ffffff",
+                        "surface": "#fcf9f3",
+                        "tertiary-fixed-dim": "#27e0a9",
+                        "surface-container-high": "#ebe8e2",
+                        "on-primary-fixed": "#1c1b19",
+                        "error": "#ba1a1a",
+                        "surface-dim": "#dcdad4",
+                        "inverse-on-surface": "#f3f0ea",
+                        "inverse-surface": "#31302d",
+                        "background": "#fcf9f3",
+                        "surface-variant": "#e5e2dc",
+                        "surface-container-highest": "#e5e2dc",
+                        "on-primary-fixed-variant": "#484644",
+                        "on-tertiary-container": "#00966f",
+                        "on-primary-container": "#868380",
+                        "primary-fixed-dim": "#cac6c2",
+                        "on-surface": "#1c1c18",
+                        "secondary-container": "#fd6f53",
+                        "on-tertiary": "#ffffff",
+                        "on-secondary-fixed-variant": "#8a1c08",
+                        "primary-container": "#1c1b19",
+                        "surface-container-low": "#f6f3ed",
+                        "on-secondary": "#ffffff",
+                        "secondary-fixed-dim": "#ffb4a5",
+                        "surface-container": "#f1eee7",
+                        "on-background": "#1c1c18",
+                        "on-error-container": "#93000a",
+                        "tertiary-container": "#002116",
+                        "on-tertiary-fixed": "#002116",
+                        "outline-variant": "#cbc6bd",
+                        "surface-tint": "#605e5b",
+                        "on-tertiary-fixed-variant": "#00513b",
+                        "primary-fixed": "#e6e2de"
+                    },
+                    "borderRadius": {
+                        "DEFAULT": "0.25rem",
+                        "lg": "0.5rem",
+                        "xl": "0.75rem",
+                        "full": "9999px"
+                    },
+                    "spacing": {
+                        "margin-edge": "48px",
+                        "grid-unit": "24px",
+                        "gutter": "2rem",
+                        "stack-lg": "3rem",
+                        "section-padding": "3rem"
+                    },
+                    "fontFamily": {
+                        "headline-lg": ["DM Serif Display"],
+                        "display-hero": ["DM Serif Display"],
+                        "serif-italic": ["DM Serif Display"],
+                        "body-main": ["Inter"],
+                        "ledger-mono": ["JetBrains Mono"],
+                        "sans-bold-caps": ["Inter"],
+                        "headline-lg-mobile": ["DM Serif Display"],
+                        "ledger-mono-bold": ["JetBrains Mono"]
+                    },
+                    "fontSize": {
+                        "headline-lg": ["48px", { "lineHeight": "1.2", "fontWeight": "400" }],
+                        "display-hero": ["72px", { "lineHeight": "1.1", "letterSpacing": "-0.01em", "fontWeight": "400" }],
+                        "serif-italic": ["18px", { "lineHeight": "1.5", "fontWeight": "400" }],
+                        "body-main": ["16px", { "lineHeight": "1.6", "fontWeight": "400" }],
+                        "ledger-mono": ["11px", { "lineHeight": "1", "letterSpacing": "-0.02em", "fontWeight": "400" }],
+                        "sans-bold-caps": ["14px", { "lineHeight": "1.2", "letterSpacing": "-0.04em", "fontWeight": "900" }],
+                        "headline-lg-mobile": ["32px", { "lineHeight": "1.2", "fontWeight": "400" }],
+                        "ledger-mono-bold": ["10px", { "lineHeight": "1", "fontWeight": "700" }]
+                    },
+                    "backgroundImage": {
+                        'drafting-grid': 'radial-gradient(circle, #cbc6bd 1px, transparent 1px)'
+                    }
+                },
+            },
+        }
+    </script>
+<style>
+        body {
+            background-color: #fcf9f3;
+            background-image: radial-gradient(circle, #cbc6bd 1px, transparent 1px);
+            background-size: 24px 24px;
+            color: #1c1c18;
+        }
+        .hard-shadow { box-shadow: 4px 4px 0px 0px rgba(0,0,0,1); }
+        .hard-shadow-card { box-shadow: 6px 6px 0px 0px rgba(0,0,0,1); }
+        .crosshair {
+            position: relative;
+        }
+        .crosshair::before, .crosshair::after {
+            content: '';
+            position: absolute;
+            background-color: #1c1c18;
+        }
+        .crosshair-tl::before { top: -4px; left: -1px; width: 3px; height: 9px; }
+        .crosshair-tl::after { top: -1px; left: -4px; width: 9px; height: 3px; }
+        .vertical-text { writing-mode: vertical-rl; transform: rotate(180deg); }
+    </style>
+</head>
+<body class="font-body-main antialiased overflow-x-hidden flex h-screen w-full" style="background-image: radial-gradient(var(--outline-variant, #cbc6bd) 1px, transparent 0); background-size: 24px 24px;">
+<!-- SideNavBar -->
+<nav class="hidden md:flex flex-col h-screen py-grid-unit px-6 bg-surface border-r border-outline shadow-[4px_0px_0px_0px_rgba(0,0,0,1)] z-50 fixed left-0 top-0 w-[280px]">
+<div class="mb-12 font-headline-lg text-headline-lg text-primary tracking-tight">Litigation OS</div>
+<p class="font-ledger-mono text-ledger-mono text-outline uppercase tracking-widest mb-8">Legal Operations</p>
+<div class="flex-grow flex flex-col gap-4">
+<a class="flex items-center gap-3 p-2 text-on-surface-variant hover:bg-surface-variant transition-colors active:translate-x-1" href="#">
+<span class="material-symbols-outlined" data-icon="dashboard">dashboard</span>
+<span class="">Dashboard</span>
+</a>
+<a class="flex items-center gap-3 p-2 text-primary font-bold border-r-2 border-secondary bg-surface-variant transition-colors active:translate-x-1" href="#">
+<span class="material-symbols-outlined" data-icon="gavel">gavel</span>
+<span class="">Litigation</span>
+</a>
+<a class="flex items-center gap-3 p-2 text-on-surface-variant hover:bg-surface-variant transition-colors active:translate-x-1" href="#">
+<span class="material-symbols-outlined" data-icon="fact_check">fact_check</span>
+<span class="">Compliance</span>
+</a>
+<a class="flex items-center gap-3 p-2 text-on-surface-variant hover:bg-surface-variant transition-colors active:translate-x-1" href="#">
+<span class="material-symbols-outlined" data-icon="inventory_2">inventory_2</span>
+<span class="">Repository</span>
+</a>
+<a class="flex items-center gap-3 p-2 text-on-surface-variant hover:bg-surface-variant transition-colors active:translate-x-1" href="#">
+<span class="material-symbols-outlined" data-icon="analytics">analytics</span>
+<span class="">Analytics</span>
+</a>
+</div>
+<div class="flex flex-col gap-2 border-t border-outline pt-4">
+<a class="flex items-center gap-3 p-2 text-on-surface-variant hover:bg-surface-variant transition-colors" href="#">
+<span class="material-symbols-outlined" data-icon="settings">settings</span>
+<span class="">Settings</span>
+</a>
+<a class="flex items-center gap-3 p-2 text-on-surface-variant hover:bg-surface-variant transition-colors" href="#">
+<span class="material-symbols-outlined" data-icon="help_outline">help_outline</span>
+<span class="">Support</span>
+</a>
+</div>
+</nav>
+<!-- Main Content Area -->
+<main class="flex-1 md:ml-[280px] flex flex-col h-screen overflow-hidden"><div class="absolute inset-0 flex items-center justify-center pointer-events-none opacity-[0.03] z-0 overflow-hidden"><svg class="text-primary" fill="none" height="800" stroke="currentColor" viewbox="0 0 100 100" width="600"><path d="M20 90 L80 90 M30 90 L30 30 M70 90 L70 30 M25 30 L75 30 M50 10 L50 30 M20 20 L80 20" stroke-width="0.5"></path><circle cx="50" cy="15" r="5" stroke-width="0.5"></circle><path d="M10 95 L90 95" stroke-width="1"></path></svg></div>
+<!-- TopAppBar -->
+<header class="flex justify-between items-center h-16 px-margin-edge w-full bg-surface/80 backdrop-blur-md sticky top-0 z-40 border-b border-outline">
+<div class="flex items-center gap-6">
+<span class="font-headline-lg text-primary text-2xl hidden md:block">Notice Tracker</span>
+<nav class="hidden md:flex gap-4 font-ledger-mono text-ledger-mono uppercase tracking-widest">
+<a class="text-secondary border-b-2 border-secondary pb-1 click:opacity-80" href="#">Kanban</a>
+<a class="text-on-surface-variant hover:text-primary transition-all pb-1 click:opacity-80" href="#">List</a>
+<a class="text-on-surface-variant hover:text-primary transition-all pb-1 click:opacity-80" href="#">Timeline</a>
+</nav>
+</div>
+<div class="flex items-center gap-4">
+<span class="font-ledger-mono text-ledger-mono uppercase text-on-surface-variant hidden lg:block">System Status: Active</span>
+<div class="flex gap-2 text-primary">
+<button class="p-1 hover:bg-surface-variant transition-colors rounded"><span class="material-symbols-outlined" data-icon="notifications">notifications</span></button>
+<button class="p-1 hover:bg-surface-variant transition-colors rounded"><span class="material-symbols-outlined" data-icon="account_circle">account_circle</span></button>
+</div>
+</div>
+</header>
+<!-- Scrollable Canvas -->
+<div class="flex-1 overflow-y-auto p-4 md:p-margin-edge relative">
+<div class="max-w-7xl mx-auto flex flex-col gap-10">
+<!-- KPI Section -->
+<section class="grid grid-cols-1 md:grid-cols-4 gap-4">
+<!-- Total Notices -->
+<div class="bg-surface border-2 border-primary p-4 hard-shadow flex flex-col justify-between h-[120px]">
+<div class="flex justify-between items-start">
+<span class="font-ledger-mono-bold text-[10px] text-outline uppercase tracking-tighter">Total Notices</span>
+<span class="material-symbols-outlined text-outline text-lg">receipt_long</span>
+</div>
+<div class="font-headline-lg text-4xl text-primary mt-2">1,248</div>
+</div>
+<!-- Pending Action -->
+<div class="bg-surface border-2 border-secondary p-4 hard-shadow flex flex-col justify-between h-[120px]">
+<div class="flex justify-between items-start">
+<span class="font-ledger-mono-bold text-[10px] text-secondary uppercase tracking-tighter">Pending Action</span>
+<span class="material-symbols-outlined text-secondary text-lg">hourglass_empty</span>
+</div>
+<div class="font-headline-lg text-4xl text-secondary mt-2">142</div>
+</div>
+<!-- Accepted Today -->
+<div class="bg-surface border-2 border-[#3B82F6] p-4 hard-shadow flex flex-col justify-between h-[120px]">
+<div class="flex justify-between items-start">
+<span class="font-ledger-mono-bold text-[10px] text-[#3B82F6] uppercase tracking-tighter">Accepted Today</span>
+<span class="material-symbols-outlined text-[#3B82F6] text-lg">check_circle</span>
+</div>
+<div class="font-headline-lg text-4xl text-[#3B82F6] mt-2">28</div>
+</div>
+<!-- Flagged Issues -->
+<div class="bg-surface border-2 border-on-tertiary-container p-4 hard-shadow flex flex-col justify-between h-[120px]">
+<div class="flex justify-between items-start">
+<span class="font-ledger-mono-bold text-[10px] text-on-tertiary-container uppercase tracking-tighter">Flagged Issues</span>
+<span class="material-symbols-outlined text-on-tertiary-container text-lg">flag</span>
+</div>
+<div class="font-headline-lg text-4xl text-on-tertiary-container mt-2">15</div>
+</div>
+</section>
+<!-- Incoming Stream Section -->
+<section class="relative border border-primary p-4 bg-surface-bright crosshair crosshair-tl bg-surface-container-low">
+<div class="flex justify-between items-end mb-4 border-b border-outline pb-2">
+<h2 class="font-ledger-mono-bold text-2xl uppercase tracking-tighter">Staging Area</h2>
+<span class="font-ledger-mono text-ledger-mono uppercase text-secondary">3 Pending Action</span>
+</div>
+<div class="flex gap-4 overflow-x-auto pb-4 snap-x">
+<!-- Kanban Card 1 -->
+<div class="min-w-[280px] bg-surface border border-primary p-4 flex flex-col gap-3 hard-shadow-card snap-center shrink-0">
+<div class="flex justify-between items-start">
+<span class="bg-secondary-fixed text-on-secondary-fixed font-ledger-mono-bold px-2 py-1 border border-primary text-[10px]">SEC 143(1)</span>
+<span class="font-ledger-mono text-outline text-[10px]">OCT 24, 2023</span>
+</div>
+<div>
+<h3 class="font-sans-bold-caps text-md font-headline-lg leading-tight">TechNova Solutions Ltd.</h3>
+<p class="font-ledger-mono text-on-surface-variant mt-1 text-[10px]">PAN: ABCD1234E | AY: 2023-24</p>
+</div>
+<div class="border-t border-dashed border-outline pt-2 mt-1 flex justify-between">
+<button class="font-sans-bold-caps text-xs text-[#3B82F6] hover:underline flex items-center gap-1">
+<span class="material-symbols-outlined text-[14px]">check</span> Accept
+                                </button>
+<button class="font-sans-bold-caps text-xs text-secondary hover:underline flex items-center gap-1">
+<span class="material-symbols-outlined text-[14px]">flag</span> Flag
+                                </button>
+</div>
+</div>
+<!-- Kanban Card 2 -->
+<div class="min-w-[280px] bg-surface border border-primary p-4 flex flex-col gap-3 hard-shadow-card snap-center shrink-0">
+<div class="flex justify-between items-start">
+<span class="bg-error-container text-on-error-container font-ledger-mono-bold px-2 py-1 border border-primary text-[10px]">SEC 148</span>
+<span class="font-ledger-mono text-outline text-[10px]">OCT 22, 2023</span>
+</div>
+<div>
+<h3 class="font-headline-lg text-md text-primary leading-tight font-bold">Global Dynamics Inc.</h3>
+<p class="font-body-main text-[10px] text-on-surface-variant mt-1 uppercase tracking-tight">PAN: WXYZ9876Q | AY: 2020-21</p>
+</div>
+<div class="border-t border-dashed border-outline pt-2 mt-1 flex justify-between"><button class="font-body-main font-bold text-[10px] uppercase tracking-widest text-[#3B82F6] hover:underline flex items-center gap-1"><span class="material-symbols-outlined text-[14px]">check</span> Accept</button><button class="font-body-main font-bold text-[10px] uppercase tracking-widest text-secondary hover:underline flex items-center gap-1"><span class="material-symbols-outlined text-[14px]">flag</span> Flag</button></div>
+</div>
+<!-- Kanban Card 3 -->
+<div class="min-w-[280px] bg-surface border border-primary p-4 flex flex-col gap-3 hard-shadow-card snap-center shrink-0">
+<div class="flex justify-between items-start">
+<span class="bg-surface-variant text-on-surface-variant font-ledger-mono-bold px-2 py-1 border border-primary text-[10px]">SEC 156</span>
+<span class="font-ledger-mono text-outline text-[10px]">OCT 20, 2023</span>
+</div>
+<div>
+<h3 class="font-headline-lg text-md text-primary leading-tight font-bold">Apex Manufacturing</h3>
+<p class="font-body-main text-[10px] text-on-surface-variant mt-1 uppercase tracking-tight">PAN: ABIFM5494K | AY: 2022-23</p>
+</div>
+<div class="border-t border-dashed border-outline pt-2 mt-1 flex justify-between"><button class="font-body-main font-bold text-[10px] uppercase tracking-widest text-[#3B82F6] hover:underline flex items-center gap-1"><span class="material-symbols-outlined text-[14px]">check</span> Accept</button><button class="font-body-main font-bold text-[10px] uppercase tracking-widest text-secondary hover:underline flex items-center gap-1"><span class="material-symbols-outlined text-[14px]">flag</span> Flag</button></div>
+</div>
+</div>
+</section>
+<!-- Notice Registry Section -->
+<section>
+<div class="flex flex-col md:flex-row justify-between items-baseline mb-4 border-b-2 border-primary pb-2 gap-4">
+<h2 class="font-ledger-mono-bold text-2xl uppercase tracking-tighter">Registry Ledger</h2>
+</div>
+<div class="flex flex-col gap-2">
+<!-- Ledger Header -->
+<div class="hidden md:grid grid-cols-12 gap-4 px-4 py-2 border-b border-outline font-ledger-mono-bold text-[10px] text-outline uppercase tracking-tighter bg-surface-variant">
+<div class="col-span-3">Reference No.</div>
+<div class="col-span-3">Entity</div>
+<div class="col-span-3">Details (PAN / AY)</div>
+<div class="col-span-2 text-center">Status</div>
+<div class="col-span-1 text-right">Action</div>
+</div>
+<!-- Registry Item 1 -->
+<div class="bg-surface border-b border-outline md:border-b-0 md:border-b-dashed grid grid-cols-1 md:grid-cols-12 gap-4 p-4 md:py-3 hover:bg-surface-variant transition-all cursor-pointer items-center text-sm" onclick="document.getElementById('dossier-modal').classList.remove('hidden')">
+<div class="col-span-1 md:col-span-3 flex flex-col justify-center">
+<span class="font-ledger-mono-bold text-[10px] text-outline uppercase tracking-tighter mb-1 md:hidden">Reference No.</span>
+<span class="font-ledger-mono text-xs font-bold truncate text-primary" title="ITBAASTS158B028262710902737911">ITBAASTS158B0282627...</span>
+</div>
+<div class="col-span-1 md:col-span-3 flex flex-col">
+<h4 class="font-headline-lg text-lg mb-0.5 text-primary leading-none">Apex Manufacturing</h4>
+<p class="font-body-main text-xs text-on-surface-variant font-medium">Sec 143(2) Notice</p>
+</div>
+<div class="col-span-1 md:col-span-3 flex flex-col md:flex-row gap-x-3 gap-y-1">
+<p class="font-ledger-mono text-[10px] text-on-surface-variant"><span class="text-outline">PAN:</span> ABIFM5494K</p>
+<p class="font-ledger-mono text-[10px] text-on-surface-variant"><span class="text-outline">AY:</span> 2023-24</p>
+</div>
+<div class="col-span-1 md:col-span-2 flex flex-row md:flex-col justify-between md:items-center gap-2">
+<span class="font-ledger-mono-bold text-[10px] text-outline uppercase mb-0.5 md:hidden">Status &amp; Due Date</span>
+<span class="font-ledger-mono-bold text-[9px] text-[#3B82F6] uppercase border border-[#3B82F6] px-2 py-0.5 bg-surface">Verified</span>
+<span class="font-ledger-mono text-[10px] font-bold text-primary">Due: NOV 15</span>
+</div>
+<div class="col-span-1 flex justify-end">
+<button aria-label="Open Dossier" class="p-1 border border-primary hover:bg-primary hover:text-on-primary transition-colors bg-surface" onclick="event.stopPropagation(); document.getElementById('dossier-modal').classList.remove('hidden')">
+<span class="material-symbols-outlined text-[16px]">open_in_new</span>
+</button>
+</div>
+</div>
+<!-- Registry Item 2 -->
+<div class="bg-surface border-b border-outline md:border-b-0 md:border-b-dashed grid grid-cols-1 md:grid-cols-12 gap-4 p-4 md:py-3 hover:bg-surface-variant transition-all cursor-pointer items-center text-sm" onclick="document.getElementById('dossier-modal').classList.remove('hidden')">
+<div class="col-span-1 md:col-span-3 flex flex-col justify-center">
+<span class="font-ledger-mono-bold text-[10px] text-outline uppercase tracking-tighter mb-1 md:hidden">Reference No.</span>
+<span class="font-ledger-mono text-xs font-bold truncate text-primary" title="CPC/2526/T12/661017439">CPC/2526/T12/661017...</span>
+</div>
+<div class="col-span-1 md:col-span-3 flex flex-col">
+<h4 class="font-headline-lg text-lg mb-0.5 text-primary leading-none">Zenith Holdings</h4>
+<p class="font-body-main text-xs text-on-surface-variant font-medium">Sec 156 Demand</p>
+</div>
+<div class="col-span-1 md:col-span-3 flex flex-col md:flex-row gap-x-3 gap-y-1">
+<p class="font-ledger-mono text-[10px] text-on-surface-variant"><span class="text-outline">PAN:</span> AADCH5557M</p>
+<p class="font-ledger-mono text-[10px] text-on-surface-variant"><span class="text-outline">AY:</span> 2021-22</p>
+</div>
+<div class="col-span-1 md:col-span-2 flex flex-row md:flex-col justify-between md:items-center gap-2">
+<span class="font-ledger-mono-bold text-[10px] text-outline uppercase mb-0.5 md:hidden">Status &amp; Due Date</span>
+<span class="font-ledger-mono-bold text-[9px] text-secondary uppercase border border-secondary px-2 py-0.5 bg-surface">Due Soon</span>
+<span class="font-ledger-mono text-[10px] font-bold text-secondary">Due: OCT 30</span>
+</div>
+<div class="col-span-1 flex justify-end">
+<button aria-label="Open Dossier" class="p-1 border border-primary hover:bg-primary hover:text-on-primary transition-colors bg-surface" onclick="event.stopPropagation(); document.getElementById('dossier-modal').classList.remove('hidden')">
+<span class="material-symbols-outlined text-[16px]">open_in_new</span>
+</button>
+</div>
+</div>
+<!-- Registry Item 3 -->
+<div class="bg-surface border-b border-outline md:border-b-0 md:border-b-dashed grid grid-cols-1 md:grid-cols-12 gap-4 p-4 md:py-3 hover:bg-surface-variant transition-all cursor-pointer items-center text-sm" onclick="document.getElementById('dossier-modal').classList.remove('hidden')">
+<div class="col-span-1 md:col-span-3 flex flex-col justify-center">
+<span class="font-ledger-mono-bold text-[10px] text-outline uppercase tracking-tighter mb-1 md:hidden">Reference No.</span>
+<span class="font-ledger-mono text-xs font-bold truncate text-primary" title="ITBA/PNL/2026-27">ITBA/PNL/2026-27</span>
+</div>
+<div class="col-span-1 md:col-span-3 flex flex-col">
+<h4 class="font-headline-lg text-lg mb-0.5 text-primary leading-none">TechNova Solutions</h4>
+<p class="font-body-main text-xs text-on-surface-variant font-medium">Sec 271AAC Penalty</p>
+</div>
+<div class="col-span-1 md:col-span-3 flex flex-col md:flex-row gap-x-3 gap-y-1">
+<p class="font-ledger-mono text-[10px] text-on-surface-variant"><span class="text-outline">PAN:</span> ABCD1234E</p>
+<p class="font-ledger-mono text-[10px] text-on-surface-variant"><span class="text-outline">AY:</span> 2023-24</p>
+</div>
+<div class="col-span-1 md:col-span-2 flex flex-row md:flex-col justify-between md:items-center gap-2">
+<span class="font-ledger-mono-bold text-[10px] text-outline uppercase mb-0.5 md:hidden">Status &amp; Due Date</span>
+<span class="font-ledger-mono-bold text-[9px] text-on-surface-variant uppercase border border-outline px-2 py-0.5 bg-surface">Pending</span>
+<span class="font-ledger-mono text-[10px] font-bold text-primary">Due: DEC 10</span>
+</div>
+<div class="col-span-1 flex justify-end">
+<button aria-label="Open Dossier" class="p-1 border border-primary hover:bg-primary hover:text-on-primary transition-colors bg-surface" onclick="event.stopPropagation(); document.getElementById('dossier-modal').classList.remove('hidden')">
+<span class="material-symbols-outlined text-[16px]">open_in_new</span>
+</button>
+</div>
+</div>
+</div>
+</section>
+</div>
+</div>
+</main>
+<!-- Dossier Modal (Hidden by default, structure for functionality) -->
+<div class="hidden fixed inset-0 z-[100] bg-primary/20 backdrop-blur-sm flex items-center justify-center p-4" id="dossier-modal">
+<div class="bg-surface border-2 border-primary hard-shadow-card w-full max-w-2xl max-h-[90vh] flex flex-col overflow-hidden">
+<!-- Modal Header -->
+<div class="p-4 border-b border-primary flex justify-between items-center bg-surface-bright">
+<div class="flex items-center gap-3">
+<div class="w-10 h-10 bg-secondary text-on-secondary flex items-center justify-center font-bold rounded-lg">AM</div>
+<div>
+<h2 class="font-headline-lg text-2xl leading-none">Apex Manufacturing</h2>
+<p class="font-ledger-mono text-[10px] text-outline uppercase tracking-widest mt-1">Dossier ID: #LIT-2023-001</p>
+</div>
+</div>
+<button class="p-1 hover:bg-surface-variant transition-colors" onclick="document.getElementById('dossier-modal').classList.add('hidden')">
+<span class="material-symbols-outlined">close</span>
+</button>
+</div>
+<!-- Modal Body -->
+<div class="p-6 overflow-y-auto flex-1 bg-[#fcf9f3] font-body-main">
+<div class="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-6">
+<!-- Primary Metadata -->
+<div class="flex flex-col gap-1">
+<span class="font-ledger-mono-bold text-[10px] text-outline uppercase tracking-tighter">Portal ID / PAN</span>
+<span class="font-ledger-mono text-sm font-bold text-primary">ABIFM5494K</span>
+</div>
+<div class="flex flex-col gap-1">
+<span class="font-ledger-mono-bold text-[10px] text-outline uppercase tracking-tighter">Proceedings Type</span>
+<span class="font-body-main text-sm font-medium text-secondary">Appeal Proceedings</span>
+</div>
+<div class="flex flex-col gap-1">
+<span class="font-ledger-mono-bold text-[10px] text-outline uppercase tracking-tighter">Reference Number</span>
+<span class="font-ledger-mono text-xs font-bold truncate" title="ITBAASTS158B028262710902737911">ITBAASTS158B028262710902737911</span>
+</div>
+<div class="flex flex-col gap-1">
+<span class="font-ledger-mono-bold text-[10px] text-outline uppercase tracking-tighter">Acknowledgment Number</span>
+<span class="font-ledger-mono text-xs font-bold">—</span>
+</div>
+<div class="flex flex-col gap-1">
+<span class="font-ledger-mono-bold text-[10px] text-outline uppercase tracking-tighter">Section</span>
+<span class="font-body-main text-sm font-medium">158BC r.w.s 158BD</span>
+</div>
+<div class="flex flex-col gap-1">
+<span class="font-ledger-mono-bold text-[10px] text-outline uppercase tracking-tighter">Allotted Personnel</span>
+<div class="flex items-center gap-2">
+<div class="w-5 h-5 bg-primary text-on-primary text-[9px] flex items-center justify-center rounded-full">HG</div>
+<span class="font-body-main text-sm">Harsh Gupta</span>
+</div>
+</div>
+<!-- Dates Section -->
+<div class="col-span-full grid grid-cols-2 gap-4 p-4 bg-surface-container-low border border-outline-variant rounded">
+<div class="flex flex-col gap-1">
+<span class="font-ledger-mono-bold text-[10px] text-outline uppercase">Notice Date</span>
+<span class="font-ledger-mono text-sm font-bold">JUN 21, 2026</span>
+</div>
+<div class="flex flex-col gap-1">
+<span class="font-ledger-mono-bold text-[10px] text-secondary uppercase">Filing Due Date</span>
+<span class="font-ledger-mono text-sm font-bold text-secondary">AUG 20, 2026</span>
+</div>
+</div>
+<!-- Remarks -->
+<div class="col-span-full flex flex-col gap-2">
+<span class="font-ledger-mono-bold text-[10px] text-outline uppercase">Remarks &amp; Notes History</span>
+<div class="p-4 border border-dashed border-outline bg-surface-container-lowest text-sm italic text-on-surface-variant">
+                        "Pending block assessment reply drafting. Awaiting confirmation on hearing date from the client's internal legal team."
+                    </div>
+</div>
+<!-- Status Toggle -->
+<div class="col-span-full flex items-center justify-between p-4 border border-primary bg-surface-bright">
+<div>
+<p class="font-sans-bold-caps text-xs uppercase">Filing Status</p>
+<p class="text-[11px] text-on-surface-variant">Mark this case as completed and filed on the portal.</p>
+</div>
+<button class="flex items-center gap-2 px-4 py-2 border border-primary font-sans-bold-caps text-xs hover:bg-surface-variant transition-colors">
+<span class="material-symbols-outlined text-base">check_circle</span>
+                        Mark as Filed
+                    </button>
+</div>
+</div>
+</div>
+<!-- Modal Footer -->
+<div class="p-4 border-t border-primary flex justify-between items-center bg-surface-container-high">
+<button class="flex items-center gap-2 px-4 py-2 border border-primary font-sans-bold-caps text-xs hover:bg-surface-variant transition-colors">
+<span class="material-symbols-outlined text-base">edit</span>
+                Edit Case
+            </button>
+<div class="flex gap-3">
+<button class="px-6 py-2 border border-primary font-sans-bold-caps text-xs hover:bg-surface-variant transition-colors" onclick="document.getElementById('dossier-modal').classList.add('hidden')">Cancel</button>
+<button class="px-6 py-2 bg-primary text-on-primary font-sans-bold-caps text-xs hover:opacity-90 transition-opacity">Save Changes</button>
+</div>
+</div>
+</div>
+</div>
+</body></html>

@@ -1,0 +1,412 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="en" style=""><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Notice Tracker - Litigation OS</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display&amp;family=Inter:wght@400;700;900&amp;family=JetBrains+Mono:wght@400;700&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    "colors": {
+                        "surface-container-lowest": "#050505",
+                        "surface": "#0A0A0A",
+                        "surface-bright": "#141414",
+                        "surface-container-low": "#0F0F0F",
+                        "surface-variant": "#1A1A1A",
+                        "surface-container-high": "#242424",
+                        "background": "#0A0A0A",
+                        
+                        "primary": "#E2D9C8",
+                        "on-primary": "#0A0A0A",
+                        "primary-fixed": "#D3CABB",
+                        
+                        "secondary": "#D35400",
+                        "on-secondary": "#FFFFFF",
+                        "secondary-fixed": "#A04000",
+                        "on-secondary-fixed": "#F5CBA7",
+                        "secondary-container": "#873600",
+                        "on-secondary-container": "#EDBB99",
+                        
+                        "tertiary": "#6366F1",
+                        "on-tertiary": "#FFFFFF",
+                        
+                        "outline": "#4A4A4A",
+                        "outline-variant": "#2F2F2F",
+                        
+                        "on-surface": "#E2D9C8",
+                        "on-surface-variant": "#8C877D",
+                        "on-background": "#E2D9C8",
+                        
+                        "error": "#CF6679",
+                        "error-container": "#4A0008",
+                        "on-error-container": "#FFD2D6"
+                    },
+                    "borderRadius": {
+                        "DEFAULT": "0.25rem",
+                        "lg": "0.5rem",
+                        "xl": "0.75rem",
+                        "full": "9999px"
+                    },
+                    "spacing": {
+                        "margin-edge": "48px",
+                        "grid-unit": "24px",
+                        "gutter": "2rem",
+                        "stack-lg": "3rem",
+                        "section-padding": "3rem"
+                    },
+                    "fontFamily": {
+                        "headline-lg": ["DM Serif Display"],
+                        "display-hero": ["DM Serif Display"],
+                        "serif-italic": ["DM Serif Display"],
+                        "body-main": ["Inter"],
+                        "ledger-mono": ["JetBrains Mono"],
+                        "sans-bold-caps": ["Inter"],
+                        "headline-lg-mobile": ["DM Serif Display"],
+                        "ledger-mono-bold": ["JetBrains Mono"]
+                    },
+                    "fontSize": {
+                        "headline-lg": ["48px", { "lineHeight": "1.2", "fontWeight": "400" }],
+                        "display-hero": ["72px", { "lineHeight": "1.1", "letterSpacing": "-0.01em", "fontWeight": "400" }],
+                        "serif-italic": ["18px", { "lineHeight": "1.5", "fontWeight": "400" }],
+                        "body-main": ["16px", { "lineHeight": "1.6", "fontWeight": "400" }],
+                        "ledger-mono": ["11px", { "lineHeight": "1", "letterSpacing": "-0.02em", "fontWeight": "400" }],
+                        "sans-bold-caps": ["14px", { "lineHeight": "1.2", "letterSpacing": "-0.04em", "fontWeight": "900" }],
+                        "headline-lg-mobile": ["32px", { "lineHeight": "1.2", "fontWeight": "400" }],
+                        "ledger-mono-bold": ["10px", { "lineHeight": "1", "fontWeight": "700" }]
+                    }
+                },
+            },
+        }
+    </script>
+<style>
+        body {
+            background-color: #0A0A0A;
+            background-image: radial-gradient(circle, rgba(226, 217, 200, 0.05) 1px, transparent 1px);
+            background-size: 24px 24px;
+            color: #E2D9C8;
+        }
+        .hard-shadow { box-shadow: 4px 4px 0px 0px rgba(99, 102, 241, 0.4); }
+        .hard-shadow-card { box-shadow: 6px 6px 0px 0px rgba(99, 102, 241, 0.6); }
+        .crosshair {
+            position: relative;
+        }
+        .crosshair::before, .crosshair::after {
+            content: '';
+            position: absolute;
+            background-color: #6366F1;
+        }
+        .crosshair-tl::before { top: -4px; left: -1px; width: 3px; height: 9px; }
+        .crosshair-tl::after { top: -1px; left: -4px; width: 9px; height: 3px; }
+        .vertical-text { writing-mode: vertical-rl; transform: rotate(180deg); }
+    </style>
+</head>
+<body class="font-body-main antialiased overflow-x-hidden flex h-screen w-full bg-background text-primary" style="background-image: radial-gradient(rgba(226, 217, 200, 0.05) 1px, transparent 0); background-size: 24px 24px;">
+<!-- SideNavBar -->
+<nav class="hidden md:flex flex-col h-screen py-grid-unit px-6 bg-surface border-r border-outline shadow-[4px_0px_0px_0px_rgba(99,102,241,0.2)] z-50 fixed left-0 top-0 w-[280px]">
+<div class="mb-12 font-headline-lg text-headline-lg text-primary tracking-tight">Litigation OS</div>
+<p class="font-ledger-mono text-ledger-mono text-outline uppercase tracking-widest mb-8">Legal Operations</p>
+<div class="flex-grow flex flex-col gap-4">
+<a class="flex items-center gap-3 p-2 text-on-surface-variant hover:bg-surface-variant hover:text-primary transition-colors active:translate-x-1" href="#">
+<span class="material-symbols-outlined" data-icon="dashboard">dashboard</span>
+<span class="">Dashboard</span>
+</a>
+<a class="flex items-center gap-3 p-2 text-tertiary font-bold border-r-2 border-secondary bg-surface-variant transition-colors active:translate-x-1" href="#">
+<span class="material-symbols-outlined" data-icon="gavel">gavel</span>
+<span class="">Litigation</span>
+</a>
+<a class="flex items-center gap-3 p-2 text-on-surface-variant hover:bg-surface-variant hover:text-primary transition-colors active:translate-x-1" href="#">
+<span class="material-symbols-outlined" data-icon="fact_check">fact_check</span>
+<span class="">Compliance</span>
+</a>
+<a class="flex items-center gap-3 p-2 text-on-surface-variant hover:bg-surface-variant hover:text-primary transition-colors active:translate-x-1" href="#">
+<span class="material-symbols-outlined" data-icon="inventory_2">inventory_2</span>
+<span class="">Repository</span>
+</a>
+<a class="flex items-center gap-3 p-2 text-on-surface-variant hover:bg-surface-variant hover:text-primary transition-colors active:translate-x-1" href="#">
+<span class="material-symbols-outlined" data-icon="analytics">analytics</span>
+<span class="">Analytics</span>
+</a>
+</div>
+<div class="flex flex-col gap-2 border-t border-outline pt-4">
+<a class="flex items-center gap-3 p-2 text-on-surface-variant hover:bg-surface-variant hover:text-primary transition-colors" href="#">
+<span class="material-symbols-outlined" data-icon="settings">settings</span>
+<span class="">Settings</span>
+</a>
+<a class="flex items-center gap-3 p-2 text-on-surface-variant hover:bg-surface-variant hover:text-primary transition-colors" href="#">
+<span class="material-symbols-outlined" data-icon="help_outline">help_outline</span>
+<span class="">Support</span>
+</a>
+</div>
+</nav>
+<!-- Main Content Area -->
+<main class="flex-1 md:ml-[280px] flex flex-col h-screen overflow-hidden">
+<div class="absolute inset-0 flex items-center justify-center pointer-events-none opacity-[0.03] z-0 overflow-hidden">
+<svg class="text-tertiary" fill="none" height="800" stroke="currentColor" viewbox="0 0 100 100" width="600">
+<path d="M20 90 L80 90 M30 90 L30 30 M70 90 L70 30 M25 30 L75 30 M50 10 L50 30 M20 20 L80 20" stroke-width="0.5"></path>
+<circle cx="50" cy="15" r="5" stroke-width="0.5"></circle>
+<path d="M10 95 L90 95" stroke-width="1"></path>
+</svg>
+</div>
+<!-- TopAppBar -->
+<header class="flex justify-between items-center h-16 px-margin-edge w-full bg-surface/80 backdrop-blur-md sticky top-0 z-40 border-b border-outline">
+<div class="flex items-center gap-6">
+<span class="font-headline-lg text-primary text-2xl hidden md:block">Notice Tracker</span>
+<nav class="hidden md:flex gap-4 font-ledger-mono text-ledger-mono uppercase tracking-widest">
+<a class="text-secondary border-b-2 border-secondary pb-1 click:opacity-80" href="#">Kanban</a>
+<a class="text-on-surface-variant hover:text-primary transition-all pb-1 click:opacity-80" href="#">List</a>
+<a class="text-on-surface-variant hover:text-primary transition-all pb-1 click:opacity-80" href="#">Timeline</a>
+</nav>
+</div>
+<div class="flex items-center gap-4">
+<span class="font-ledger-mono text-ledger-mono uppercase text-on-surface-variant hidden lg:block">System Status: Active</span>
+<div class="flex gap-2 text-primary">
+<button class="p-1 hover:bg-surface-variant hover:text-tertiary transition-colors rounded"><span class="material-symbols-outlined" data-icon="notifications">notifications</span></button>
+<button class="p-1 hover:bg-surface-variant hover:text-tertiary transition-colors rounded"><span class="material-symbols-outlined" data-icon="account_circle">account_circle</span></button>
+</div>
+</div>
+</header>
+<!-- Scrollable Canvas -->
+<div class="flex-1 overflow-y-auto p-4 md:p-margin-edge relative">
+<div class="max-w-7xl mx-auto flex flex-col gap-12">
+<!-- Incoming Stream Section -->
+<section class="relative border border-tertiary p-6 bg-surface-container-low crosshair crosshair-tl">
+<div class="flex justify-between items-end mb-6 border-b border-outline pb-2">
+<h2 class="font-ledger-mono-bold text-3xl uppercase tracking-tighter text-primary">Staging Area</h2>
+<span class="font-ledger-mono text-ledger-mono uppercase text-secondary">3 Pending Action</span>
+</div>
+<div class="flex gap-6 overflow-x-auto pb-4 snap-x">
+<!-- Kanban Card 1 -->
+<div class="min-w-[320px] bg-surface border border-tertiary p-5 flex flex-col gap-4 hard-shadow-card snap-center shrink-0 hover:border-secondary transition-colors">
+<div class="flex justify-between items-start">
+<span class="bg-secondary-fixed text-on-secondary-fixed font-ledger-mono-bold px-2 py-1 border border-secondary">SEC 143(1)</span>
+<span class="font-ledger-mono text-on-surface-variant">OCT 24, 2023</span>
+</div>
+<div>
+<h3 class="font-sans-bold-caps text-lg font-headline-lg text-primary">TechNova Solutions Ltd.</h3>
+<p class="font-ledger-mono text-on-surface-variant mt-1">PAN: ABCD1234E | AY: 2023-24</p>
+</div>
+<div class="border-t border-dashed border-outline pt-3 mt-2 flex justify-between">
+<button class="font-sans-bold-caps text-xs text-tertiary hover:text-primary hover:underline flex items-center gap-1 transition-colors">
+<span class="material-symbols-outlined text-[16px]">check</span> Accept
+                            </button>
+<button class="font-sans-bold-caps text-xs text-secondary hover:text-primary hover:underline flex items-center gap-1 transition-colors">
+<span class="material-symbols-outlined text-[16px]">flag</span> Flag
+                            </button>
+</div>
+</div>
+<!-- Kanban Card 2 -->
+<div class="min-w-[320px] bg-surface border border-tertiary p-5 flex flex-col gap-4 hard-shadow-card snap-center shrink-0 hover:border-secondary transition-colors">
+<div class="flex justify-between items-start">
+<span class="bg-error-container text-on-error-container font-ledger-mono-bold px-2 py-1 border border-error">SEC 148</span>
+<span class="font-ledger-mono text-on-surface-variant">OCT 22, 2023</span>
+</div>
+<div>
+<h3 class="font-headline-lg text-base text-primary">Global Dynamics Inc.</h3>
+<p class="font-body-main text-xs text-on-surface-variant mt-1 uppercase tracking-tight">PAN: WXYZ9876Q | AY: 2020-21</p>
+</div>
+<div class="border-t border-dashed border-outline pt-3 mt-2 flex justify-between">
+<button class="font-body-main font-bold text-[10px] uppercase tracking-widest text-tertiary hover:text-primary hover:underline flex items-center gap-1 transition-colors">
+<span class="material-symbols-outlined text-[14px]">check</span> Accept
+                            </button>
+<button class="font-body-main font-bold text-[10px] uppercase tracking-widest text-secondary hover:text-primary hover:underline flex items-center gap-1 transition-colors">
+<span class="material-symbols-outlined text-[14px]">flag</span> Flag
+                            </button>
+</div>
+</div>
+</div>
+</section>
+<!-- Notice Registry Section -->
+<section>
+<div class="flex flex-col md:flex-row justify-between items-baseline mb-6 border-b-2 border-tertiary pb-4 gap-4">
+<h2 class="font-ledger-mono-bold text-3xl uppercase tracking-tighter text-primary">Registry</h2>
+</div>
+<div class="flex flex-col gap-4">
+<!-- Registry Item 1 -->
+<div class="bg-surface border-2 border-tertiary flex flex-col md:flex-row items-stretch p-4 hover:bg-surface-variant transition-all hard-shadow mb-4 cursor-pointer hover:border-secondary" onclick="document.getElementById('dossier-modal').classList.remove('hidden')">
+<div class="w-full md:w-40 flex-shrink-0 mb-3 md:mb-0 md:border-r border-outline pr-4 flex flex-col justify-center">
+<span class="font-ledger-mono-bold text-[10px] text-outline uppercase tracking-tighter mb-1">Reference No.</span>
+<span class="font-ledger-mono text-xs font-bold truncate text-on-surface-variant" title="ITBAASTS158B028262710902737911">ITBAASTS158B02...</span>
+</div>
+<div class="flex-grow pl-0 md:pl-6 w-full flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+<div class="flex-1">
+<h4 class="font-headline-lg text-xl mb-1 text-primary">Apex Manufacturing</h4>
+<p class="font-body-main text-sm text-on-surface-variant font-medium mb-1">Section 143(2) Notice - Scrutiny</p>
+<div class="flex flex-wrap gap-x-4 gap-y-1">
+<p class="font-ledger-mono text-[10px] text-on-surface-variant"><span class="text-outline">AY:</span> 2023-24</p>
+<p class="font-ledger-mono text-[10px] text-on-surface-variant"><span class="text-outline">PAN:</span> ABIFM5494K</p>
+</div>
+</div>
+<div class="flex items-center gap-6">
+<div class="flex flex-col items-center min-w-[80px]">
+<span class="font-ledger-mono-bold text-[10px] text-tertiary uppercase border border-tertiary px-2 py-0.5 mb-1 bg-surface-container-lowest">Verified</span>
+</div>
+<div class="flex flex-col items-end min-w-[80px]">
+<span class="font-ledger-mono-bold text-[9px] text-outline uppercase mb-0.5">Due Date</span>
+<span class="font-ledger-mono text-xs font-bold text-primary">NOV 15</span>
+</div>
+<button aria-label="Open Dossier" class="p-1.5 border border-tertiary text-tertiary hover:bg-tertiary hover:text-on-tertiary transition-colors bg-surface" onclick="document.getElementById('dossier-modal').classList.remove('hidden')">
+<span class="material-symbols-outlined text-[18px]">open_in_new</span>
+</button>
+</div>
+</div>
+</div>
+<!-- Registry Item 2 -->
+<div class="bg-surface border-2 border-tertiary flex flex-col md:flex-row items-stretch p-4 hover:bg-surface-variant transition-all hard-shadow mb-4 cursor-pointer hover:border-secondary" onclick="document.getElementById('dossier-modal').classList.remove('hidden')">
+<div class="w-full md:w-40 flex-shrink-0 mb-3 md:mb-0 md:border-r border-outline pr-4 flex flex-col justify-center">
+<span class="font-ledger-mono-bold text-[10px] text-outline uppercase tracking-tighter mb-1">Reference No.</span>
+<span class="font-ledger-mono text-xs font-bold truncate text-on-surface-variant" title="CPC/2526/T12/661017439">CPC/2526/T12/6...</span>
+</div>
+<div class="flex-grow pl-0 md:pl-6 w-full flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+<div class="flex-1">
+<h4 class="font-headline-lg text-xl mb-1 text-primary">Zenith Holdings</h4>
+<p class="font-body-main text-sm text-on-surface-variant font-medium mb-1">Section 156 Demand Notice</p>
+<div class="flex flex-wrap gap-x-4 gap-y-1">
+<p class="font-ledger-mono text-[10px] text-on-surface-variant"><span class="text-outline">AY:</span> 2021-22</p>
+<p class="font-ledger-mono text-[10px] text-on-surface-variant"><span class="text-outline">PAN:</span> AADCH5557M</p>
+</div>
+</div>
+<div class="flex items-center gap-6">
+<div class="flex flex-col items-center min-w-[80px]">
+<span class="font-ledger-mono-bold text-[10px] text-secondary uppercase border border-secondary px-2 py-0.5 mb-1 bg-surface-container-lowest">Due Soon</span>
+</div>
+<div class="flex flex-col items-end min-w-[80px]">
+<span class="font-ledger-mono-bold text-[9px] text-outline uppercase mb-0.5">Due Date</span>
+<span class="font-ledger-mono text-xs font-bold text-secondary">OCT 30</span>
+</div>
+<button aria-label="Open Dossier" class="p-1.5 border border-tertiary text-tertiary hover:bg-tertiary hover:text-on-tertiary transition-colors bg-surface" onclick="document.getElementById('dossier-modal').classList.remove('hidden')">
+<span class="material-symbols-outlined text-[18px]">open_in_new</span>
+</button>
+</div>
+</div>
+</div>
+<!-- Registry Item 3 -->
+<div class="bg-surface border-2 border-tertiary flex flex-col md:flex-row items-stretch p-4 hover:bg-surface-variant transition-all hard-shadow mb-4 cursor-pointer hover:border-secondary" onclick="document.getElementById('dossier-modal').classList.remove('hidden')">
+<div class="w-full md:w-40 flex-shrink-0 mb-3 md:mb-0 md:border-r border-outline pr-4 flex flex-col justify-center">
+<span class="font-ledger-mono-bold text-[10px] text-outline uppercase tracking-tighter mb-1">Reference No.</span>
+<span class="font-ledger-mono text-xs font-bold truncate text-on-surface-variant" title="ITBA/PNL/2026-27">ITBA/PNL/2026-27</span>
+</div>
+<div class="flex-grow pl-0 md:pl-6 w-full flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+<div class="flex-1">
+<h4 class="font-headline-lg text-xl mb-1 text-primary">TechNova Solutions Ltd.</h4>
+<p class="font-body-main text-sm text-on-surface-variant font-medium mb-1">Section 271AAC Penalty</p>
+<div class="flex flex-wrap gap-x-4 gap-y-1">
+<p class="font-ledger-mono text-[10px] text-on-surface-variant"><span class="text-outline">AY:</span> 2023-24</p>
+<p class="font-ledger-mono text-[10px] text-on-surface-variant"><span class="text-outline">PAN:</span> ABCD1234E</p>
+</div>
+</div>
+<div class="flex items-center gap-6">
+<div class="flex flex-col items-center min-w-[80px]">
+<span class="font-ledger-mono-bold text-[10px] text-outline uppercase border border-outline px-2 py-0.5 mb-1 bg-surface-container-lowest text-on-surface-variant">Pending</span>
+</div>
+<div class="flex flex-col items-end min-w-[80px]">
+<span class="font-ledger-mono-bold text-[9px] text-outline uppercase mb-0.5">Due Date</span>
+<span class="font-ledger-mono text-xs font-bold text-primary">DEC 10</span>
+</div>
+<button aria-label="Open Dossier" class="p-1.5 border border-tertiary text-tertiary hover:bg-tertiary hover:text-on-tertiary transition-colors bg-surface" onclick="document.getElementById('dossier-modal').classList.remove('hidden')">
+<span class="material-symbols-outlined text-[18px]">open_in_new</span>
+</button>
+</div>
+</div>
+</div>
+</div>
+</section>
+</div>
+</div>
+</main>
+<!-- Dossier Modal -->
+<div class="hidden fixed inset-0 z-[100] bg-black/60 backdrop-blur-sm flex items-center justify-center p-4" id="dossier-modal">
+<div class="bg-surface border-2 border-tertiary hard-shadow-card w-full max-w-2xl max-h-[90vh] flex flex-col overflow-hidden">
+<!-- Modal Header -->
+<div class="p-4 border-b border-tertiary flex justify-between items-center bg-surface-bright">
+<div class="flex items-center gap-3">
+<div class="w-10 h-10 bg-secondary text-on-secondary flex items-center justify-center font-bold rounded-lg shadow-[0_0_10px_rgba(211,84,0,0.5)]">AM</div>
+<div>
+<h2 class="font-headline-lg text-2xl leading-none text-primary">Apex Manufacturing</h2>
+<p class="font-ledger-mono text-[10px] text-on-surface-variant uppercase tracking-widest mt-1">Dossier ID: #LIT-2023-001</p>
+</div>
+</div>
+<button class="p-1 text-on-surface-variant hover:text-primary hover:bg-surface-variant transition-colors" onclick="document.getElementById('dossier-modal').classList.add('hidden')">
+<span class="material-symbols-outlined">close</span>
+</button>
+</div>
+<!-- Modal Body -->
+<div class="p-6 overflow-y-auto flex-1 bg-background font-body-main text-on-surface-variant">
+<div class="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-6">
+<!-- Primary Metadata -->
+<div class="flex flex-col gap-1">
+<span class="font-ledger-mono-bold text-[10px] text-outline uppercase tracking-tighter">Portal ID / PAN</span>
+<span class="font-ledger-mono text-sm font-bold text-tertiary">ABIFM5494K</span>
+</div>
+<div class="flex flex-col gap-1">
+<span class="font-ledger-mono-bold text-[10px] text-outline uppercase tracking-tighter">Proceedings Type</span>
+<span class="font-body-main text-sm font-medium text-secondary">Appeal Proceedings</span>
+</div>
+<div class="flex flex-col gap-1">
+<span class="font-ledger-mono-bold text-[10px] text-outline uppercase tracking-tighter">Reference Number</span>
+<span class="font-ledger-mono text-xs font-bold truncate text-primary" title="ITBAASTS158B028262710902737911">ITBAASTS158B028262710902737911</span>
+</div>
+<div class="flex flex-col gap-1">
+<span class="font-ledger-mono-bold text-[10px] text-outline uppercase tracking-tighter">Acknowledgment Number</span>
+<span class="font-ledger-mono text-xs font-bold text-primary">—</span>
+</div>
+<div class="flex flex-col gap-1">
+<span class="font-ledger-mono-bold text-[10px] text-outline uppercase tracking-tighter">Section</span>
+<span class="font-body-main text-sm font-medium text-primary">158BC r.w.s 158BD</span>
+</div>
+<div class="flex flex-col gap-1">
+<span class="font-ledger-mono-bold text-[10px] text-outline uppercase tracking-tighter">Allotted Personnel</span>
+<div class="flex items-center gap-2">
+<div class="w-5 h-5 bg-tertiary text-on-tertiary text-[9px] flex items-center justify-center rounded-full">HG</div>
+<span class="font-body-main text-sm text-primary">Harsh Gupta</span>
+</div>
+</div>
+<!-- Dates Section -->
+<div class="col-span-full grid grid-cols-2 gap-4 p-4 bg-surface-container-low border border-outline-variant rounded">
+<div class="flex flex-col gap-1">
+<span class="font-ledger-mono-bold text-[10px] text-outline uppercase">Notice Date</span>
+<span class="font-ledger-mono text-sm font-bold text-primary">JUN 21, 2026</span>
+</div>
+<div class="flex flex-col gap-1">
+<span class="font-ledger-mono-bold text-[10px] text-secondary uppercase">Filing Due Date</span>
+<span class="font-ledger-mono text-sm font-bold text-secondary">AUG 20, 2026</span>
+</div>
+</div>
+<!-- Remarks -->
+<div class="col-span-full flex flex-col gap-2">
+<span class="font-ledger-mono-bold text-[10px] text-outline uppercase">Remarks &amp; Notes History</span>
+<div class="p-4 border border-dashed border-outline bg-surface-container-lowest text-sm italic text-on-surface-variant">
+                        "Pending block assessment reply drafting. Awaiting confirmation on hearing date from the client's internal legal team."
+                    </div>
+</div>
+<!-- Status Toggle -->
+<div class="col-span-full flex items-center justify-between p-4 border border-tertiary bg-surface-bright">
+<div>
+<p class="font-sans-bold-caps text-xs uppercase text-primary">Filing Status</p>
+<p class="text-[11px] text-on-surface-variant">Mark this case as completed and filed on the portal.</p>
+</div>
+<button class="flex items-center gap-2 px-4 py-2 border border-tertiary text-tertiary font-sans-bold-caps text-xs hover:bg-tertiary hover:text-on-tertiary transition-colors shadow-[0_0_10px_rgba(99,102,241,0.2)] hover:shadow-[0_0_15px_rgba(99,102,241,0.5)]">
+<span class="material-symbols-outlined text-base">check_circle</span>
+                        Mark as Filed
+                    </button>
+</div>
+</div>
+</div>
+<!-- Modal Footer -->
+<div class="p-4 border-t border-tertiary flex justify-between items-center bg-surface-container-high">
+<button class="flex items-center gap-2 px-4 py-2 border border-outline text-primary font-sans-bold-caps text-xs hover:bg-surface-variant transition-colors">
+<span class="material-symbols-outlined text-base">edit</span>
+                Edit Case
+            </button>
+<div class="flex gap-3">
+<button class="px-6 py-2 border border-outline text-primary font-sans-bold-caps text-xs hover:bg-surface-variant transition-colors" onclick="document.getElementById('dossier-modal').classList.add('hidden')">Cancel</button>
+<button class="px-6 py-2 bg-tertiary text-on-tertiary font-sans-bold-caps text-xs hover:opacity-90 transition-opacity shadow-[0_0_10px_rgba(99,102,241,0.4)]">Save Changes</button>
+</div>
+</div>
+</div>
+</div>
+</body></html>

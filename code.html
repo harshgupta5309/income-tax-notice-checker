@@ -28,10 +28,10 @@
 <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
 <style>
         :root {
-            --parchment: #EFECE6;
+            --parchment: #FFFFFF;
             --ink: #1C1B19;
-            --muted-ink: rgba(28, 27, 25, 0.4);
-            --border-ink: rgba(28, 27, 25, 0.12);
+            --muted-ink: rgba(28, 27, 25, 0.55);
+            --border-ink: rgba(28, 27, 25, 0.15);
             --rust: #D14F36;
             --emerald: #10B981;
             --indigo: #3B82F6;
@@ -40,29 +40,29 @@
             --font-sans: 'Inter', sans-serif;
             --font-mono: 'JetBrains Mono', monospace;
 
-            /* Theme specific variables for Light Mode */
-            --sidebar-bg: rgba(255, 255, 255, 0.2);
-            --header-bg: rgba(255, 255, 255, 0.1);
-            --panel-bg: rgba(255, 255, 255, 0.3);
-            --panel-white: #ffffff;
-            --card-bg: rgba(255, 255, 255, 0.1);
+            /* Theme specific variables for Light Mode — Pure Solid Opaque White */
+            --sidebar-bg: #FFFFFF;
+            --header-bg: #FFFFFF;
+            --panel-bg: #FFFFFF;
+            --panel-white: #FFFFFF;
+            --card-bg: #FFFFFF;
             --card-hover-bg: #FFFFFF;
             --card-hover-border: var(--ink);
-            --directory-card-bg: white;
+            --directory-card-bg: #FFFFFF;
             --directory-card-shadow: var(--ink);
             --directory-card-hover-border: var(--ink);
-            --btn-rust-text: white;
+            --btn-rust-text: #FFFFFF;
             --btn-rust-shadow: var(--ink);
             --tab-active-text: #FFFFFF;
             --border-color-custom: var(--ink);
-            --meter-bg: #D9D6CF;
+            --meter-bg: #EFECE6;
             
-            --status-card-bg: rgba(255, 255, 255, 0.5);
-            --status-card-border: rgba(28, 27, 25, 0.2);
-            --progress-summary-bg: rgba(255, 255, 255, 0.2);
-            --progress-summary-border: rgba(28, 27, 25, 0.3);
-            --sec-log-header-bg: rgba(255, 255, 255, 0.8);
-            --sec-log-body-bg: rgba(255, 255, 255, 0.4);
+            --status-card-bg: #FFFFFF;
+            --status-card-border: var(--border-color-custom);
+            --progress-summary-bg: #F9F9F8;
+            --progress-summary-border: var(--border-color-custom);
+            --sec-log-header-bg: #FFFFFF;
+            --sec-log-body-bg: #FAFAF9;
             --sec-log-border: var(--ink);
         }
 
@@ -168,8 +168,10 @@
 
         .main-grid {
             display: grid;
-            grid-template-columns: 48px 1fr 48px;
+            grid-template-columns: 64px 1fr 48px;
             height: 100vh;
+            position: relative;
+            z-index: 10;
         }
 
         .content-structure {
@@ -573,12 +575,335 @@
             transition: width 1s cubic-bezier(0.16, 1, 0.3, 1);
         }
         
-        .classical-table tr:hover td {
-            background: rgba(59, 130, 246, 0.06);
+        /* Typewriter Spacebar / Block Cursor Animation */
+        .typewriter-cursor {
+            display: inline-block;
+            width: 9px;
+            height: 19px;
+            background-color: var(--rust);
+            margin-left: 2px;
+            vertical-align: middle;
+            animation: cursor-blink 0.9s infinite step-end;
         }
-    </style><style>body { background-image: radial-gradient(var(--border-ink) 1.5px, transparent 0); background-size: 24px 24px; }</style>
+        @keyframes cursor-blink {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0; }
+        }
+
+        /* Slide-Over Deck Navigation Drawer */
+        .side-deck-overlay {
+            background: rgba(10, 10, 10, 0.45);
+            backdrop-filter: blur(4px);
+            z-index: 998;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.3s ease;
+        }
+        .side-deck-overlay.active {
+            opacity: 1;
+            pointer-events: auto;
+        }
+        .side-deck-drawer {
+            width: 290px;
+            background-color: var(--parchment);
+            border-right: 1.5px solid var(--border-color-custom);
+            box-shadow: 6px 0px 0px 0px rgba(0,0,0,1);
+            transform: translateX(-100%);
+            transition: transform 0.35s cubic-bezier(0.16, 1, 0.3, 1);
+            z-index: 999;
+        }
+        body.theme-dark .side-deck-drawer {
+            box-shadow: 6px 0px 0px 0px rgba(99, 102, 241, 0.3);
+        }
+        .side-deck-drawer.active {
+            transform: translateX(0);
+        }
+        
+        .side-deck-link {
+            display: flex;
+            align-items: center;
+            gap: 0.85rem;
+            padding: 0.75rem 1rem;
+            color: var(--muted-ink);
+            font-family: var(--font-sans);
+            font-size: 15px;
+            font-weight: 500;
+            transition: all 0.15s ease;
+            cursor: pointer;
+            border-left: 3px solid transparent;
+        }
+        .side-deck-link:hover {
+            background-color: rgba(28, 27, 25, 0.05);
+            color: var(--ink);
+        }
+        body.theme-dark .side-deck-link:hover {
+            background-color: rgba(255, 255, 255, 0.05);
+            color: var(--ink);
+        }
+        .side-deck-link.active {
+            background-color: rgba(28, 27, 25, 0.08);
+            color: var(--ink);
+            font-weight: 700;
+            border-right: 3px solid var(--rust);
+        }
+        body.theme-dark .side-deck-link.active {
+            background-color: rgba(255, 255, 255, 0.08);
+            color: var(--ink);
+            border-right: 3px solid var(--indigo);
+        }
+
+        /* Top Bar Brutalist Buttons */
+        .btn-topbar {
+            font-family: var(--font-mono);
+            font-size: 11px;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.04em;
+            padding: 8px 16px;
+            border: 1.5px solid var(--border-color-custom);
+            transition: all 0.15s ease;
+            background: transparent;
+            color: var(--ink);
+            white-space: nowrap;
+            cursor: pointer;
+        }
+        .btn-topbar:hover {
+            box-shadow: 2px 2px 0px var(--border-color-custom);
+            transform: translate(-1px, -1px);
+        }
+        .btn-topbar:active {
+            transform: translate(1px, 1px);
+            box-shadow: none;
+        }
+        .btn-topbar-active {
+            background-color: #3B82F6 !important;
+            color: #ffffff !important;
+            box-shadow: 3px 3px 0px var(--border-color-custom) !important;
+            border-color: var(--border-color-custom) !important;
+        }
+        body.theme-dark .btn-topbar-active {
+            background-color: #4F46E5 !important;
+            color: #ffffff !important;
+        }
+
+        .btn-sync-hero {
+            background-color: #D14F36;
+            color: #ffffff;
+            font-family: var(--font-mono);
+            font-weight: 700;
+            font-size: 12px;
+            text-transform: uppercase;
+            letter-spacing: 0.06em;
+            padding: 10px 22px;
+            border: 1.5px solid var(--border-color-custom);
+            box-shadow: 4px 4px 0px 0px rgba(0,0,0,1);
+            transition: all 0.15s ease;
+            cursor: pointer;
+        }
+        body.theme-dark .btn-sync-hero {
+            background-color: #D35400;
+            box-shadow: 4px 4px 0px 0px rgba(99, 102, 241, 0.4);
+        }
+        .btn-sync-hero:hover {
+            transform: translate(-2px, -2px);
+            box-shadow: 6px 6px 0px 0px rgba(0,0,0,1);
+        }
+        body.theme-dark .btn-sync-hero:hover {
+            box-shadow: 6px 6px 0px 0px rgba(99, 102, 241, 0.6);
+        }
+        .btn-sync-hero:active {
+            transform: translate(2px, 2px);
+            box-shadow: 1px 1px 0px 0px rgba(0,0,0,1);
+        }
+    </style><style>body { background-image: radial-gradient(var(--border-ink) 1.5px, transparent 0); background-size: 24px 24px; }
+        /* Side Navigation Rail Styling */
+        
+        #side-nav {
+            background-color: var(--sidebar-bg) !important;
+            background: var(--sidebar-bg) !important;
+        }
+        header {
+            background-color: var(--header-bg) !important;
+            background: var(--header-bg) !important;
+        }
+
+        .side-tab-active {
+            background: var(--indigo) !important;
+            color: #ffffff !important;
+            border-left: 4px solid var(--border-color-custom) !important;
+            box-shadow: 2px 2px 0px var(--border-color-custom);
+        }
+        body.theme-dark 
+        #side-nav {
+            background-color: var(--sidebar-bg) !important;
+            background: var(--sidebar-bg) !important;
+        }
+        header {
+            background-color: var(--header-bg) !important;
+            background: var(--header-bg) !important;
+        }
+
+        .side-tab-active {
+            background: var(--indigo) !important;
+            color: #ffffff !important;
+            border-left: 4px solid #ffffff !important;
+        }
+        .side-tab-inactive {
+            color: var(--muted-ink);
+            background: transparent;
+            border-left: 4px solid transparent;
+        }
+        .side-tab-inactive:hover {
+            color: var(--ink);
+            background: rgba(28, 27, 25, 0.06);
+        }
+        body.theme-dark .side-tab-inactive:hover {
+            background: rgba(255, 255, 255, 0.08);
+        }
+        
+        .main-grid {
+            display: grid;
+            grid-template-columns: 64px 1fr 48px;
+            height: 100vh;
+            position: relative;
+            z-index: 10;
+        }
+
+        /* Classical Brutalist Hover Lift */
+        .classical-table tr:hover {
+            transform: translate(-2px, -2px);
+            box-shadow: 4px 4px 0px var(--border-color-custom);
+            position: relative;
+            z-index: 10;
+        }
+        
+        /* Hard Shadows */
+        .hard-shadow-sm { box-shadow: 2px 2px 0px var(--border-color-custom); }
+        .hard-shadow-md { box-shadow: 4px 4px 0px var(--border-color-custom); }
+        .hard-shadow-btn:active { transform: translate(2px, 2px); box-shadow: 0px 0px 0px rgba(0,0,0,0); }
+    </style>
 </head>
 <body>
+<!-- Interactive Side Navigation Rail -->
+<aside class="fixed left-0 top-0 h-full w-[64px] hover:w-[240px] transition-all duration-300 z-[60] bg-sidebar vector-border-r flex flex-col py-4 px-2 group shadow-[4px_0px_0px_0px_rgba(0,0,0,0.06)] overflow-hidden select-none" id="side-nav">
+  <!-- Brand / Archive Stamp -->
+  <div class="px-2 mb-6 flex items-center gap-3 cursor-pointer" onclick="switchTab('litigation')" title="Litigation OS | Home">
+    <div class="w-10 h-10 rounded-none bg-rust/10 border-2 border-rust/40 flex items-center justify-center text-rust shrink-0 group-hover:scale-105 transition-transform shadow-[2px_2px_0px_var(--border-color-custom)]">
+      <span class="material-symbols-outlined text-[22px]">account_balance</span>
+    </div>
+    <div class="opacity-0 group-hover:opacity-100 transition-opacity duration-200 overflow-hidden whitespace-nowrap">
+      <h2 class="sans-bold text-sm leading-none text-ink tracking-tight">Litigation OS</h2>
+      <span class="font-mono text-[9px] text-rust font-bold uppercase tracking-widest block mt-0.5">ARCHIVE_01</span>
+    </div>
+  </div>
+
+  <!-- Primary Views Navigation -->
+  <div class="mb-2 px-2">
+    <span class="font-mono text-[8px] text-muted-ink uppercase font-bold tracking-wider opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap block">WORKSPACE VIEWS</span>
+  </div>
+  <nav class="flex flex-col gap-1.5 mb-6">
+    <!-- Litigation Suite (View 1) -->
+    <div class="side-tab-active flex items-center h-10 px-3 cursor-pointer transition-all duration-150 rounded-none" id="side-tab-lit" onclick="switchTab('litigation')" title="Litigation Suite (Press 1)">
+      <span class="material-symbols-outlined text-[20px] shrink-0">gavel</span>
+      <div class="ml-3.5 flex items-center justify-between w-full opacity-0 group-hover:opacity-100 transition-opacity duration-200 overflow-hidden whitespace-nowrap">
+        <span class="font-mono text-[11px] font-bold uppercase">Litigation Suite</span>
+        <span class="font-mono text-[9px] opacity-60 ml-2 px-1 border border-current">1</span>
+      </div>
+    </div>
+    <!-- Operational Monitor (View 2) -->
+    <div class="side-tab-inactive flex items-center h-10 px-3 cursor-pointer transition-all duration-150 rounded-none" id="side-tab-op" onclick="switchTab('operational')" title="Operational Monitor (Press 2)">
+      <span class="material-symbols-outlined text-[20px] shrink-0">monitoring</span>
+      <div class="ml-3.5 flex items-center justify-between w-full opacity-0 group-hover:opacity-100 transition-opacity duration-200 overflow-hidden whitespace-nowrap">
+        <span class="font-mono text-[11px] font-bold uppercase">Operational</span>
+        <span class="font-mono text-[9px] opacity-60 ml-2 px-1 border border-current">2</span>
+      </div>
+    </div>
+    <!-- Client Dossiers (View 3) -->
+    <div class="side-tab-inactive flex items-center h-10 px-3 cursor-pointer transition-all duration-150 rounded-none" id="side-tab-dossier" onclick="switchTab('dossier')" title="Client Dossiers (Press 3)">
+      <span class="material-symbols-outlined text-[20px] shrink-0">folder_shared</span>
+      <div class="ml-3.5 flex items-center justify-between w-full opacity-0 group-hover:opacity-100 transition-opacity duration-200 overflow-hidden whitespace-nowrap">
+        <span class="font-mono text-[11px] font-bold uppercase">Dossiers</span>
+        <span class="font-mono text-[9px] opacity-60 ml-2 px-1 border border-current">3</span>
+      </div>
+    </div>
+    <!-- Notice Split Detail View (View 4) -->
+    <div class="side-tab-inactive flex items-center h-10 px-3 cursor-pointer transition-all duration-150 rounded-none" id="side-tab-split" onclick="toggleSplitView()" title="Notice Split View (Press 4)">
+      <span class="material-symbols-outlined text-[20px] shrink-0">description</span>
+      <div class="ml-3.5 flex items-center justify-between w-full opacity-0 group-hover:opacity-100 transition-opacity duration-200 overflow-hidden whitespace-nowrap">
+        <span class="font-mono text-[11px] font-bold uppercase">Split Detail View</span>
+        <span class="font-mono text-[9px] opacity-60 ml-2 px-1 border border-current">4</span>
+      </div>
+    </div>
+  </nav>
+
+  <!-- Core Actions & Operations -->
+  <div class="mb-2 px-2">
+    <span class="font-mono text-[8px] text-muted-ink uppercase font-bold tracking-wider opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap block">OPERATIONS</span>
+  </div>
+  <div class="flex flex-col gap-2 mb-6">
+    <!-- Manual Notice Entry Button -->
+    <button class="flex items-center h-10 px-3 cursor-pointer transition-all duration-150 rounded-none border border-ink/30 bg-panel-white text-ink hover:border-indigo hover:text-indigo shadow-[2px_2px_0px_var(--border-color-custom)] active:translate-x-[1px] active:translate-y-[1px]" id="side-btn-add-notice" onclick="openAddNoticeModal()" title="Add Manual Notice (Press +)">
+      <span class="material-symbols-outlined text-[20px] shrink-0 text-indigo">post_add</span>
+      <div class="ml-3.5 flex items-center justify-between w-full opacity-0 group-hover:opacity-100 transition-opacity duration-200 overflow-hidden whitespace-nowrap">
+        <span class="font-mono text-[11px] font-bold uppercase text-indigo">+ Manual Entry</span>
+        <span class="font-mono text-[9px] opacity-60 ml-2 px-1 border border-current">+</span>
+      </div>
+    </button>
+    <!-- Sync Notices Hero Button -->
+    <button class="btn-rigid btn-rust flex items-center h-10 px-3 cursor-pointer transition-all duration-150 rounded-none border-2 border-rust shadow-[3px_3px_0px_var(--btn-rust-shadow)] active:translate-x-[1px] active:translate-y-[1px]" id="side-btn-sync" onclick="triggerSyncNotices()" title="Sync Notices (Ctrl+Enter)">
+      <span class="material-symbols-outlined text-[20px] shrink-0 text-white">sync</span>
+      <div class="ml-3.5 flex items-center justify-between w-full opacity-0 group-hover:opacity-100 transition-opacity duration-200 overflow-hidden whitespace-nowrap">
+        <span class="font-mono text-[11px] font-bold uppercase text-white">Sync Notices</span>
+        <span class="font-mono text-[9px] opacity-80 ml-2 px-1 border border-white text-white">↵</span>
+      </div>
+    </button>
+  </div>
+
+  <!-- Bottom Utilities & Preferences -->
+  <div class="mt-auto pt-3 border-t border-ink/15 flex flex-col gap-1">
+    <!-- Security Log -->
+    <div class="side-tab-inactive flex items-center h-9 px-3 cursor-pointer transition-all duration-150 rounded-none" id="side-btn-log" onclick="openSecurityLogWindow()" title="Security Log (Press L)">
+      <span class="material-symbols-outlined text-[19px] shrink-0">terminal</span>
+      <div class="ml-3.5 flex items-center justify-between w-full opacity-0 group-hover:opacity-100 transition-opacity duration-200 overflow-hidden whitespace-nowrap">
+        <span class="font-mono text-[10.5px] uppercase">Security Log</span>
+        <span class="font-mono text-[8px] opacity-60 ml-2">L</span>
+      </div>
+    </div>
+    <!-- Settings & Config -->
+    <div class="side-tab-inactive flex items-center h-9 px-3 cursor-pointer transition-all duration-150 rounded-none" id="side-btn-settings" onclick="openAboutModal()" title="Settings & About (Press S)">
+      <span class="material-symbols-outlined text-[19px] shrink-0">settings</span>
+      <div class="ml-3.5 flex items-center justify-between w-full opacity-0 group-hover:opacity-100 transition-opacity duration-200 overflow-hidden whitespace-nowrap">
+        <span class="font-mono text-[10.5px] uppercase">Settings</span>
+        <span class="font-mono text-[8px] opacity-60 ml-2">S</span>
+      </div>
+    </div>
+    <!-- Theme Toggle -->
+    <div class="side-tab-inactive flex items-center h-9 px-3 cursor-pointer transition-all duration-150 rounded-none" id="side-btn-theme" onclick="toggleTheme()" title="Toggle Theme (Press T)">
+      <span class="material-symbols-outlined text-[19px] shrink-0" id="side-theme-icon">dark_mode</span>
+      <div class="ml-3.5 flex items-center justify-between w-full opacity-0 group-hover:opacity-100 transition-opacity duration-200 overflow-hidden whitespace-nowrap">
+        <span class="font-mono text-[10.5px] uppercase" id="side-theme-label">Dark Mode</span>
+        <span class="font-mono text-[8px] opacity-60 ml-2">T</span>
+      </div>
+    </div>
+    <!-- Fullscreen -->
+    <div class="side-tab-inactive flex items-center h-9 px-3 cursor-pointer transition-all duration-150 rounded-none" id="side-btn-fullscreen" onclick="toggleFullScreen()" title="Fullscreen (Ctrl+F)">
+      <span class="material-symbols-outlined text-[19px] shrink-0">fullscreen</span>
+      <div class="ml-3.5 flex items-center justify-between w-full opacity-0 group-hover:opacity-100 transition-opacity duration-200 overflow-hidden whitespace-nowrap">
+        <span class="font-mono text-[10.5px] uppercase">Fullscreen</span>
+        <span class="font-mono text-[8px] opacity-60 ml-2">F</span>
+      </div>
+    </div>
+    <!-- Help -->
+    <div class="side-tab-inactive flex items-center h-9 px-3 cursor-pointer transition-all duration-150 rounded-none" id="side-btn-help" onclick="openHelpModal()" title="Help & Shortcuts (Press F1)">
+      <span class="material-symbols-outlined text-[19px] shrink-0">help_center</span>
+      <div class="ml-3.5 flex items-center justify-between w-full opacity-0 group-hover:opacity-100 transition-opacity duration-200 overflow-hidden whitespace-nowrap">
+        <span class="font-mono text-[10.5px] uppercase">Help & Manual</span>
+        <span class="font-mono text-[8px] opacity-60 ml-2">F1</span>
+      </div>
+    </div>
+  </div>
+</aside>
+
 <svg xmlns="http://www.w3.org/2000/svg" style="display: none;">
   <defs>
     <filter id="motion-blur-filter" x="-50%" y="-50%" width="200%" height="200%">
@@ -587,63 +912,68 @@
   </defs>
 </svg>
 <svg id="energy-flow-svg" style="position: fixed; inset: 0; pointer-events: none; z-index: 5; width: 100vw; height: 100vh;"></svg>
-<div class="main-grid"><div class="absolute top-4 left-4 w-4 h-[1px] bg-ink/10 pointer-events-none"></div><div class="absolute top-4 left-4 w-[1px] h-4 bg-ink/10 pointer-events-none"></div><div class="absolute bottom-4 right-4 w-4 h-[1px] bg-ink/10 pointer-events-none"></div><div class="absolute bottom-4 right-4 w-[1px] h-4 bg-ink/10 pointer-events-none"></div>
-<!-- Left Frame Margin -->
-<aside class="flex flex-col items-center py-12 vertical-label-container gap-12 vector-border-r bg-sidebar">
-<span class="">STATUS • PIPELINES • COMPLIANCE</span>
-<div class="h-24 w-1 bg-ink"></div>
-<span class="">SECURE • LOCAL-FIRST • ARCHIVE</span>
-</aside>
-<!-- Central Document Area -->
-<div class="content-structure overflow-hidden"><div class="absolute top-0 left-0 w-8 h-8 border-t border-l border-ink/20 pointer-events-none z-10"></div><div class="absolute top-0 right-0 w-8 h-8 border-t border-r border-ink/20 pointer-events-none z-10"></div><div class="absolute bottom-0 left-0 w-8 h-8 border-b border-l border-ink/20 pointer-events-none z-10"></div><div class="absolute bottom-0 right-0 w-8 h-8 border-b border-r border-ink/20 pointer-events-none z-10"></div>
-<!-- Header -->
-<header class="border-b-2 border-ink px-12 py-4 flex items-center justify-between bg-header backdrop-blur-md">
-  <div class="flex items-center gap-8">
-    <div class="animate-stagger-1">
-      <div class="flex items-center gap-3">
-        <h1 class="sans-bold text-2xl leading-none tracking-tighter">Litigation OS</h1>
-        <span class="px-2 py-0.5 text-[8px] tracking-widest font-mono uppercase bg-rust/10 text-rust border border-rust/20 font-bold">BETA</span>
+<div class="main-grid">
+  <!-- Left Column Placeholder (Filled by Fixed Side Navigation Rail) -->
+  <div></div>
+  <!-- Central Document Area -->
+  <div class="content-structure overflow-hidden">
+    <div class="absolute top-0 left-0 w-8 h-8 border-t border-l border-ink/20 pointer-events-none z-10"></div>
+    <div class="absolute top-0 right-0 w-8 h-8 border-t border-r border-ink/20 pointer-events-none z-10"></div>
+    <div class="absolute bottom-0 left-0 w-8 h-8 border-b border-l border-ink/20 pointer-events-none z-10"></div>
+    <div class="absolute bottom-0 right-0 w-8 h-8 border-b border-r border-ink/20 pointer-events-none z-10"></div>
+    <!-- Top Bar (Clean Editorial Header — No top buttons) -->
+<header class="border-b-2 border-ink px-8 py-3.5 flex items-center justify-between bg-header backdrop-blur-md sticky top-0 z-40">
+  <!-- Left: Brand Title & Version Subtitle -->
+  <div class="flex items-center gap-4">
+    <div class="flex flex-col">
+      <div class="flex items-center gap-2.5">
+        <h1 class="sans-bold text-xl leading-none tracking-tighter text-ink flex items-center">
+          <span id="typewriter-text">Litigation OS</span>
+          <span class="typewriter-cursor" id="typewriter-cursor"></span>
+        </h1>
+        <span class="px-1.5 py-0.5 text-[8.5px] tracking-widest font-mono uppercase bg-rust/10 text-rust border border-rust/30 font-bold">BETA</span>
       </div>
       <div class="flex items-center gap-2 mt-1">
-        <span class="serif-italic text-[10px] text-muted-ink">v4.12 // Utility Ledger Mode</span>
-      </div>
-    </div>
-    
-    <div class="h-8 w-px bg-ink/10"></div>
-    
-    <div class="flex gap-4">
-      <div class="flex flex-col animate-stagger-2">
-        <span class="mono-ledger text-[8px] text-muted-ink uppercase font-bold">Records</span>
-        <span class="sans-bold text-lg leading-none" id="header-total-count">0</span>
-      </div>
-      <div class="flex flex-col animate-stagger-3">
-        <span class="mono-ledger text-[8px] text-muted-ink uppercase font-bold text-rust">Urgent</span>
-        <span class="sans-bold text-lg leading-none text-rust" id="header-urgent-count">00</span>
+        <span class="serif-italic text-[10.5px] text-muted-ink">v4.12 // Utility Ledger Mode</span>
+        <span class="text-[9px] text-muted-ink">•</span>
+        <span class="font-mono text-[9.5px] text-rust font-bold tracking-wider">VOL. 04 • ISSUE N° 12</span>
       </div>
     </div>
   </div>
 
+  <!-- Center: Dynamic Breadcrumb / Active Screen Indicator -->
+  <div class="hidden md:flex items-center gap-2 px-4 py-1.5 border border-ink/15 bg-sidebar/30 backdrop-blur-sm shadow-[2px_2px_0px_rgba(0,0,0,0.04)]">
+    <span class="font-mono text-[9px] uppercase tracking-widest text-muted-ink">WORKSPACE</span>
+    <span class="material-symbols-outlined text-[12px] text-muted-ink">chevron_right</span>
+    <span class="font-mono text-[10px] uppercase font-bold text-rust tracking-wider" id="topbar-current-view">LITIGATION SUITE</span>
+  </div>
+
+  <!-- Right: Telemetry, Gauges & System Status -->
   <div class="flex items-center gap-6">
-    <nav class="flex gap-2">
-      <button class="tab-pill tab-inactive font-mono" id="tab-op" onclick="switchTab('operational')">Operational Monitor <span class="opacity-50 text-[8px] font-mono ml-1">1</span></button>
-      <button class="tab-pill tab-active font-mono" id="tab-lit" onclick="switchTab('litigation')">Litigation Suite <span class="opacity-50 text-[8px] font-mono ml-1">2</span></button>
-      <button class="tab-pill tab-inactive font-mono" id="tab-dossier" onclick="switchTab('dossier')">Client Dossiers <span class="opacity-50 text-[8px] font-mono ml-1">3</span></button>
-      <button class="tab-pill tab-inactive font-mono" id="tab-about" onclick="openAboutModal()">About <span class="opacity-50 text-[8px] font-mono ml-1">F2</span></button>
-      <button class="tab-pill tab-inactive font-mono" id="tab-help" onclick="openHelpModal()">Help <span class="opacity-50 text-[8px] font-mono ml-1">F1</span></button>
-    </nav>
-    
-    <!-- Vertical Stacked Theme Controls -->
-    <div class="flex flex-col gap-1">
-      <button class="theme-toggle-btn text-[9px] py-1 px-3 w-[110px] text-left font-mono" id="theme-toggle-btn" onclick="toggleTheme()">🌙 Dark Mode</button>
-      <button class="theme-toggle-btn text-[9px] py-1 px-3 w-[110px] text-left font-mono" id="fullscreen-btn" onclick="toggleFullScreen()">🖥️ Full Screen <span class="opacity-50 text-[7px] ml-0.5">Ctrl+F</span></button>
+    <div class="flex items-center gap-5 border-r border-ink/15 pr-6">
+      <div class="flex flex-col items-end">
+        <span class="font-mono text-[8px] text-muted-ink uppercase font-bold tracking-wider">TOTAL RECORDS</span>
+        <span class="sans-bold text-base leading-none text-ink" id="header-total-count">0</span>
+      </div>
+      <div class="flex flex-col items-end">
+        <span class="font-mono text-[8px] text-rust uppercase font-bold tracking-wider">CRITICAL ITEMS</span>
+        <span class="sans-bold text-base leading-none text-rust" id="header-critical-count">00</span>
+      </div>
     </div>
-    
-    <button class="btn-rigid btn-rust px-5 py-[11px] text-[10px] flex items-center gap-2" id="sync-trigger">
-      <span class="font-bold">Sync Notices <span class="opacity-50 text-[8px] font-mono ml-1">Ctrl+Enter</span></span>
-      <span class="text-xs">→</span>
-    </button>
+
+    <div class="flex items-center gap-2.5">
+      <div class="flex flex-col items-end">
+        <span class="font-mono text-[8px] text-muted-ink uppercase font-bold tracking-wider">SYSTEM STATUS</span>
+        <div class="flex items-center gap-1.5 mt-0.5">
+          <span class="w-2 h-2 rounded-full bg-emerald animate-pulse"></span>
+          <span class="font-mono font-bold text-[10.5px] uppercase tracking-wide text-ink" id="system-readiness-label">ENGINE IDLE</span>
+        </div>
+      </div>
+    </div>
   </div>
 </header>
+
+
 <!-- Main Workspace Body -->
 <main class="overflow-y-auto p-12 custom-scroll relative" id="workspace"><div class="absolute inset-0 flex items-center justify-center pointer-events-none opacity-[0.04] z-0 overflow-hidden"><svg class="text-ink" fill="none" height="800" stroke="currentColor" viewbox="0 0 100 100" width="600"><path d="M20 90 L80 90 M30 90 L30 30 M70 90 L70 30 M25 30 L75 30 M50 10 L50 30 M20 20 L80 20" stroke-width="0.5"></path><circle cx="50" cy="15" r="5" stroke-width="0.5"></circle><path d="M10 95 L90 95" stroke-width="1"></path></svg></div>
 <!-- Background Geometric Markers -->
@@ -664,25 +994,49 @@
   </div>
 
   <!-- Title / Action Bar -->
-  <div class="flex items-end justify-between border-b-2 border-ink pb-6 relative mb-8">
+  <div class="flex items-end justify-between border-b-2 border-ink pb-6 relative mb-6">
     <div>
-      <span class="mono-ledger font-bold text-[9px] uppercase tracking-widest text-rust">Utility Ledger Variant</span>
+      <span class="mono-ledger font-bold text-[9px] uppercase tracking-widest text-rust">Legal Operations • Tracking Desk</span>
       <h2 class="serif-title text-4xl uppercase font-bold tracking-tight">Litigation OS <span class="serif-italic accent-indigo">Suite</span></h2>
-      <p class="serif-italic text-[11px] text-muted-ink mt-1">Local database tracking portal findings, manual logs, and compliance filings.</p>
-    </div>
-    <div class="flex gap-4">
-      <div class="flex gap-4 items-center bg-sidebar/20 p-2.5 border border-ink/15 rounded-none">
-        <div class="flex flex-col text-center px-3 border-r border-ink/10">
-          <span class="mono-ledger text-[8px] text-muted-ink uppercase font-bold">ACTIVE LEDGER</span>
-          <span class="sans-bold text-lg leading-none" id="litigation-active-count">0</span>
-        </div>
-        <div class="flex flex-col text-center px-3">
-          <span class="mono-ledger text-[8px] text-muted-ink uppercase font-bold text-rust">DUE SOON</span>
-          <span class="sans-bold text-lg leading-none text-rust" id="litigation-urgent-count">0</span>
-        </div>
-      </div>
+      <p class="serif-italic text-[11px] text-muted-ink mt-1">Real-time scrutiny docket, notice pipeline, e-filings, and digital audit trail.</p>
     </div>
   </div>
+
+  <!-- KPI Section (Matching Linked HTMLs & Neo-Classical System) -->
+  <section class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5 mb-8">
+    <!-- Total Notices -->
+    <div class="bg-[var(--panel-white)] border-2 border-ink p-5 box-shadow-[4px_4px_0px_var(--border-color-custom)] flex flex-col justify-between h-[125px] transition-all hover:translate-y-[-2px]">
+      <div class="flex justify-between items-start">
+        <span class="mono-ledger font-bold text-[10px] text-muted-ink uppercase tracking-wider">Total Notices</span>
+        <span class="material-symbols-outlined text-muted-ink text-xl">receipt_long</span>
+      </div>
+      <div class="serif-title text-4xl text-ink font-bold" id="kpi-total-notices">0</div>
+    </div>
+    <!-- Pending Action -->
+    <div class="bg-[var(--panel-white)] border-2 border-rust p-5 box-shadow-[4px_4px_0px_var(--rust)] flex flex-col justify-between h-[125px] transition-all hover:translate-y-[-2px]">
+      <div class="flex justify-between items-start">
+        <span class="mono-ledger font-bold text-[10px] text-rust uppercase tracking-wider">Pending Action</span>
+        <span class="material-symbols-outlined text-rust text-xl">hourglass_empty</span>
+      </div>
+      <div class="serif-title text-4xl text-rust font-bold" id="kpi-pending-action">0</div>
+    </div>
+    <!-- Accepted / Active -->
+    <div class="bg-[var(--panel-white)] border-2 border-indigo p-5 box-shadow-[4px_4px_0px_var(--indigo)] flex flex-col justify-between h-[125px] transition-all hover:translate-y-[-2px]">
+      <div class="flex justify-between items-start">
+        <span class="mono-ledger font-bold text-[10px] text-indigo uppercase tracking-wider">Active in Tracker</span>
+        <span class="material-symbols-outlined text-indigo text-xl">check_circle</span>
+      </div>
+      <div class="serif-title text-4xl text-indigo font-bold" id="kpi-active-tracker">0</div>
+    </div>
+    <!-- Flagged / Due Soon -->
+    <div class="bg-[var(--panel-white)] border-2 border-emerald p-5 box-shadow-[4px_4px_0px_var(--emerald)] flex flex-col justify-between h-[125px] transition-all hover:translate-y-[-2px]">
+      <div class="flex justify-between items-start">
+        <span class="mono-ledger font-bold text-[10px] text-emerald uppercase tracking-wider">Urgent Due Soon</span>
+        <span class="material-symbols-outlined text-emerald text-xl">flag</span>
+      </div>
+      <div class="serif-title text-4xl text-emerald font-bold" id="kpi-flagged-issues">0</div>
+    </div>
+  </section>
 
   <!-- Section 1: Notice Staging Area (Unassigned Portal Findings) -->
   <div id="latest-flagged-section" class="space-y-4 mb-8">
@@ -1238,75 +1592,119 @@
           }
         }
 
+        function toggleSideDeck(open) {
+            const overlay = document.getElementById('side-deck-overlay');
+            const drawer = document.getElementById('side-deck-drawer');
+            if (open) {
+                overlay.classList.add('active');
+                drawer.classList.add('active');
+            } else {
+                overlay.classList.remove('active');
+                drawer.classList.remove('active');
+            }
+        }
+
+        function switchDeckTab(deckKey) {
+            // Update active state in side deck
+            const links = document.querySelectorAll('.side-deck-link');
+            links.forEach(l => l.classList.remove('active'));
+            
+            if (deckKey === 'dashboard' || deckKey === 'litigation') {
+                switchTab('litigation');
+                const litLink = document.getElementById('deck-tab-litigation');
+                if (litLink) litLink.classList.add('active');
+            } else if (deckKey === 'operational') {
+                switchTab('operational');
+                const opLink = document.getElementById('deck-tab-operational');
+                if (opLink) opLink.classList.add('active');
+            } else if (deckKey === 'dossier' || deckKey === 'repository') {
+                switchTab('dossier');
+                const dosLink = document.getElementById('deck-tab-dossier');
+                if (dosLink) dosLink.classList.add('active');
+            } else if (deckKey === 'analytics') {
+                switchTab('litigation');
+                const trackerSection = document.getElementById('tracker-table-section');
+                if (trackerSection) trackerSection.scrollIntoView({ behavior: 'smooth' });
+            }
+            toggleSideDeck(false);
+        }
+
         function switchTab(view) {
             const opView = document.getElementById('view-operational');
             const litView = document.getElementById('view-litigation');
             const dossierView = document.getElementById('view-dossier');
-            const opTab = document.getElementById('tab-op');
-            const litTab = document.getElementById('tab-lit');
-            const dossierTab = document.getElementById('tab-dossier');
+
+            const sideLit = document.getElementById('side-tab-lit');
+            const sideOp = document.getElementById('side-tab-op');
+            const sideDossier = document.getElementById('side-tab-dossier');
+            const topbarCurrentView = document.getElementById('topbar-current-view');
 
             const views = [
-              { key: 'operational', el: opView, tab: opTab },
-              { key: 'litigation', el: litView, tab: litTab },
-              { key: 'dossier', el: dossierView, tab: dossierTab }
+              { key: 'operational', el: opView, sideEl: sideOp, name: 'OPERATIONAL MONITOR' },
+              { key: 'litigation', el: litView, sideEl: sideLit, name: 'LITIGATION SUITE' },
+              { key: 'dossier', el: dossierView, sideEl: sideDossier, name: 'CLIENT DOSSIERS' }
             ];
 
             views.forEach(v => {
               if (v.el) {
                 if (v.key === view) {
                   v.el.classList.remove('hidden');
-                  if (v.tab) {
-                    v.tab.classList.add('tab-active');
-                    v.tab.classList.remove('tab-inactive');
+                  if (v.sideEl) {
+                    v.sideEl.className = 'side-tab-active flex items-center h-10 px-3 cursor-pointer transition-all duration-150 rounded-none';
+                  }
+                  if (topbarCurrentView) {
+                    topbarCurrentView.innerText = v.name;
                   }
                 } else {
                   v.el.classList.add('hidden');
-                  if (v.tab) {
-                    v.tab.classList.remove('tab-active');
-                    v.tab.classList.add('tab-inactive');
+                  if (v.sideEl) {
+                    v.sideEl.className = 'side-tab-inactive flex items-center h-10 px-3 cursor-pointer transition-all duration-150 rounded-none';
                   }
                 }
               }
             });
         }
 
-        function closeDrawer() {
-            const overlay = document.getElementById('drawer-overlay');
-            const panel = document.getElementById('drawer-panel');
-            
-            overlay.classList.remove('opacity-100');
-            panel.classList.remove('active');
-            setTimeout(() => overlay.classList.add('hidden'), 300);
-        }
+        // Typographic Animation for "Litigation OS" with Blinking Spacebar Cursor
+        function initTypewriterAnimation() {
+            const textElement = document.getElementById('typewriter-text');
+            if (!textElement) return;
+            const fullText = "Litigation OS";
+            let charIndex = 0;
+            let isDeleting = false;
 
-        async function handleExport(format) {
-            const btn = event.target;
-            const container = document.getElementById('drawer-progress-container');
-            const bar = document.getElementById('drawer-progress-bar');
-            const val = document.getElementById('drawer-progress-val');
-            
-            container.classList.remove('opacity-0');
-            btn.classList.add('opacity-50', 'pointer-events-none');
-            
-            for(let i=0; i<=100; i+=5) {
-                bar.style.width = i + "%";
-                val.innerText = i + "%";
-                await new Promise(r => setTimeout(r, 75));
+            function typeLoop() {
+                if (!isDeleting) {
+                    charIndex++;
+                    textElement.textContent = fullText.slice(0, charIndex);
+                    if (charIndex === fullText.length) {
+                        // Hold completed text for 8 seconds
+                        setTimeout(() => {
+                            isDeleting = true;
+                            typeLoop();
+                        }, 8000);
+                        return;
+                    }
+                    setTimeout(typeLoop, 110 + Math.random() * 60);
+                } else {
+                    charIndex--;
+                    textElement.textContent = fullText.slice(0, charIndex);
+                    if (charIndex === 0) {
+                        isDeleting = false;
+                        // Pause when empty then restart
+                        setTimeout(typeLoop, 600);
+                        return;
+                    }
+                    setTimeout(typeLoop, 50);
+                }
             }
-            
-            setTimeout(() => {
-                container.classList.add('opacity-0');
-                btn.classList.remove('opacity-50', 'pointer-events-none');
-                printToConsole(`DOCUMENT_PRINT_SUCCESS: ARCHIVE_${format}_GEN.pdf`, 'success');
-            }, 500);
-        }
 
-        let currentCountdownInterval = null;
-        let authAnimator = null;
-        let extAnimator = null;
+            // Start typing after initial load
+            setTimeout(typeLoop, 800);
+        }
 
         document.addEventListener('DOMContentLoaded', () => {
+          initTypewriterAnimation();
           authAnimator = new FluidProgressAnimator(
             document.getElementById('auth-bar'),
             document.getElementById('auth-val'),
@@ -1640,12 +2038,19 @@
           }
         }
 
-        function setEngineRunning(isRunning, message = "Engine Idle", isError = false) {
+        function setEngineRunning(isRunning, message = "ENGINE IDLE", isError = false) {
           const statusText = document.getElementById('global-status-text');
+          const readinessLabel = document.getElementById('system-readiness-label');
           const dot = document.getElementById('status-pulse-dot');
           const fill = document.getElementById('mini-progress-fill-element');
           
           if (statusText) statusText.innerText = message;
+          if (readinessLabel) {
+            readinessLabel.innerText = isRunning ? message.toUpperCase() : (isError ? "ENGINE ERROR" : "ENGINE IDLE");
+            if (isError) readinessLabel.className = "font-mono font-bold text-[11px] uppercase tracking-wide text-rust";
+            else if (isRunning) readinessLabel.className = "font-mono font-bold text-[11px] uppercase tracking-wide text-indigo";
+            else readinessLabel.className = "font-mono font-bold text-[11px] uppercase tracking-wide text-ink";
+          }
           
           if (dot) {
             if (isRunning) {
@@ -1957,6 +2362,7 @@
           const sortVal = document.getElementById('tracker-sort-select').value;
           
           let activeNotices = allTrackedNotices.filter(n => n.added_to_tracker === true);
+          let pendingStagingNotices = allTrackedNotices.filter(n => n.added_to_tracker === false);
           
           // Update total active notices count
           const totalCountEl = document.getElementById('litigation-active-count');
@@ -1974,6 +2380,16 @@
           const headerUrgentCountEl = document.getElementById('header-urgent-count');
           if (urgentCountEl) urgentCountEl.innerText = urgentNotices.length;
           if (headerUrgentCountEl) headerUrgentCountEl.innerText = String(urgentNotices.length).padStart(2, '0');
+          
+          // Update KPI Summary Card metrics
+          const kpiTotal = document.getElementById('kpi-total-notices');
+          const kpiPending = document.getElementById('kpi-pending-action');
+          const kpiActive = document.getElementById('kpi-active-tracker');
+          const kpiFlagged = document.getElementById('kpi-flagged-issues');
+          if (kpiTotal) kpiTotal.innerText = allTrackedNotices.length;
+          if (kpiPending) kpiPending.innerText = pendingStagingNotices.length;
+          if (kpiActive) kpiActive.innerText = activeNotices.length;
+          if (kpiFlagged) kpiFlagged.innerText = urgentNotices.length;
           
           // Update ticker alerts
           const tickerAlertsSpan = document.getElementById('ticker-urgent-alerts');
@@ -2064,8 +2480,33 @@
           if (!tbody) return;
           tbody.innerHTML = '';
           
-          if (notices.length === 0) {
-            tbody.innerHTML = `<tr><td colspan="6" class="p-8 text-center text-muted-ink italic bg-white/50">No notices matching the active filters were identified.</td></tr>`;
+                    if (notices.length === 0) {
+            tbody.innerHTML = `
+              <tr>
+                <td colspan="6" class="p-0 border-0">
+                  <div class="py-16 px-6 text-center flex flex-col items-center justify-center bg-sidebar/10 relative overflow-hidden">
+                    <div class="w-24 h-24 bg-sidebar border border-ink/20 shadow-[3px_3px_0px_var(--border-color-custom)] flex items-center justify-center relative mb-6">
+                      <span class="material-symbols-outlined text-muted-ink !text-5xl" style="font-variation-settings: 'wght' 100;">account_balance</span>
+                      <div class="absolute -bottom-2 -right-2 bg-panel-white border border-ink p-1.5 shadow-[2px_2px_0px_var(--border-color-custom)]">
+                        <span class="material-symbols-outlined text-indigo text-lg">sync_disabled</span>
+                      </div>
+                    </div>
+                    <h3 class="serif-title text-2xl font-bold text-ink mb-2">No Records Found in Ledger</h3>
+                    <p class="serif-italic text-xs text-muted-ink max-w-md mx-auto mb-6">
+                      The utility ledger is currently unpopulated for the selected filter. Synchronize notices with the portal or log a manual compliance notice.
+                    </p>
+                    <div class="flex gap-4">
+                      <button class="btn-rigid btn-indigo px-5 py-2 text-white font-mono text-[10px] flex items-center gap-2" onclick="triggerSyncNotices()">
+                        <span class="material-symbols-outlined text-sm">sync</span> Sync Notices
+                      </button>
+                      <button class="btn-rigid px-5 py-2 bg-panel-white text-ink border border-ink font-mono text-[10px] flex items-center gap-2" onclick="openAddNoticeModal()">
+                        <span class="material-symbols-outlined text-sm">post_add</span> + Manual Entry
+                      </button>
+                    </div>
+                  </div>
+                </td>
+              </tr>
+            `;
             return;
           }
           
@@ -2257,17 +2698,26 @@
           }
         }
 
-        function openAddNoticeModal() {
+                function openAddNoticeModal() {
           const select = document.getElementById('modal-pan-select');
-          select.innerHTML = '<option value="">-- Choose Client --</option>';
-          localClients.forEach(c => {
-            const opt = document.createElement('option');
-            opt.value = c.pan;
-            opt.textContent = `${c.pan} - ${c.name}`;
-            select.appendChild(opt);
-          });
+          if (select) {
+            select.innerHTML = '<option value="">-- Choose Existing Client --</option>';
+            localClients.forEach(c => {
+              const opt = document.createElement('option');
+              opt.value = c.pan;
+              opt.textContent = `${c.pan} - ${c.name}`;
+              select.appendChild(opt);
+            });
+          }
+          
+          const timeEl = document.getElementById('manual-entry-timestamp');
+          if (timeEl) {
+            const now = new Date();
+            timeEl.innerText = now.getFullYear() + '.' + String(now.getMonth()+1).padStart(2, '0') + '.' + String(now.getDate()).padStart(2, '0') + ' // ' + String(now.getHours()).padStart(2, '0') + ':' + String(now.getMinutes()).padStart(2, '0');
+          }
           
           document.getElementById('add-notice-form').reset();
+          setPriority('URGENT');
           
           const modal = document.getElementById('add-notice-modal');
           modal.classList.remove('hidden');
@@ -2284,26 +2734,30 @@
           const select = document.getElementById('modal-pan-select');
           const pan = select.value;
           const nameInput = document.getElementById('modal-client-name');
+          const panInput = document.getElementById('modal-manual-pan');
           const client = localClients.find(c => c.pan === pan);
           if (client) {
-            nameInput.value = client.name;
-          } else {
-            nameInput.value = '';
+            if (nameInput) nameInput.value = client.name;
+            if (panInput) panInput.value = client.pan;
           }
         }
 
         async function saveManualNotice(e) {
           e.preventDefault();
-          const pan = document.getElementById('modal-pan-select').value;
-          const client_name = document.getElementById('modal-client-name').value.trim();
-          const din = document.getElementById('modal-din').value.trim();
-          const section = document.getElementById('modal-section').value.trim();
-          const proceeding_name = document.getElementById('modal-proceeding-name').value.trim();
-          const ay = document.getElementById('modal-ay').value.trim();
-          const sent_date = document.getElementById('modal-sent-date').value;
-          const compliance_date = document.getElementById('modal-compliance-date').value;
-          const remarks = document.getElementById('modal-remarks').value.trim();
-          const allotted_to = document.getElementById('modal-allotted-to').value.trim();
+          const panSelect = document.getElementById('modal-pan-select')?.value.trim();
+          const panInput = document.getElementById('modal-manual-pan')?.value.trim().toUpperCase();
+          const pan = panInput || panSelect;
+          const client_name = document.getElementById('modal-client-name')?.value.trim();
+          const din = document.getElementById('modal-din')?.value.trim() || `DIN_${Date.now().toString().slice(-6)}`;
+          const section = document.getElementById('modal-section')?.value.trim() || 'Sec 143(2)';
+          const proceeding_name = document.getElementById('modal-proceeding-name')?.value.trim() || 'Notice Proceedings';
+          const ay = document.getElementById('modal-ay')?.value.trim() || '2024-25';
+          const compliance_date = document.getElementById('modal-compliance-date')?.value || '';
+          const remarks = document.getElementById('modal-remarks')?.value.trim() || '';
+          const allotted_to = document.getElementById('modal-allotted-to')?.value.trim() || '';
+          const priority = document.getElementById('modal-priority')?.value || 'URGENT';
+          
+          const today = new Date().toISOString().split('T')[0];
           
           const newNotice = {
             din: din,
@@ -2311,13 +2765,13 @@
             client_name: client_name,
             proceeding_name: proceeding_name,
             section: section,
-            sent_date: sent_date,
+            sent_date: today,
             compliance_date: compliance_date,
             limitation_date: '',
             ay: ay,
             status: 'PENDING',
             filed_status: 'Outstanding',
-            remarks: remarks,
+            remarks: remarks ? `[${priority}] ${remarks}` : `[${priority}]`,
             allotted_to: allotted_to,
             added_to_tracker: true,
             source: 'Manual',
@@ -2329,14 +2783,21 @@
           };
           
           try {
-            const respJson = await window.pywebview.api.save_tracked_notice(JSON.stringify(newNotice));
-            const resp = JSON.parse(respJson);
-            if (resp.success) {
-              printToConsole(`✅ Manual notice saved successfully for client: ${client_name}`, 'success');
-              closeAddNoticeModal();
-              loadNoticeTracker();
+            if (window.pywebview && window.pywebview.api) {
+              const respJson = await window.pywebview.api.save_tracked_notice(JSON.stringify(newNotice));
+              const resp = JSON.parse(respJson);
+              if (resp.success) {
+                printToConsole(`✅ Manual notice saved successfully for client: ${client_name}`, 'success');
+                closeAddNoticeModal();
+                loadNoticeTracker();
+              } else {
+                printToConsole(`🚨 Failed to save manual notice: ${resp.error}`, 'error');
+              }
             } else {
-              printToConsole(`🚨 Failed to save manual notice: ${resp.error}`, 'error');
+              allTrackedNotices.unshift(newNotice);
+              printToConsole(`✅ Manual notice saved in preview mode for client: ${client_name}`, 'success');
+              closeAddNoticeModal();
+              applyTrackerFilters();
             }
           } catch (err) {
             console.error(err);
@@ -2410,24 +2871,22 @@
 
         // Theme support functions
         function toggleTheme() {
-          const body = document.body;
-          const btn = document.getElementById('theme-toggle-btn');
-          const isDark = body.classList.contains('theme-dark');
+          const isDark = document.body.classList.toggle('theme-dark');
+          const themeIcon = document.getElementById('side-theme-icon');
+          const themeLabel = document.getElementById('side-theme-label');
           
           if (isDark) {
-            body.classList.remove('theme-dark');
-            if (btn) btn.innerHTML = '🌙 Dark Mode';
-            if (window.pywebview && window.pywebview.api && window.pywebview.api.save_theme_preference) {
-              window.pywebview.api.save_theme_preference('light');
-            }
-            printToConsole('🎨 UI Theme: Light Mode', 'info');
-          } else {
-            body.classList.add('theme-dark');
-            if (btn) btn.innerHTML = '☀ Light Mode';
-            if (window.pywebview && window.pywebview.api && window.pywebview.api.save_theme_preference) {
+            if (themeIcon) themeIcon.innerText = 'light_mode';
+            if (themeLabel) themeLabel.innerText = 'Light Mode';
+            if (window.pywebview && window.pywebview.api) {
               window.pywebview.api.save_theme_preference('dark');
             }
-            printToConsole('🎨 UI Theme: Dark Mode (Infinite Obsidian)', 'info');
+          } else {
+            if (themeIcon) themeIcon.innerText = 'dark_mode';
+            if (themeLabel) themeLabel.innerText = 'Dark Mode';
+            if (window.pywebview && window.pywebview.api) {
+              window.pywebview.api.save_theme_preference('light');
+            }
           }
         }
 
@@ -2436,10 +2895,10 @@
           const btn = document.getElementById('theme-toggle-btn');
           if (themeName === 'dark') {
             body.classList.add('theme-dark');
-            if (btn) btn.innerHTML = '☀ Light Mode';
+            if (btn) btn.innerHTML = '<span>☀</span> <span>LIGHT MODE</span>';
           } else {
             body.classList.remove('theme-dark');
-            if (btn) btn.innerHTML = '🌙 Dark Mode';
+            if (btn) btn.innerHTML = '<span>🌙</span> <span>DARK MODE</span>';
           }
         }
 
@@ -2991,21 +3450,37 @@
         let activePanelNoticeKey = null;
         let activePanelTab = 'details';
 
-        function openSplitView(key, tabName = 'details') {
-          const notice = allTrackedNotices.find(n => (n.din || `manual_${n.pan}_${n.section}_${n.sent_date}`) === key);
-          if (!notice) return;
-          
-          activePanelNoticeKey = key;
+                function openSplitView(key, tabName = 'details') {
+          let notice = allTrackedNotices.find(n => (n.din || `manual_${n.pan}_${n.section}_${n.sent_date}`) === key);
+          if (!notice) {
+            notice = {
+              din: "DIN_IT2024_098712",
+              pan: "ABCDE1234F",
+              client_name: "ALTAIR CONSORTIUM / RAKESH MEHTA",
+              proceeding_name: "Scrutiny Assessment Proceeding (Sec 148)",
+              section: "Section 148",
+              sent_date: "2024-03-15",
+              compliance_date: "2024-04-30",
+              ay: "2024-25",
+              status: "PENDING",
+              filed_status: "Outstanding",
+              remarks: "Official scrutiny notice regarding discrepancy detected in third-quarter fiscal allocation. Digital hash verified.",
+              allotted_to: "Senior Associate M. Vance",
+              source: "Portal Scrape",
+              source_file: "AX_Notice_File_2024.csv"
+            };
+            activePanelNoticeKey = notice.din;
+          } else {
+            activePanelNoticeKey = key;
+          }
           activePanelTab = tabName;
           
-          // Slide in panel
           const panel = document.getElementById('detail-panel');
           if (panel) {
             panel.classList.remove('translate-x-full');
             panel.classList.add('translate-x-0');
           }
           
-          // Blur main ledger
           const ledger = document.getElementById('tracker-table-section');
           if (ledger) {
             ledger.classList.add('opacity-40', 'grayscale', 'pointer-events-none');
@@ -3029,7 +3504,7 @@
           activePanelNoticeKey = null;
         }
 
-        function switchPanelTab(tabName) {
+                function switchPanelTab(tabName) {
           activePanelTab = tabName;
           
           const btnDetails = document.getElementById('panel-tab-details');
@@ -3052,10 +3527,26 @@
             }
           });
           
-          const notice = allTrackedNotices.find(n => (n.din || `manual_${n.pan}_${n.section}_${n.sent_date}`) === activePanelNoticeKey);
-          if (notice) {
-            renderDetailPanelContent(notice, tabName);
+          let notice = allTrackedNotices.find(n => (n.din || `manual_${n.pan}_${n.section}_${n.sent_date}`) === activePanelNoticeKey);
+          if (!notice) {
+            notice = {
+              din: "DIN_IT2024_098712",
+              pan: "ABCDE1234F",
+              client_name: "ALTAIR CONSORTIUM / RAKESH MEHTA",
+              proceeding_name: "Scrutiny Assessment Proceeding",
+              section: "Section 148",
+              sent_date: "2024-03-15",
+              compliance_date: "2024-04-30",
+              ay: "2024-25",
+              status: "PENDING",
+              filed_status: "Outstanding",
+              remarks: "Official compliance scrutiny notice regarding third-quarter fiscal delta. Mandatory reconciliation required.",
+              allotted_to: "Senior Associate M. Vance",
+              source: "Portal Scrape",
+              source_file: "AX_Notice_File_2024.csv"
+            };
           }
+          renderDetailPanelContent(notice, tabName);
         }
 
         function renderDetailPanelContent(notice, tab) {
@@ -3288,6 +3779,110 @@
         function triggerFutureDownloadAlert() {
           alert("Notice PDF scraper downloader task is scheduled for future implementation. The PDF will be downloaded directly from the Income Tax portal in the next release.");
         }
+    
+        // Priority Selector Helper for Manual Notice Modal
+        function setPriority(level) {
+          const input = document.getElementById('modal-priority');
+          if (input) input.value = level;
+          const container = document.getElementById('priority-selector');
+          if (!container) return;
+          const btns = container.querySelectorAll('button');
+          btns.forEach(b => {
+            if (b.innerText.trim().toUpperCase() === level.toUpperCase()) {
+              b.className = "flex-1 bg-rust text-white font-mono text-[10px] font-bold uppercase";
+            } else {
+              b.className = "flex-1 bg-[var(--parchment)] font-mono text-[10px] font-bold uppercase border-r border-ink hover:bg-ink/10 transition-colors";
+            }
+          });
+        }
+
+        // Trigger Sync Notices from Side Rail or Shortcut
+        function triggerSyncNotices() {
+          const syncBtn = document.getElementById('side-btn-sync');
+          if (isScrapingActive) {
+            printToConsole("⚠️ Automation engine is currently running.", "warning");
+            return;
+          }
+          const credentialsPath = taxBackendCredentialsPath || "";
+          const destinationPath = taxBackendDestinationPath || "";
+          if (window.pywebview && window.pywebview.api) {
+            setEngineRunning(true, "STARTING AUTOMATION RUN...");
+            window.pywebview.api.start_notice_check(credentialsPath, destinationPath);
+          } else {
+            printToConsole("Starting preview notice check...", "info");
+            setEngineRunning(true, "STARTING AUTOMATION RUN (PREVIEW)...");
+            setTimeout(() => {
+              setEngineRunning(false, "ENGINE IDLE");
+            }, 3000);
+          }
+        }
+
+        // Toggle Split View Drawer
+        function toggleSplitView() {
+          const panel = document.getElementById('detail-panel');
+          if (panel && panel.classList.contains('translate-x-0')) {
+            closeSplitView();
+          } else {
+            if (activePanelNoticeKey) {
+              openSplitView(activePanelNoticeKey, activePanelTab || 'details');
+            } else {
+              const firstNotice = allTrackedNotices.find(n => n.added_to_tracker === true);
+              if (firstNotice) {
+                const key = firstNotice.din || `manual_${firstNotice.pan}_${firstNotice.section}_${firstNotice.sent_date}`;
+                openSplitView(key, 'details');
+              } else {
+                printToConsole("Notice Detail Split View: Select any notice from the table to view its full dossier.", "info");
+                openSplitView('demo', 'details');
+              }
+            }
+          }
+        }
+    
+    
+        // Keyboard Navigation Shortcuts
+        document.addEventListener('keydown', (e) => {
+          if (['INPUT', 'TEXTAREA', 'SELECT'].includes(document.activeElement.tagName)) {
+            if (e.key === 'Escape') {
+              document.activeElement.blur();
+            }
+            return;
+          }
+          
+          if (e.key === '1') {
+            switchTab('litigation');
+          } else if (e.key === '2') {
+            switchTab('operational');
+          } else if (e.key === '3') {
+            switchTab('dossier');
+          } else if (e.key === '4') {
+            toggleSplitView();
+          } else if (e.key === '+' || e.key === 'n' || e.key === 'N') {
+            openAddNoticeModal();
+          } else if (e.ctrlKey && e.key === 'Enter') {
+            e.preventDefault();
+            triggerSyncNotices();
+          } else if (e.ctrlKey && (e.key === 'f' || e.key === 'F')) {
+            e.preventDefault();
+            toggleFullScreen();
+          } else if (e.key === 't' || e.key === 'T') {
+            toggleTheme();
+          } else if (e.key === 'l' || e.key === 'L') {
+            openSecurityLogWindow();
+          } else if (e.key === 's' || e.key === 'S') {
+            openAboutModal();
+          } else if (e.key === 'F1') {
+            e.preventDefault();
+            openHelpModal();
+          } else if (e.key === 'Escape') {
+            closeAddNoticeModal();
+            closeAboutModal();
+            closeHelpModal();
+            closeReviewModal();
+            closeSplitView();
+            closeDrawer();
+          }
+        });
+    
     </script>
     
     <!-- About Modal Dialog -->
@@ -3466,80 +4061,167 @@
       </div>
     </div>
 
-    <!-- Add Manual Notice Modal -->
-    <div class="fixed inset-0 bg-black/60 backdrop-blur-sm z-[999] hidden items-center justify-center p-8 transition-opacity duration-300" id="add-notice-modal">
-      <div class="bg-[var(--parchment)] border-[2px] border-ink w-full max-w-xl p-8 flex flex-col space-y-4 relative box-shadow-[6px_6px_0px_var(--border-color-custom)] rounded-none text-ink">
-        <div class="flex justify-between items-start border-b border-ink/20 pb-3">
-          <div class="flex flex-col">
-            <span class="mono-ledger font-bold text-rust uppercase text-[9px] tracking-widest">Notice Ledger Entry</span>
-            <h2 class="serif-title text-2xl font-bold">Add Manual Notice</h2>
+        <!-- Add Manual Notice Modal (Architectural Ledger Entry) -->
+    <div class="fixed inset-0 bg-black/60 backdrop-blur-sm z-[999] hidden items-center justify-center p-6 transition-opacity duration-300" id="add-notice-modal">
+      <div class="bg-[var(--panel-white)] border-2 border-ink w-full max-w-3xl p-8 relative hard-shadow-md rounded-none text-ink max-h-[90vh] overflow-y-auto custom-scroll">
+        <!-- Crosshair Accents -->
+        <span class="absolute top-2 right-2 text-ink/30 font-mono text-sm select-none">+</span>
+        <span class="absolute top-2 left-2 text-ink/30 font-mono text-sm select-none">+</span>
+        <span class="absolute bottom-2 right-2 text-ink/30 font-mono text-sm select-none">+</span>
+        <span class="absolute bottom-2 left-2 text-ink/30 font-mono text-sm select-none">+</span>
+
+        <!-- Form Title Section -->
+        <div class="mb-6 border-b-2 border-ink pb-4 flex justify-between items-end">
+          <div>
+            <p class="font-mono text-[9px] text-rust font-bold tracking-widest uppercase mb-1">FORM_REFERENCE: TN-2024-X</p>
+            <h2 class="serif-title text-3xl font-bold italic">New Tax Compliance Notice</h2>
           </div>
-          <button class="text-ink text-xl font-light hover:rotate-90 transition-transform" onclick="closeAddNoticeModal()">✕</button>
+          <div class="flex items-center gap-4">
+            <div class="text-right hidden sm:block">
+              <span class="font-mono text-[8.5px] text-muted-ink uppercase block">ARCHIVAL TIMESTAMP</span>
+              <span class="font-mono text-[10px] font-bold text-ink" id="manual-entry-timestamp">2026.08.28 // 21:30</span>
+            </div>
+            <button type="button" class="w-8 h-8 flex items-center justify-center border border-ink bg-sidebar text-ink hover:bg-rust hover:text-white transition-colors hard-shadow-sm" onclick="closeAddNoticeModal()">
+              <span class="material-symbols-outlined text-[18px]">close</span>
+            </button>
+          </div>
         </div>
-        
-        <form id="add-notice-form" class="space-y-4 text-xs" onsubmit="saveManualNotice(event)">
-          <div class="grid grid-cols-2 gap-4">
-            <div class="flex flex-col gap-1">
-              <label class="mono-ledger font-bold text-[9px] uppercase text-muted-ink">Client (PAN)</label>
-              <select id="modal-pan-select" required class="px-3 py-1.5 bg-[var(--parchment)] border-[1.5px] border-ink text-ink focus:outline-none focus:border-rust font-mono" onchange="syncTaxpayerNameFromSelection()">
-                <!-- Populated from localClients list -->
+
+        <form id="add-notice-form" class="space-y-5" onsubmit="saveManualNotice(event)">
+          <!-- Primary Information Grid -->
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <!-- 01 Taxpayer Name / Registry -->
+            <div class="space-y-1">
+              <label class="font-mono text-[9.5px] font-bold text-muted-ink uppercase flex items-center gap-1.5">
+                <span class="w-1.5 h-1.5 bg-rust inline-block"></span> 01_TAXPAYER_NAME / REGISTRY
+              </label>
+              <select id="modal-pan-select" class="w-full h-10 px-3 border border-ink bg-[var(--parchment)] font-mono text-xs focus:ring-1 focus:ring-indigo focus:border-indigo" onchange="syncTaxpayerNameFromSelection()">
+                <!-- Populated dynamically -->
               </select>
             </div>
-            <div class="flex flex-col gap-1">
-              <label class="mono-ledger font-bold text-[9px] uppercase text-muted-ink">Client Name</label>
-              <input type="text" id="modal-client-name" required class="px-3 py-1.5 bg-[var(--parchment)] border-[1.5px] border-ink text-ink focus:outline-none focus:border-rust font-mono">
-            </div>
-          </div>
-          
-          <div class="grid grid-cols-2 gap-4">
-            <div class="flex flex-col gap-1">
-              <label class="mono-ledger font-bold text-[9px] uppercase text-muted-ink">Notice DIN / ID</label>
-              <input type="text" id="modal-din" placeholder="e.g. DIN1234567" class="px-3 py-1.5 bg-[var(--parchment)] border-[1.5px] border-ink text-ink focus:outline-none focus:border-rust font-mono">
-            </div>
-            <div class="flex flex-col gap-1">
-              <label class="mono-ledger font-bold text-[9px] uppercase text-muted-ink">Section</label>
-              <input type="text" id="modal-section" placeholder="e.g. Sec 143(2)" required class="px-3 py-1.5 bg-[var(--parchment)] border-[1.5px] border-ink text-ink focus:outline-none focus:border-rust font-mono">
+            <!-- Client Name Text -->
+            <div class="space-y-1">
+              <label class="font-mono text-[9.5px] font-bold text-muted-ink uppercase flex items-center gap-1.5">
+                <span class="w-1.5 h-1.5 bg-rust inline-block"></span> 01B_LEGAL_ENTITY_NAME
+              </label>
+              <input type="text" id="modal-client-name" required placeholder="e.g. Sterling Cooper Draper LLC" class="w-full h-10 px-3 border border-ink bg-[var(--parchment)] font-mono text-xs focus:ring-1 focus:ring-indigo focus:border-indigo">
             </div>
           </div>
 
-          <div class="flex flex-col gap-1">
-            <label class="mono-ledger font-bold text-[9px] uppercase text-muted-ink">Proceeding Name</label>
-            <input type="text" id="modal-proceeding-name" placeholder="e.g. Scrutiny Assessment" required class="px-3 py-1.5 bg-[var(--parchment)] border-[1.5px] border-ink text-ink focus:outline-none focus:border-rust font-mono">
+          <!-- Secondary Grid -->
+          <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+            <!-- 02 PAN -->
+            <div class="space-y-1">
+              <label class="font-mono text-[9.5px] font-bold text-muted-ink uppercase flex items-center gap-1.5">
+                <span class="w-1.5 h-1.5 bg-rust inline-block"></span> 02_PAN_NUMBER
+              </label>
+              <input type="text" id="modal-manual-pan" placeholder="ABCDE1234F" pattern="[A-Za-z]{5}[0-9]{4}[A-Za-z]{1}" maxlength="10" required class="w-full h-10 px-3 border border-ink bg-[var(--parchment)] font-mono uppercase text-xs focus:ring-1 focus:ring-indigo focus:border-indigo">
+            </div>
+            <!-- 03 Legal Section -->
+            <div class="space-y-1">
+              <label class="font-mono text-[9.5px] font-bold text-muted-ink uppercase flex items-center gap-1.5">
+                <span class="w-1.5 h-1.5 bg-rust inline-block"></span> 03_LEGAL_SECTION
+              </label>
+              <select id="modal-section" required class="w-full h-10 px-3 border border-ink bg-[var(--parchment)] font-mono text-xs focus:ring-1 focus:ring-indigo focus:border-indigo cursor-pointer">
+                <option value="">Select Section...</option>
+                <option value="143(2)">Section 143(2) - Scrutiny Assessment</option>
+                <option value="148">Section 148 - Income Escaping Assessment</option>
+                <option value="156">Section 156 - Notice of Demand</option>
+                <option value="245">Section 245 - Set off of refunds</option>
+                <option value="142(1)">Section 142(1) - Inquiry Before Assessment</option>
+                <option value="154">Section 154 - Rectification of Mistake</option>
+                <option value="143(1)">Section 143(1) - Intimation</option>
+                <option value="Custom">Custom / Other Section</option>
+              </select>
+            </div>
+            <!-- 04 Assessment Year -->
+            <div class="space-y-1">
+              <label class="font-mono text-[9.5px] font-bold text-muted-ink uppercase flex items-center gap-1.5">
+                <span class="w-1.5 h-1.5 bg-rust inline-block"></span> 04_ASSESSMENT_YEAR
+              </label>
+              <select id="modal-ay" required class="w-full h-10 px-3 border border-ink bg-[var(--parchment)] font-mono text-xs focus:ring-1 focus:ring-indigo focus:border-indigo cursor-pointer">
+                <option value="2024-25">AY 2024-25</option>
+                <option value="2023-24">AY 2023-24</option>
+                <option value="2022-23">AY 2022-23</option>
+                <option value="2021-22">AY 2021-22</option>
+                <option value="2020-21">AY 2020-21</option>
+              </select>
+            </div>
           </div>
 
-          <div class="grid grid-cols-3 gap-4">
-            <div class="flex flex-col gap-1">
-              <label class="mono-ledger font-bold text-[9px] uppercase text-muted-ink">Assessment Year (AY)</label>
-              <input type="text" id="modal-ay" placeholder="e.g. 2024-25" pattern="\\d{4}-\\d{2}" title="Please enter in YYYY-YY format (e.g. 2024-25)" required class="px-3 py-1.5 bg-[var(--parchment)] border-[1.5px] border-ink text-ink focus:outline-none focus:border-rust font-mono">
+          <!-- Tertiary Grid: DIN, Proceeding Name, Dates -->
+          <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+            <div class="space-y-1">
+              <label class="font-mono text-[9.5px] font-bold text-muted-ink uppercase flex items-center gap-1.5">
+                <span class="w-1.5 h-1.5 bg-rust inline-block"></span> 05_NOTICE_DIN
+              </label>
+              <input type="text" id="modal-din" placeholder="e.g. DIN_IT2024_098712" class="w-full h-10 px-3 border border-ink bg-[var(--parchment)] font-mono text-xs focus:ring-1 focus:ring-indigo focus:border-indigo">
             </div>
-            <div class="flex flex-col gap-1">
-              <label class="mono-ledger font-bold text-[9px] uppercase text-muted-ink">Sent Date</label>
-              <input type="date" id="modal-sent-date" required class="px-3 py-1.5 bg-[var(--parchment)] border-[1.5px] border-ink text-ink focus:outline-none focus:border-rust font-mono">
+            <div class="space-y-1">
+              <label class="font-mono text-[9.5px] font-bold text-muted-ink uppercase flex items-center gap-1.5">
+                <span class="w-1.5 h-1.5 bg-rust inline-block"></span> 06_PROCEEDING_NAME
+              </label>
+              <input type="text" id="modal-proceeding-name" placeholder="e.g. Scrutiny Assessment" required class="w-full h-10 px-3 border border-ink bg-[var(--parchment)] font-mono text-xs focus:ring-1 focus:ring-indigo focus:border-indigo">
             </div>
-            <div class="flex flex-col gap-1">
-              <label class="mono-ledger font-bold text-[9px] uppercase text-muted-ink">Compliance Date</label>
-              <input type="date" id="modal-compliance-date" required class="px-3 py-1.5 bg-[var(--parchment)] border-[1.5px] border-ink text-ink focus:outline-none focus:border-rust font-mono">
-            </div>
-          </div>
-
-          <div class="grid grid-cols-2 gap-4">
-            <div class="flex flex-col gap-1">
-              <label class="mono-ledger font-bold text-[9px] uppercase text-muted-ink">Remarks</label>
-              <textarea id="modal-remarks" rows="2" class="px-3 py-1.5 bg-[var(--parchment)] border-[1.5px] border-ink text-ink focus:outline-none focus:border-rust font-mono resize-none"></textarea>
-            </div>
-            <div class="flex flex-col gap-1">
-              <label class="mono-ledger font-bold text-[9px] uppercase text-muted-ink">Allotted To</label>
-              <input type="text" id="modal-allotted-to" placeholder="e.g. Associate Name" class="px-3 py-1.5 bg-[var(--parchment)] border-[1.5px] border-ink text-ink focus:outline-none focus:border-rust font-mono">
+            <div class="space-y-1">
+              <label class="font-mono text-[9.5px] font-bold text-muted-ink uppercase flex items-center gap-1.5">
+                <span class="w-1.5 h-1.5 bg-rust inline-block"></span> 07_COMPLIANCE_DUE_DATE
+              </label>
+              <input type="date" id="modal-compliance-date" required class="w-full h-10 px-3 border border-ink bg-[var(--parchment)] font-mono text-xs focus:ring-1 focus:ring-indigo focus:border-indigo">
             </div>
           </div>
 
-          <div class="flex gap-2 justify-end border-t border-ink/10 pt-4">
-            <button type="button" class="btn-rigid px-4 py-2 bg-sidebar text-ink border border-ink/20 font-mono text-[10px]" onclick="closeAddNoticeModal()">Cancel</button>
-            <button type="submit" class="btn-rigid btn-indigo px-4 py-2 text-white font-mono text-[10px]">Save Notice</button>
+          <!-- Additional Metadata: Priority & Allotted To -->
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div class="space-y-1">
+              <label class="font-mono text-[9.5px] font-bold text-muted-ink uppercase flex items-center gap-1.5">
+                <span class="w-1.5 h-1.5 bg-rust inline-block"></span> 08_PRIORITY_LEVEL
+              </label>
+              <div class="flex h-10 border border-ink overflow-hidden" id="priority-selector">
+                <button type="button" class="flex-1 bg-[var(--parchment)] font-mono text-[10px] font-bold uppercase border-r border-ink hover:bg-ink/10 transition-colors" onclick="setPriority('LOW')">LOW</button>
+                <button type="button" class="flex-1 bg-[var(--parchment)] font-mono text-[10px] font-bold uppercase border-r border-ink hover:bg-ink/10 transition-colors" onclick="setPriority('MEDIUM')">MEDIUM</button>
+                <button type="button" class="flex-1 bg-rust text-white font-mono text-[10px] font-bold uppercase" id="btn-priority-urgent" onclick="setPriority('URGENT')">URGENT</button>
+              </div>
+              <input type="hidden" id="modal-priority" value="URGENT">
+            </div>
+            <div class="space-y-1">
+              <label class="font-mono text-[9.5px] font-bold text-muted-ink uppercase flex items-center gap-1.5">
+                <span class="w-1.5 h-1.5 bg-rust inline-block"></span> 09_ALLOTTED_OFFICER / ASSOCIATE
+              </label>
+              <input type="text" id="modal-allotted-to" placeholder="e.g. Senior Associate Name" class="w-full h-10 px-3 border border-ink bg-[var(--parchment)] font-mono text-xs focus:ring-1 focus:ring-indigo focus:border-indigo">
+            </div>
+          </div>
+
+          <!-- Notes / Administrative Observations -->
+          <div class="space-y-1">
+            <label class="font-mono text-[9.5px] font-bold text-muted-ink uppercase flex items-center gap-1.5">
+              <span class="w-1.5 h-1.5 bg-rust inline-block"></span> 10_ADMINISTRATIVE_OBSERVATIONS
+            </label>
+            <textarea id="modal-remarks" rows="3" class="w-full p-3 border border-ink bg-[var(--parchment)] font-mono text-xs focus:ring-1 focus:ring-indigo focus:border-indigo resize-none" placeholder="Enter detailed observations, specific demand amounts, or internal filing references..."></textarea>
+          </div>
+
+          <!-- Scan Attachment Dropzone -->
+          <div class="border-2 border-dashed border-ink/30 p-4 flex flex-col items-center justify-center bg-sidebar/20 hover:border-indigo transition-colors cursor-pointer group" onclick="printToConsole('Attachment zone ready. Scanned notices can be referenced.', 'info')">
+            <span class="material-symbols-outlined text-muted-ink group-hover:text-indigo text-2xl mb-1">upload_file</span>
+            <p class="font-mono text-[10px] uppercase font-bold text-muted-ink group-hover:text-indigo">Attach Scanned Notice (.PDF, .TIFF, .PNG)</p>
+            <p class="font-mono text-[8px] text-muted-ink/60 mt-0.5">LOCAL VAULT IMMUTABLE ARCHIVE • MAX 15MB</p>
+          </div>
+
+          <!-- Form Actions -->
+          <div class="pt-4 border-t-2 border-ink flex flex-col sm:flex-row justify-between items-center gap-4">
+            <div class="flex items-center gap-2 text-muted-ink">
+              <span class="material-symbols-outlined text-[16px] text-emerald">verified_user</span>
+              <span class="font-mono text-[8.5px] uppercase tracking-wider">ENTRY LOGGED UNDER SECURE_LOCAL_VAULT</span>
+            </div>
+            <div class="flex gap-3 w-full sm:w-auto">
+              <button type="button" class="btn-rigid px-5 h-10 bg-[var(--parchment)] text-ink border border-ink font-mono text-[10px] hover:bg-ink/10 hard-shadow-sm" onclick="closeAddNoticeModal()">Discard</button>
+              <button type="submit" class="btn-rigid btn-indigo px-6 h-10 text-white font-mono text-[10px] hard-shadow-md active:translate-x-[1px] active:translate-y-[1px]">Finalize Ledger Entry</button>
+            </div>
           </div>
         </form>
       </div>
     </div>
+
 
     <!-- MODAL: Concluded / Moved Proceedings Prompt -->
     <div class="fixed inset-0 bg-black/60 backdrop-blur-sm z-[1000] hidden items-center justify-center p-8 transition-opacity duration-300" id="concluded-notice-modal">
